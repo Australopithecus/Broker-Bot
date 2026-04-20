@@ -1,5 +1,8 @@
 name: Broker Bot Cloud Run
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 on:
   schedule:
     # 4:15pm ET = 21:15 UTC during standard time (winter)
@@ -14,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -37,7 +40,30 @@ jobs:
         run: |
           python scripts/restore_db_from_snapshot.py
 
-      - name: Train, rebalance, learn, and build snapshot
+      - name: Validate required configuration
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          ALPACA_PAPER_URL: ${{ secrets.ALPACA_PAPER_URL }}
+          ALPACA_DATA_FEED: ${{ secrets.ALPACA_DATA_FEED }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_ENABLED: ${{ secrets.LLM_ENABLED }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os
+          required = ["ALPACA_API_KEY", "ALPACA_SECRET_KEY"]
+          optional = ["ALPACA_PAPER_URL", "ALPACA_DATA_FEED", "OPENAI_API_KEY", "LLM_ENABLED", "LLM_MODEL", "API_TOKEN"]
+          missing = [name for name in required if not os.getenv(name, "").strip()]
+          if missing:
+              raise SystemExit(f"Missing required GitHub Actions secrets: {', '.join(missing)}")
+          print("Required secrets present.")
+          for name in optional:
+              print(f"{name}: {'set' if os.getenv(name, '').strip() else 'not set'}")
+          PY
+
+      - name: Export bot environment
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
@@ -53,12 +79,48 @@ jobs:
           REPORTS_DIR: data/reports
           LEARNED_POLICY_PATH: data/learned_policy.json
         run: |
+          {
+            echo "ALPACA_API_KEY=${ALPACA_API_KEY}"
+            echo "ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}"
+            echo "ALPACA_PAPER_URL=${ALPACA_PAPER_URL}"
+            echo "ALPACA_DATA_FEED=${ALPACA_DATA_FEED}"
+            echo "OPENAI_API_KEY=${OPENAI_API_KEY}"
+            echo "LLM_ENABLED=${LLM_ENABLED}"
+            echo "LLM_MODEL=${LLM_MODEL}"
+            echo "API_TOKEN=${API_TOKEN}"
+            echo "UNIVERSE_PATH=${UNIVERSE_PATH}"
+            echo "BROKER_BOT_DB=${BROKER_BOT_DB}"
+            echo "MODEL_DIR=${MODEL_DIR}"
+            echo "REPORTS_DIR=${REPORTS_DIR}"
+            echo "LEARNED_POLICY_PATH=${LEARNED_POLICY_PATH}"
+          } >> "$GITHUB_ENV"
+
+      - name: Train model
+        run: |
           python -m broker_bot.cli train
+
+      - name: Rebalance paper portfolio
+        run: |
           python -m broker_bot.cli rebalance
+
+      - name: Snapshot account
+        run: |
           python -m broker_bot.cli snapshot
+
+      - name: Review prior decisions
+        run: |
           python -m broker_bot.cli review-decisions
+
+      - name: Generate advisor report
+        run: |
           python -m broker_bot.cli advisor-report
+
+      - name: Generate strategy report
+        run: |
           python -m broker_bot.cli strategy-report
+
+      - name: Build dashboard snapshot
+        run: |
           python scripts/build_snapshot.py
 
       - name: Commit snapshot and learned state
