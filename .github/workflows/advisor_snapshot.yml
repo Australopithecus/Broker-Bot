@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  advisor:
+  cloud_run:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
