@@ -95,6 +95,56 @@ jobs:
             echo "LEARNED_POLICY_PATH=${LEARNED_POLICY_PATH}"
           } >> "$GITHUB_ENV"
 
+      - name: Verify Alpaca trading and market data access
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime, timedelta, timezone
+
+          from alpaca.trading.client import TradingClient
+          from alpaca.data.historical import StockHistoricalDataClient
+          from alpaca.data.requests import StockBarsRequest
+          from alpaca.data.timeframe import TimeFrame
+
+          api_key = os.environ["ALPACA_API_KEY"]
+          secret_key = os.environ["ALPACA_SECRET_KEY"]
+          feed = os.getenv("ALPACA_DATA_FEED", "iex").strip() or "iex"
+
+          try:
+              trading = TradingClient(api_key, secret_key, paper=True)
+              account = trading.get_account()
+              print(f"Trading auth OK. Account status: {getattr(account, 'status', 'unknown')}")
+          except Exception as exc:
+              raise SystemExit(
+                  "Alpaca trading authentication failed. "
+                  "Check ALPACA_API_KEY / ALPACA_SECRET_KEY and make sure they are paper trading API keys. "
+                  f"Underlying error: {exc}"
+              )
+
+          try:
+              data_client = StockHistoricalDataClient(api_key, secret_key)
+              req = StockBarsRequest(
+                  symbol_or_symbols=["SPY"],
+                  timeframe=TimeFrame.Day,
+                  start=datetime.now(timezone.utc) - timedelta(days=10),
+                  end=datetime.now(timezone.utc),
+                  feed=feed,
+              )
+              bars = data_client.get_stock_bars(req).df
+              if bars.empty:
+                  raise SystemExit(
+                      f"Alpaca market data auth succeeded but returned no bars for SPY using feed={feed}."
+                  )
+              print(f"Market data auth OK using feed={feed}.")
+          except Exception as exc:
+              raise SystemExit(
+                  "Alpaca market data request failed. "
+                  "Most likely causes are invalid API keys, stale secrets, or ALPACA_DATA_FEED set to sip without entitlement. "
+                  "Try setting ALPACA_DATA_FEED=iex in GitHub Secrets. "
+                  f"Underlying error: {exc}"
+              )
+          PY
+
       - name: Train model
         run: |
           python -m broker_bot.cli train
