@@ -235,6 +235,14 @@ def log_decision_run(db_path: str, ts: str, regime_leverage: float, spy_vol: flo
         )
 
 
+def read_latest_decision_run(db_path: str) -> tuple[str, float | None, float | None, str | None] | None:
+    with sqlite3.connect(db_path) as conn:
+        row = conn.execute(
+            "SELECT ts, regime_leverage, spy_vol, context FROM decision_runs ORDER BY ts DESC LIMIT 1"
+        ).fetchone()
+        return row
+
+
 def log_decision_logs(
     db_path: str,
     ts: str,

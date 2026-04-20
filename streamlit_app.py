@@ -301,13 +301,23 @@ else:
 
 st.subheader("Strategy Reports")
 if strategy_reports:
-    for report in strategy_reports[:5]:
+    watchlist_reports = [report for report in strategy_reports if report.get("report_type") == "watchlist"]
+    standard_reports = [report for report in strategy_reports if report.get("report_type") != "watchlist"]
+
+    if watchlist_reports:
+        latest_watchlist = watchlist_reports[0]
+        st.markdown(f"**{latest_watchlist.get('headline','Watchlist Report')}** — {latest_watchlist.get('ts','')}")
+        st.write(latest_watchlist.get("summary", ""))
+        st.markdown(latest_watchlist.get("body", ""))
+        st.divider()
+
+    for report in standard_reports[:5]:
         st.markdown(f"**{report.get('headline','Strategy Report')}** — {report.get('ts','')}")
         st.write(report.get("summary", ""))
         changes = report.get("changes", {})
         if changes:
             st.caption("Changes: " + ", ".join([f"{k}={v}" for k, v in changes.items()]))
-        with st.expander("Show report body"):
+        with st.expander("Show full report body"):
             st.markdown(report.get("body", ""))
         st.divider()
 else:
