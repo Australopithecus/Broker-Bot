@@ -4,9 +4,21 @@ from urllib.parse import urlsplit
 import requests
 import streamlit as st
 
-API_BASE = os.getenv("API_BASE_URL", "")
-API_TOKEN = os.getenv("API_TOKEN", "")
-DATA_URL = os.getenv("DATA_URL", "")
+
+def _secret(name: str) -> str:
+    value = os.getenv(name, "").strip()
+    if value:
+        return value
+    try:
+        secret_value = st.secrets.get(name, "")
+    except Exception:
+        secret_value = ""
+    return str(secret_value).strip() if secret_value else ""
+
+
+API_BASE = _secret("API_BASE_URL")
+API_TOKEN = _secret("API_TOKEN")
+DATA_URL = _secret("DATA_URL")
 
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
 
