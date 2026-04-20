@@ -6,7 +6,17 @@ import os
 from pathlib import Path
 
 from .config import load_config
-from .logging_db import init_db, log_equity, log_positions, log_trades, log_signals, log_advisor_report
+from .logging_db import (
+    init_db,
+    log_advisor_report,
+    log_decision_logs,
+    log_decision_run,
+    log_equity,
+    log_positions,
+    log_signals,
+    log_trades,
+)
+from .learning import generate_strategy_report, review_and_learn
 from .pipeline import train_on_history, run_backtest_on_history
 from .data import fetch_latest_close
 from .trader import rebalance_portfolio, snapshot_equity, snapshot_positions
@@ -39,17 +49,64 @@ def cmd_backtest(args: argparse.Namespace) -> None:
     config = load_config()
     symbols = _load_symbols(config)
     results = run_backtest_on_history(config, symbols)
+    if results.empty:
+        print("Backtest returned no rows.")
+        return
+
+    total_return = float(results["strategy_equity"].iloc[-1] - 1.0)
+    avg_daily = float(results["strategy_return"].mean())
+    vol = float(results["strategy_return"].std()) if len(results) > 1 else 0.0
+    hit_rate = float((results["strategy_return"] > 0).mean())
+    avg_alpha = float(results["alpha"].mean()) if "alpha" in results.columns else 0.0
+    avg_turnover = float(results["turnover"].mean()) if "turnover" in results.columns else 0.0
+    print(
+        "Backtest summary: "
+        f"total_return={total_return:.2%}, avg_period_return={avg_daily:.3%}, "
+        f"vol={vol:.3%}, hit_rate={hit_rate:.1%}, avg_alpha={avg_alpha:.3%}, "
+        f"avg_turnover={avg_turnover:.3f}"
+    )
     print(results.tail(5).to_string(index=False))
 
 
 def cmd_rebalance(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
+    review_summary = "Learning skipped."
+    try:
+        review_report = review_and_learn(config)
+        review_summary = review_report.summary
+    except Exception as exc:
+        review_summary = f"Learning skipped: {exc}"
+    config = load_config()
     symbols = _load_symbols(config)
 
-    ts, orders, signals = rebalance_portfolio(config, symbols)
+    ts, orders, signals, decision_context = rebalance_portfolio(config, symbols)
     if orders:
         log_trades(config.db_path, orders)
+
+    log_decision_run(
+        config.db_path,
+        ts,
+        float(decision_context.get("effective_leverage", 0.0)),
+        float(decision_context.get("spy_vol", 0.0)),
+        json.dumps(decision_context),
+    )
+    log_decision_logs(
+        config.db_path,
+        ts,
+        [
+            (
+                signal.symbol,
+                signal.side,
+                1 if signal.selected else 0,
+                float(signal.base_score if signal.base_score is not None else signal.score),
+                float(signal.score),
+                json.dumps(signal.components or {}, sort_keys=True),
+                signal.rationale or None,
+            )
+            for signal in signals
+        ],
+    )
 
     log_signals(
         config.db_path,
@@ -64,7 +121,10 @@ def cmd_rebalance(args: argparse.Namespace) -> None:
     ts_eq, equity, cash, port = snapshot_equity(config)
     log_equity(config.db_path, ts_eq, equity, cash, port, spy_value=spy_value)
 
-    print(f"Rebalanced at {ts} with {len(orders)} orders.")
+    print(
+        f"Rebalanced at {ts} with {len(orders)} orders. "
+        f"Learning summary: {review_summary}"
+    )
 
 
 def cmd_snapshot(args: argparse.Namespace) -> None:
@@ -121,6 +181,23 @@ def cmd_advisor(args: argparse.Namespace) -> None:
         print("Advisor report generated (no overrides applied).")
 
 
+def cmd_review_decisions(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = review_and_learn(config)
+    print(f"{report.headline}: {report.summary}")
+    if report.report_path:
+        print(f"Saved report to {report.report_path}")
+
+
+def cmd_strategy_report(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_strategy_report(config)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Broker Bot - Paper Trading")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -133,6 +210,8 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("dashboard")
     subparsers.add_parser("dashboard-web")
     subparsers.add_parser("advisor-report")
+    subparsers.add_parser("review-decisions")
+    subparsers.add_parser("strategy-report")
 
     return parser
 
@@ -157,6 +236,10 @@ def main() -> None:
         cmd_dashboard_web(args)
     elif args.command == "advisor-report":
         cmd_advisor(args)
+    elif args.command == "review-decisions":
+        cmd_review_decisions(args)
+    elif args.command == "strategy-report":
+        cmd_strategy_report(args)
 
 
 if __name__ == "__main__":

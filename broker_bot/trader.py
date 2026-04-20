@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 
-
 import pandas as pd
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest, GetOrdersRequest
@@ -13,7 +12,9 @@ from alpaca.common.exceptions import APIError
 from .config import Config
 from .data import fetch_daily_bars
 from .features import build_features
+from .learning import build_symbol_memory
 from .model import load_model, predict_return
+from .research import build_research_overlay
 from .logging_db import read_latest_equity
 
 
@@ -23,6 +24,10 @@ class Signal:
     score: float
     side: str  # LONG or SHORT or HOLD
     vol: float | None = None
+    base_score: float | None = None
+    selected: bool = False
+    components: dict[str, float] | None = None
+    rationale: str = ""
 
 
 def _latest_date(df: pd.DataFrame) -> datetime:
@@ -89,7 +94,18 @@ def _is_tradable(trading: TradingClient, symbol: str, cache: dict[str, dict[str,
     return info["tradable"]
 
 
-def generate_signals(config: Config, symbols: list[str]) -> tuple[pd.DataFrame, list[Signal], float, float]:
+def _component_payload(row: pd.Series) -> dict[str, float]:
+    return {
+        "technical_adjustment": float(row.get("technical_adjustment", 0.0)),
+        "snapshot_adjustment": float(row.get("snapshot_adjustment", 0.0)),
+        "screener_adjustment": float(row.get("screener_adjustment", 0.0)),
+        "news_adjustment": float(row.get("news_adjustment", 0.0)),
+        "memory_adjustment": float(row.get("memory_adjustment", 0.0)),
+        "llm_adjustment": float(row.get("llm_adjustment", 0.0)),
+    }
+
+
+def generate_signals(config: Config, symbols: list[str]) -> tuple[pd.DataFrame, list[Signal], float, float, dict]:
     end = datetime.now(timezone.utc)
     start = end - timedelta(days=260)
     bars = fetch_daily_bars(config, symbols + ["SPY"], start, end).bars
@@ -111,26 +127,70 @@ def generate_signals(config: Config, symbols: list[str]) -> tuple[pd.DataFrame, 
     if config.min_dollar_vol > 0 and "dollar_vol_20d" in latest.columns:
         latest = latest[latest["dollar_vol_20d"] >= config.min_dollar_vol]
 
+    symbol_memory = build_symbol_memory(config.db_path)
+    latest, research_context = build_research_overlay(config, latest, symbol_memory=symbol_memory)
+
     long_candidates = latest[latest["pred_return"] >= config.min_long_return].sort_values("pred_return", ascending=False)
     short_candidates = latest[latest["pred_return"] <= config.max_short_return].sort_values("pred_return", ascending=True)
 
     longs = long_candidates.head(config.rebalance_top_k)
     shorts = short_candidates.head(config.rebalance_top_k)
+    selected_symbols = set(longs["Symbol"]).union(set(shorts["Symbol"]))
 
     signals: list[Signal] = []
     for _, row in longs.iterrows():
-        signals.append(Signal(symbol=row["Symbol"], score=float(row["pred_return"]), side="LONG", vol=float(row["vol_20d"])))
+        signals.append(
+            Signal(
+                symbol=row["Symbol"],
+                score=float(row["pred_return"]),
+                side="LONG",
+                vol=float(row["vol_20d"]),
+                base_score=float(row.get("base_pred_return", row["pred_return"])),
+                selected=True,
+                components=_component_payload(row),
+                rationale=str(row.get("rationale", "")),
+            )
+        )
     for _, row in shorts.iterrows():
-        signals.append(Signal(symbol=row["Symbol"], score=float(row["pred_return"]), side="SHORT", vol=float(row["vol_20d"])))
+        signals.append(
+            Signal(
+                symbol=row["Symbol"],
+                score=float(row["pred_return"]),
+                side="SHORT",
+                vol=float(row["vol_20d"]),
+                base_score=float(row.get("base_pred_return", row["pred_return"])),
+                selected=True,
+                components=_component_payload(row),
+                rationale=str(row.get("rationale", "")),
+            )
+        )
 
     for _, row in latest.iterrows():
-        if row["Symbol"] not in {s.symbol for s in signals}:
-            signals.append(Signal(symbol=row["Symbol"], score=float(row["pred_return"]), side="HOLD", vol=float(row["vol_20d"])))
+        if row["Symbol"] not in selected_symbols:
+            signals.append(
+                Signal(
+                    symbol=row["Symbol"],
+                    score=float(row["pred_return"]),
+                    side="HOLD",
+                    vol=float(row["vol_20d"]),
+                    base_score=float(row.get("base_pred_return", row["pred_return"])),
+                    selected=False,
+                    components=_component_payload(row),
+                    rationale=str(row.get("rationale", "")),
+                )
+            )
 
     spy_df = bars[bars["Symbol"] == "SPY"]
     regime_lev = _regime_leverage(spy_df, config.gross_leverage, config.bear_leverage)
     spy_vol = _spy_volatility(spy_df, config.vol_window)
-    return latest, signals, regime_lev, spy_vol
+    decision_context = {
+        "candidate_count": int(len(latest)),
+        "selected_long_count": int(len(longs)),
+        "selected_short_count": int(len(shorts)),
+        "memory_symbol_count": int(len(symbol_memory)),
+        "research": research_context.to_dict(),
+    }
+    return latest, signals, regime_lev, spy_vol, decision_context
 
 
 def _target_weights(
@@ -168,9 +228,9 @@ def _target_weights(
 
 def rebalance_portfolio(
     config: Config, symbols: list[str]
-) -> tuple[str, list[tuple[str, str, float, float | None, str | None, str | None]], list[Signal]]:
+) -> tuple[str, list[tuple[str, str, float, float | None, str | None, str | None]], list[Signal], dict]:
     trading = TradingClient(config.alpaca_api_key, config.alpaca_secret_key, paper=True)
-    latest, signals, regime_lev, spy_vol = generate_signals(config, symbols)
+    latest, signals, regime_lev, spy_vol, decision_context = generate_signals(config, symbols)
 
     account = trading.get_account()
     shorting_flag = getattr(account, "shorting_enabled", False)
@@ -211,6 +271,11 @@ def rebalance_portfolio(
             continue
         filtered[sym] = w
     weights = filtered
+    decision_context["effective_leverage"] = float(leverage)
+    decision_context["regime_leverage"] = float(regime_lev)
+    decision_context["spy_vol"] = float(spy_vol)
+    decision_context["selected_weights"] = {symbol: float(weight) for symbol, weight in weights.items()}
+    decision_context["shorting_enabled"] = bool(shorting_enabled)
 
     equity = float(account.equity)
 
@@ -357,7 +422,7 @@ def rebalance_portfolio(
             submitted.status,
         ))
 
-    return datetime.now(timezone.utc).isoformat(), orders_to_log, signals
+    return datetime.now(timezone.utc).isoformat(), orders_to_log, signals, decision_context
 
 
 def snapshot_positions(config: Config) -> tuple[str, list[tuple[str, float, float | None, float | None, float | None]]]:

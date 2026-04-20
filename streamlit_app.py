@@ -56,6 +56,10 @@ def fetch(path: str):
             return {"data": data.get("trades", [])}
         if route == "/api/advisor":
             return {"data": data.get("advisor_reports", [])}
+        if route == "/api/strategy":
+            return {"data": data.get("strategy_reports", [])}
+        if route == "/api/decisions":
+            return {"data": data.get("decisions", [])}
         return {}
     st.error("Set API_BASE_URL or DATA_URL in Streamlit secrets.")
     st.stop()
@@ -204,6 +208,8 @@ if equity:
 positions = fetch("/api/positions").get("data", [])
 trades = fetch("/api/trades").get("data", [])
 advisor = fetch("/api/advisor").get("data", [])
+strategy_reports = fetch("/api/strategy").get("data", [])
+decisions = fetch("/api/decisions?limit=50").get("data", [])
 
 st.subheader("Positions")
 if positions:
@@ -280,3 +286,56 @@ if advisor:
         st.divider()
 else:
     st.caption("No advisor reports yet.")
+
+st.subheader("Strategy Reports")
+if strategy_reports:
+    for report in strategy_reports[:5]:
+        st.markdown(f"**{report.get('headline','Strategy Report')}** — {report.get('ts','')}")
+        st.write(report.get("summary", ""))
+        changes = report.get("changes", {})
+        if changes:
+            st.caption("Changes: " + ", ".join([f"{k}={v}" for k, v in changes.items()]))
+        with st.expander("Show report body"):
+            st.markdown(report.get("body", ""))
+        st.divider()
+else:
+    st.caption("No strategy reports yet.")
+
+st.subheader("Recent Decisions")
+if decisions:
+    try:
+        import pandas as pd
+
+        decision_df = pd.DataFrame(decisions)
+        for column in ["base_score", "final_score", "signed_return", "beat_spy"]:
+            if column in decision_df.columns:
+                decision_df[column] = pd.to_numeric(decision_df[column], errors="coerce")
+        if "components" in decision_df.columns:
+            decision_df["component_summary"] = decision_df["components"].apply(
+                lambda comp: ", ".join(
+                    f"{k.replace('_adjustment', '')}={float(v):+.4f}"
+                    for k, v in sorted((comp or {}).items(), key=lambda item: abs(float(item[1])), reverse=True)
+                    if abs(float(v)) >= 0.0001
+                )[:200]
+                if isinstance(comp, dict)
+                else ""
+            )
+        display_cols = [
+            col for col in [
+                "ts",
+                "symbol",
+                "side",
+                "base_score",
+                "final_score",
+                "signed_return",
+                "beat_spy",
+                "outcome_label",
+                "rationale",
+                "component_summary",
+            ] if col in decision_df.columns
+        ]
+        st.dataframe(decision_df[display_cols], use_container_width=True)
+    except Exception:
+        st.write(decisions)
+else:
+    st.caption("No decision logs yet.")

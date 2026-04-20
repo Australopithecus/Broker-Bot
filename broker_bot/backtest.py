@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 import pandas as pd
 
-from .features import FEATURE_COLUMNS, build_features
+from .features import build_features
 from .model import train_model, predict_return
 
 
@@ -62,6 +62,94 @@ def _inverse_vol_weights(
     return weights
 
 
+def _clip(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
+
+
+def _rank_signal(series: pd.Series, ascending: bool = True) -> pd.Series:
+    if series.empty:
+        return pd.Series(dtype=float, index=series.index)
+    filled = pd.to_numeric(series, errors="coerce")
+    median = float(filled.dropna().median()) if not filled.dropna().empty else 0.0
+    filled = filled.fillna(median)
+    ranked = filled.rank(pct=True, ascending=ascending)
+    return (ranked * 2.0) - 1.0
+
+
+def _memory_score(history: list[float]) -> float:
+    if not history:
+        return 0.0
+    avg_signed = sum(history) / len(history)
+    hit_rate = sum(1 for value in history if value > 0) / len(history)
+    confidence = min(1.0, len(history) / 6.0)
+    score = ((avg_signed / 0.02) * 0.6) + (((hit_rate - 0.5) * 2.0) * 0.4)
+    return _clip(score, -1.0, 1.0) * confidence
+
+
+def _apply_ensemble_overlay(
+    slice_df: pd.DataFrame,
+    technical_weight: float,
+    snapshot_weight: float,
+    screener_weight: float,
+    news_weight: float,
+    memory_weight: float,
+    llm_weight: float,
+    symbol_memory: dict[str, float],
+) -> pd.DataFrame:
+    overlay = slice_df.copy()
+    overlay["base_pred_return"] = overlay["pred_return"].astype(float)
+
+    mom_signal = _rank_signal(overlay["mom_20d"], ascending=True)
+    short_signal = _rank_signal(overlay["return_5d"], ascending=True)
+    rank_signal = (overlay["rank_mom_20d"].astype(float) * 2.0) - 1.0
+    vol_signal = -_rank_signal(overlay["vol_20d"], ascending=True)
+    overlay["technical_adjustment"] = (
+        ((0.40 * mom_signal) + (0.20 * short_signal) + (0.25 * rank_signal) + (0.15 * vol_signal))
+        * 0.0025
+        * technical_weight
+    )
+
+    daily_move = _rank_signal(overlay["return_1d"], ascending=True)
+    range_signal = _rank_signal(-overlay["range_5d"], ascending=True)
+    volume_signal = _rank_signal(overlay["dollar_vol_20d"], ascending=True)
+    overlay["snapshot_adjustment"] = (
+        ((0.55 * daily_move) + (0.25 * range_signal) + (0.20 * volume_signal))
+        * 0.0016
+        * snapshot_weight
+    )
+
+    mover_signal = _rank_signal(overlay["return_1d"], ascending=True)
+    active_signal = _rank_signal(overlay["dollar_vol_20d"], ascending=True)
+    overlay["screener_adjustment"] = (
+        ((0.65 * mover_signal) + (0.35 * active_signal)) * 0.0016 * screener_weight
+    )
+
+    abnormal_move = overlay["return_1d"].abs()
+    event_signal = _rank_signal(abnormal_move, ascending=True)
+    directional_event = event_signal * overlay["return_1d"].apply(lambda value: 1.0 if value >= 0 else -1.0)
+    overlay["news_adjustment"] = (
+        ((0.6 * directional_event) + (0.4 * active_signal)) * 0.0022 * news_weight
+    )
+
+    overlay["memory_adjustment"] = (
+        overlay["Symbol"].map(symbol_memory).fillna(0.0).astype(float) * 0.0018 * memory_weight
+    )
+
+    conviction_proxy = (0.5 * mom_signal) + (0.3 * directional_event) + (0.2 * rank_signal)
+    overlay["llm_adjustment"] = conviction_proxy * 0.0025 * llm_weight
+
+    overlay["pred_return"] = (
+        overlay["base_pred_return"]
+        + overlay["technical_adjustment"]
+        + overlay["snapshot_adjustment"]
+        + overlay["screener_adjustment"]
+        + overlay["news_adjustment"]
+        + overlay["memory_adjustment"]
+        + overlay["llm_adjustment"]
+    )
+    return overlay
+
+
 def run_backtest(
     bars: pd.DataFrame,
     horizon_days: int,
@@ -83,6 +171,12 @@ def run_backtest(
     miss_rebalance_prob: float,
     rebalance_delay_days: int,
     sim_seed: int,
+    technical_weight: float = 1.0,
+    snapshot_weight: float = 0.8,
+    screener_weight: float = 0.7,
+    news_weight: float = 0.9,
+    memory_weight: float = 0.8,
+    llm_weight: float = 0.8,
 ) -> pd.DataFrame:
     features = build_features(bars)
     features = features[features["Symbol"] != "SPY"].copy()
@@ -100,6 +194,9 @@ def run_backtest(
 
     daily_returns = []
     current_weights: dict[str, float] = {}
+    symbol_history: dict[str, list[float]] = {}
+    symbol_memory: dict[str, float] = {}
+    pending_memory_updates: list[tuple[pd.Timestamp, str, float]] = []
 
     equity = 1.0
     equity_curve: list[float] = [equity]
@@ -111,6 +208,14 @@ def run_backtest(
         ts_dt = pd.to_datetime(ts)
         slice_df = features[features["timestamp"] == ts].copy()
 
+        matured = [item for item in pending_memory_updates if item[0] <= ts_dt]
+        if matured:
+            for _, symbol, signed_return in matured:
+                history = symbol_history.setdefault(symbol, [])
+                history.append(float(signed_return))
+                symbol_memory[symbol] = _memory_score(history)
+            pending_memory_updates = [item for item in pending_memory_updates if item[0] > ts_dt]
+
         if min_price > 0:
             slice_df = slice_df[slice_df["close"] >= min_price]
         if min_dollar_vol > 0 and "dollar_vol_20d" in slice_df.columns:
@@ -119,7 +224,10 @@ def run_backtest(
 
         if slice_df.empty:
             # No eligible symbols today; hold weights and record flat return.
-            daily_returns.append((ts_dt, 0.0))
+            gross_exposure = sum(abs(weight) for weight in current_weights.values())
+            long_count = sum(1 for weight in current_weights.values() if weight > 0)
+            short_count = sum(1 for weight in current_weights.values() if weight < 0)
+            daily_returns.append((ts_dt, 0.0, 0.0, gross_exposure, long_count, short_count))
             equity_curve.append(equity)
             continue
 
@@ -155,6 +263,17 @@ def run_backtest(
             else:
                 slice_df["pred_return"] = 0.0
 
+            slice_df = _apply_ensemble_overlay(
+                slice_df,
+                technical_weight=technical_weight,
+                snapshot_weight=snapshot_weight,
+                screener_weight=screener_weight,
+                news_weight=news_weight,
+                memory_weight=memory_weight,
+                llm_weight=llm_weight,
+                symbol_memory=symbol_memory,
+            )
+
             # Vol targeting on SPY
             spy_df = market_df[market_df["timestamp"] <= ts_dt].sort_values("timestamp")
             spy_returns = spy_df["close"].pct_change().dropna()
@@ -181,11 +300,31 @@ def run_backtest(
                 max_position_pct=max_position_pct,
                 allow_shorts=True,
             )
+            longs = (
+                slice_df[slice_df["pred_return"] >= min_long_return]
+                .sort_values("pred_return", ascending=False)
+                .head(top_k)
+            )
+            shorts = (
+                slice_df[slice_df["pred_return"] <= max_short_return]
+                .sort_values("pred_return", ascending=True)
+                .head(top_k)
+            )
+            eval_dt = ts_dt + pd.Timedelta(days=horizon_days)
+            for _, row in longs.iterrows():
+                pending_memory_updates.append((eval_dt, row["Symbol"], float(row["next_return"])))
+            for _, row in shorts.iterrows():
+                pending_memory_updates.append((eval_dt, row["Symbol"], -float(row["next_return"])))
             turnover = sum(abs(new_weights.get(sym, 0.0) - current_weights.get(sym, 0.0)) for sym in set(new_weights) | set(current_weights))
             current_weights = new_weights
             cost = (tcost_bps / 10000.0) * turnover
+            long_count = len(longs)
+            short_count = len(shorts)
         else:
             cost = 0.0
+            turnover = 0.0
+            long_count = sum(1 for weight in current_weights.values() if weight > 0)
+            short_count = sum(1 for weight in current_weights.values() if weight < 0)
 
         if slice_df.empty:
             continue
@@ -196,10 +335,18 @@ def run_backtest(
             daily_ret += weight * float(row["next_return"])
 
         daily_ret -= cost
-        daily_returns.append((ts_dt, daily_ret))
+        gross_exposure = sum(abs(weight) for weight in current_weights.values())
+        daily_returns.append((ts_dt, daily_ret, turnover, gross_exposure, long_count, short_count))
         equity = equity * (1 + daily_ret)
         equity_curve.append(equity)
 
-    result = pd.DataFrame(daily_returns, columns=["timestamp", "strategy_return"]).sort_values("timestamp")
+    result = pd.DataFrame(
+        daily_returns,
+        columns=["timestamp", "strategy_return", "turnover", "gross_exposure", "long_count", "short_count"],
+    ).sort_values("timestamp")
     result["strategy_equity"] = (1 + result["strategy_return"]).cumprod()
+    market = bars[bars["Symbol"] == "SPY"].sort_values("timestamp")[["timestamp", "close"]].copy()
+    market["spy_return"] = market["close"].pct_change(horizon_days)
+    result = result.merge(market[["timestamp", "spy_return"]], on="timestamp", how="left")
+    result["alpha"] = result["strategy_return"] - result["spy_return"].fillna(0.0)
     return result

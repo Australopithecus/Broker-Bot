@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -14,6 +13,7 @@ import pandas as pd
 from .config import Config
 from .data import fetch_daily_bars
 from .features import build_features
+from .llm_utils import call_json_llm
 
 
 @dataclass
@@ -160,17 +160,6 @@ def _sanitize_overrides(config: Config, raw_overrides: dict[str, float]) -> dict
 
 
 def _call_llm(config: Config, context: dict) -> dict | None:
-    if not os.getenv("OPENAI_API_KEY"):
-        return None
-    if not os.getenv("LLM_ENABLED", "0").strip().lower() in {"1", "true", "yes", "y"}:
-        return None
-    model = os.getenv("LLM_MODEL", "gpt-5-mini").strip()
-    try:
-        from openai import OpenAI
-    except Exception:
-        return None
-
-    client = OpenAI()
     system = (
         "You are a conservative policy advisor for a paper-trading bot. "
         "Return ONLY valid JSON with keys: summary (string), suggestions (array of strings), "
@@ -179,37 +168,7 @@ def _call_llm(config: Config, context: dict) -> dict | None:
         + ", ".join(ALLOWED_OVERRIDES.keys())
         + ". Keep tweaks small and explainable."
     )
-    user = json.dumps(context)
-    request_kwargs = {
-        "model": model,
-        "input": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        "max_output_tokens": 500,
-    }
-    try:
-        response = client.responses.create(**request_kwargs)
-    except Exception as exc:
-        message = str(exc).lower()
-        if "unsupported parameter" in message and "temperature" in message:
-            # Defensive fallback for older code paths / env drift.
-            request_kwargs.pop("temperature", None)
-            try:
-                response = client.responses.create(**request_kwargs)
-            except Exception:
-                return None
-        else:
-            return None
-    text = response.output_text or ""
-    start = text.find("{")
-    end = text.rfind("}")
-    if start == -1 or end == -1:
-        return None
-    try:
-        return json.loads(text[start : end + 1])
-    except Exception:
-        return None
+    return call_json_llm(config, system_prompt=system, payload=context, max_output_tokens=500)
 
 
 def generate_advisor_report(config: Config) -> AdvisorReport:

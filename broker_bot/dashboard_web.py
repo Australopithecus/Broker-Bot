@@ -9,7 +9,14 @@ import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from .logging_db import read_latest_equity, read_latest_positions, read_latest_trades, read_latest_advisor_reports
+from .logging_db import (
+    read_latest_advisor_reports,
+    read_latest_equity,
+    read_latest_positions,
+    read_latest_strategy_reports,
+    read_latest_trades,
+    read_recent_selected_decisions,
+)
 
 
 def create_app(db_path: str) -> FastAPI:
@@ -119,6 +126,55 @@ def create_app(db_path: str) -> FastAPI:
                     "suggestions": json.loads(row[3]) if row[3] else [],
                     "metrics": json.loads(row[4]) if row[4] else {},
                     "overrides": json.loads(row[5]) if row[5] else {},
+                }
+            )
+        return JSONResponse({"data": data})
+
+    @app.get("/api/strategy")
+    def strategy(request: Request) -> JSONResponse:
+        _check_token(request)
+        rows = read_latest_strategy_reports(db_path, limit=10)
+        data = []
+        for row in rows:
+            data.append(
+                {
+                    "ts": row[0],
+                    "report_type": row[1],
+                    "headline": row[2],
+                    "summary": row[3],
+                    "body": row[4],
+                    "metrics": json.loads(row[5]) if row[5] else {},
+                    "changes": json.loads(row[6]) if row[6] else {},
+                }
+            )
+        return JSONResponse({"data": data})
+
+    @app.get("/api/decisions")
+    def decisions(request: Request) -> JSONResponse:
+        _check_token(request)
+        try:
+            limit = int(request.query_params.get("limit", "50"))
+        except ValueError:
+            limit = 50
+        limit = max(1, min(limit, 300))
+        rows = read_recent_selected_decisions(db_path, limit=limit)
+        data = []
+        for row in rows:
+            data.append(
+                {
+                    "ts": row[0],
+                    "symbol": row[1],
+                    "side": row[2],
+                    "base_score": row[3],
+                    "final_score": row[4],
+                    "components": json.loads(row[5]) if row[5] else {},
+                    "rationale": row[6],
+                    "evaluated_ts": row[7],
+                    "horizon_days": row[8],
+                    "realized_return": row[9],
+                    "signed_return": row[10],
+                    "beat_spy": row[11],
+                    "outcome_label": row[12],
                 }
             )
         return JSONResponse({"data": data})
@@ -233,6 +289,15 @@ def _dashboard_html() -> str:
     .sell { background: rgba(248, 113, 113, 0.2); color: var(--red); }
 
     .muted { color: var(--muted); }
+    .decision-rationale {
+      max-width: 520px;
+      white-space: normal;
+      line-height: 1.4;
+    }
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
 
     @media (max-width: 900px) {
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -299,6 +364,29 @@ def _dashboard_html() -> str:
     <section class="panel">
       <h2>Advisor Reports</h2>
       <div id="advisorReports" class="muted">No reports yet.</div>
+    </section>
+
+    <section class="panel">
+      <h2>Strategy Reports</h2>
+      <div id="strategyReports" class="muted">No reports yet.</div>
+    </section>
+
+    <section class="panel">
+      <h2>Recent Decisions</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Symbol</th>
+            <th>Side</th>
+            <th>Base</th>
+            <th>Final</th>
+            <th>Outcome</th>
+            <th>Rationale</th>
+          </tr>
+        </thead>
+        <tbody id="decisionsBody"></tbody>
+      </table>
     </section>
   </div>
 
@@ -484,8 +572,63 @@ async function loadAdvisor() {
   });
 }
 
+function renderComponents(components) {
+  const entries = Object.entries(components || {})
+    .filter(([, value]) => Math.abs(Number(value || 0)) >= 0.0001)
+    .sort((a, b) => Math.abs(Number(b[1])) - Math.abs(Number(a[1])));
+  if (!entries.length) return '';
+  return entries.map(([key, value]) => `${key.replace('_adjustment', '')}: ${Number(value).toFixed(4)}`).join(' • ');
+}
+
+async function loadStrategy() {
+  const res = await fetch('/api/strategy', { headers: apiHeaders });
+  const data = await res.json();
+  const reports = data.data || [];
+  const container = document.getElementById('strategyReports');
+  if (!reports.length) {
+    container.textContent = 'No strategy reports yet.';
+    return;
+  }
+  container.innerHTML = '';
+  reports.slice(0, 4).forEach(report => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.marginBottom = '10px';
+    const changes = report.changes ? Object.keys(report.changes) : [];
+    div.innerHTML = `
+      <strong>${report.headline}</strong> <span class="muted">(${report.ts})</span><br />
+      ${report.summary}<br />
+      <span class="muted">Type: ${report.report_type}${changes.length ? ` • Changes: ${changes.join(', ')}` : ''}</span>
+    `;
+    container.appendChild(div);
+  });
+}
+
+async function loadDecisions() {
+  const res = await fetch('/api/decisions?limit=40', { headers: apiHeaders });
+  const data = await res.json();
+  const body = document.getElementById('decisionsBody');
+  body.innerHTML = '';
+  (data.data || []).forEach(row => {
+    const tr = document.createElement('tr');
+    const sideClass = row.side === 'LONG' ? 'buy' : 'sell';
+    const outcome = row.outcome_label ? `${row.outcome_label}${row.signed_return !== null && row.signed_return !== undefined ? ` (${pct(row.signed_return)})` : ''}` : '--';
+    const extras = renderComponents(row.components);
+    tr.innerHTML = `
+      <td>${row.ts}</td>
+      <td>${row.symbol}</td>
+      <td><span class="pill ${sideClass}">${row.side}</span></td>
+      <td>${pct(row.base_score)}</td>
+      <td>${pct(row.final_score)}</td>
+      <td>${outcome}</td>
+      <td class="decision-rationale">${row.rationale || ''}${extras ? `<div class="muted">${extras}</div>` : ''}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
 async function refreshAll() {
-  await Promise.all([loadSummary(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor()]);
+  await Promise.all([loadSummary(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadStrategy(), loadDecisions()]);
 }
 
 refreshAll();

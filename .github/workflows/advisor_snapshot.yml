@@ -1,4 +1,4 @@
-name: Advisor Snapshot
+name: Broker Bot Cloud Run
 
 on:
   schedule:
@@ -37,7 +37,7 @@ jobs:
         run: |
           python scripts/restore_db_from_snapshot.py
 
-      - name: Run snapshot + advisor
+      - name: Train, rebalance, learn, and build snapshot
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
@@ -50,19 +50,25 @@ jobs:
           UNIVERSE_PATH: data/sp500.csv
           BROKER_BOT_DB: data/broker_bot.sqlite
           MODEL_DIR: data/models
+          REPORTS_DIR: data/reports
+          LEARNED_POLICY_PATH: data/learned_policy.json
         run: |
+          python -m broker_bot.cli train
+          python -m broker_bot.cli rebalance
           python -m broker_bot.cli snapshot
+          python -m broker_bot.cli review-decisions
           python -m broker_bot.cli advisor-report
+          python -m broker_bot.cli strategy-report
           python scripts/build_snapshot.py
 
-      - name: Commit snapshot
+      - name: Commit snapshot and learned state
         run: |
           git config user.name "broker-bot"
           git config user.email "broker-bot@users.noreply.github.com"
-          git add data/dashboard_snapshot.json
+          git add data/dashboard_snapshot.json data/learned_policy.json data/reports
           if git diff --cached --quiet; then
-            echo "No snapshot changes to commit."
+            echo "No bot output changes to commit."
             exit 0
           fi
-          git commit -m "Update dashboard snapshot"
+          git commit -m "Update broker bot cloud outputs"
           git push

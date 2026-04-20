@@ -1,8 +1,11 @@
 # Broker Bot (Paper Trading)
 
-A Python-based paper-trading bot that trains on one year of Alpaca historical data, generates aggressive long/short signals, and logs activity to a local desktop dashboard database (Tkinter).
+A Python-based paper-trading bot for Alpaca paper accounts that combines machine learning, market data, lightweight news interpretation, optional LLM judgment, and a self-review loop. It logs what it decided, why it decided it, how those decisions performed later, and small bounded policy changes it wants to make.
 
 **Disclaimer:** This project is for educational purposes only and is not financial advice.
+
+Deployment guide:
+[DEPLOY.md](/Users/keithvandusen/Documents/New%20project/DEPLOY.md)
 
 ## Quick Start
 
@@ -22,6 +25,17 @@ python3 scripts/setup_env.py
 
 3. Update `data/sp500.csv` with the full S&P 500 list when ready.
 
+## Architecture
+
+The current version is built as a bounded ensemble rather than a single black-box model:
+
+- Base model: a Random Forest predicts short-horizon returns from momentum, volatility, and market context features.
+- Market overlays: Alpaca snapshots, market movers, most-active symbols, and recent news headlines can nudge the base prediction up or down.
+- Optional LLM overlay: an LLM can review the strongest candidates and add a small explainable adjustment, but only within tight limits.
+- Memory: the bot scores symbols partly by how well its past decisions on those symbols have worked.
+- Learning loop: mature decisions are evaluated after the prediction horizon passes, component weights are adjusted within bounds, and the learned policy is saved in `data/learned_policy.json`.
+- Reporting: markdown strategy and learning reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots.
+
 ## Commands
 
 Train the model on one year of data:
@@ -36,10 +50,32 @@ Run a backtest (in-sample, for quick feedback):
 python3 -m broker_bot.cli backtest
 ```
 
+The backtest now evaluates an ensemble-aware proxy of the live system, including:
+
+- the base Random Forest
+- technical overlays
+- snapshot-style price/volume overlays
+- screener-style mover/activity overlays
+- event/news proxies from abnormal move and volume behavior
+- rolling symbol memory
+- a bounded discretionary/LLM-style conviction proxy
+
 Rebalance the paper portfolio using the latest signals:
 
 ```bash
 python3 -m broker_bot.cli rebalance
+```
+
+Review mature past decisions, score what worked, and update learned component weights:
+
+```bash
+python3 -m broker_bot.cli review-decisions
+```
+
+Generate a strategy report explaining recent decisions, lessons, and proposed changes:
+
+```bash
+python3 -m broker_bot.cli strategy-report
 ```
 
 Snapshot account + positions (no trades):
@@ -84,11 +120,19 @@ You can deploy the UI via Streamlit Community Cloud using `streamlit_app.py`. Th
      `https://raw.githubusercontent.com/<user>/<repo>/main/data/dashboard_snapshot.json`
 
 The Streamlit app calls your bot API endpoints and shows:
-Equity vs SPY, positions, trades, and Advisor reports.
+Equity vs SPY, positions, trades, advisor reports, strategy-report snapshots, and recent decision rationale.
 
-### GitHub Actions (Advisor + Snapshot Only)
+### GitHub Actions (Full Scheduled Cloud Run)
 
-This workflow runs daily (weekdays) and commits `data/dashboard_snapshot.json` so Streamlit can read it.
+This workflow runs on a schedule and performs the full paper-trading cloud loop:
+
+- restore prior state from the committed snapshot
+- train the model
+- rebalance the paper account
+- review past decisions and update learned weights
+- generate advisor and strategy reports
+- rebuild `data/dashboard_snapshot.json`
+- commit updated snapshot/report/policy files back to GitHub
 
 Workflow file: `.github/workflows/advisor_snapshot.yml`
 
@@ -100,18 +144,28 @@ Workflow file: `.github/workflows/advisor_snapshot.yml`
 - `OPENAI_API_KEY` (if `LLM_ENABLED=1`)
 - `LLM_ENABLED` (`1` to enable LLM advisor)
 - `LLM_MODEL` (e.g. `gpt-5-mini`)
+- `API_TOKEN`
 
 **Schedule note**: The cron is set for **21:15 UTC** (4:15pm ET in winter). During daylight saving time it will run at 5:15pm ET unless you update the schedule.
 
-Generate a daily Advisor report (auto-applies small parameter tweaks by default):
+Manual commands used by the workflow:
 
 ```bash
+python3 -m broker_bot.cli train
+python3 -m broker_bot.cli rebalance
+python3 -m broker_bot.cli snapshot
+python3 -m broker_bot.cli review-decisions
 python3 -m broker_bot.cli advisor-report
+python3 -m broker_bot.cli strategy-report
+python3 scripts/build_snapshot.py
 ```
 
-### LLM Advisor (Dynamic Policy Tweaks + Explainability)
+### LLM Advisor And LLM Research Overlay
 
-The Advisor can optionally call an LLM to provide explainability and propose small, bounded parameter tweaks.
+The bot can optionally use an LLM in two places:
+
+- Advisor mode: explainability plus small parameter suggestions.
+- Research overlay: candidate review for the strongest long/short names, again with small bounded return adjustments.
 
 Set these in `.env` (or use secrets in CI):
 
@@ -121,14 +175,19 @@ LLM_ENABLED=1
 LLM_MODEL=gpt-5-mini
 ```
 
-LLM outputs are sanitized and clamped to conservative bounds before applying overrides.
+LLM outputs are sanitized and clamped to conservative bounds before applying overrides or score adjustments.
 
 ## Notes
 
 - The bot uses long/short signals with inverse-volatility sizing and an SPY regime filter (reduces leverage in bear regimes).
-- The model is a Random Forest regressor on momentum/volatility features with market context.
+- The base model is a Random Forest regressor on momentum/volatility features with market context.
+- The live signal stack can blend in Alpaca snapshots, market movers, most-active names, recent Alpaca news headlines, symbol memory, and optional LLM watchlist judgments.
 - The backtest uses walk-forward retraining, weekly rebalancing, and transaction cost estimates for realism.
+- The backtest now better matches the live ensemble by simulating bounded overlay components offline from historical price/volume structure.
 - Advisor overrides are stored in `data/advisor_overrides.json` and applied at startup when enabled.
+- Learned ensemble weights are stored in `data/learned_policy.json` and are intentionally kept bounded.
+- Reports are written to `data/reports/`.
+- The dashboard APIs/UI now expose recent selected decisions, component contributions, and later outcomes.
 - Optional sector exposure critiques use `data/sector_map.csv` (set via `SECTOR_MAP_PATH`).
 
 ### Risk & Liquidity Controls
@@ -136,6 +195,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - `MIN_PRICE` and `MIN_DOLLAR_VOL` filter illiquid or low-priced symbols.
 - `VOL_TARGET` + `VOL_WINDOW` scales leverage down in high-volatility regimes.
 - `MAX_DRAWDOWN`, `MIN_LEVERAGE`, and `DRAWDOWN_WINDOW` apply drawdown guardrails.
+- `TECHNICAL_WEIGHT`, `SNAPSHOT_WEIGHT`, `SCREENER_WEIGHT`, `NEWS_WEIGHT`, `MEMORY_WEIGHT`, and `LLM_WEIGHT` set the ensemble blend before learned-policy updates.
 - Backtest-only reliability simulation:
   - `MISS_REBALANCE_PROB` simulates skipped rebalances (e.g., CI delays/failures).
   - `REBALANCE_DELAY_DAYS` delays a missed rebalance by N days.

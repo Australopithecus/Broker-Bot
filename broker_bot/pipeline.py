@@ -55,4 +55,10 @@ def run_backtest_on_history(config: Config, symbols: list[str]) -> pd.DataFrame:
         miss_rebalance_prob=config.miss_rebalance_prob,
         rebalance_delay_days=config.rebalance_delay_days,
         sim_seed=config.sim_seed,
+        technical_weight=config.technical_weight,
+        snapshot_weight=config.snapshot_weight,
+        screener_weight=config.screener_weight,
+        news_weight=config.news_weight,
+        memory_weight=config.memory_weight,
+        llm_weight=config.llm_weight,
     )
