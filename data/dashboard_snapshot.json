@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-22T03:17:23.192360+00:00",
+  "generated_at": "2026-04-22T15:56:17.675577+00:00",
   "bots": {
     "llm": {
       "label": "LLM Bot",
@@ -83,7 +83,104 @@
           "status": "OrderStatus.ACCEPTED"
         }
       ],
-      "positions": [],
+      "positions": [
+        {
+          "symbol": "UNH",
+          "qty": 17.340288715,
+          "avg_entry": 352.273153,
+          "avg_entry_price": 352.273153,
+          "market_value": 6154.588674,
+          "unreal_pl": 46.070494,
+          "unrealized_pl": 46.070494,
+          "side": "Long",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
+        },
+        {
+          "symbol": "GOOGL",
+          "qty": -18.0,
+          "avg_entry": 336.711111,
+          "avg_entry_price": 336.711111,
+          "market_value": -6073.3782,
+          "unreal_pl": -12.578202,
+          "unrealized_pl": -12.578202,
+          "side": "Short",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
+        },
+        {
+          "symbol": "META",
+          "qty": 8.97276765,
+          "avg_entry": 672.742792,
+          "avg_entry_price": 672.742792,
+          "market_value": 6060.341862,
+          "unreal_pl": 23.977101,
+          "unrealized_pl": 23.977101,
+          "side": "Long",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
+        },
+        {
+          "symbol": "MSFT",
+          "qty": -14.0,
+          "avg_entry": 425.49,
+          "avg_entry_price": 425.49,
+          "market_value": -6050.24,
+          "unreal_pl": -93.38,
+          "unrealized_pl": -93.38,
+          "side": "Short",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
+        },
+        {
+          "symbol": "PG",
+          "qty": -42.0,
+          "avg_entry": 142.51881,
+          "avg_entry_price": 142.51881,
+          "market_value": -5986.68,
+          "unreal_pl": -0.88998,
+          "unrealized_pl": -0.88998,
+          "side": "Short",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
+        },
+        {
+          "symbol": "JPM",
+          "qty": -19.0,
+          "avg_entry": 313.941053,
+          "avg_entry_price": 313.941053,
+          "market_value": -5940.445,
+          "unreal_pl": 24.435007,
+          "unrealized_pl": 24.435007,
+          "side": "Short",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
+        }
+      ],
       "advisor_reports": [],
       "strategy_reports": [
         {

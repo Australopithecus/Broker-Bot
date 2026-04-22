@@ -352,7 +352,7 @@ def _dashboard_html() -> str:
   <div class="container">
     <header>
       <h1>Broker Bot Dashboard</h1>
-      <p>Local paper-trading monitor • Auto-refreshes every 10s</p>
+      <p>Local paper-trading monitor • Auto-refreshes every 10s • Selector controls the detail panels, while the main chart compares all bots together.</p>
       <label class="muted" for="botSelector">Bot</label>
       <select id="botSelector" style="width: 180px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;"></select>
     </header>
@@ -368,7 +368,7 @@ def _dashboard_html() -> str:
 
     <section class="grid">
       <div class="panel">
-        <h2>Equity Curve</h2>
+        <h2>Bot Performance Comparison</h2>
         <canvas id="equityChart" width="900" height="240"></canvas>
         <div class="muted" id="equityHint"></div>
       </div>
@@ -455,22 +455,46 @@ const stdev = (arr) => {
 const tokenParam = new URLSearchParams(window.location.search).get('token');
 const apiHeaders = tokenParam ? { 'X-API-Token': tokenParam } : {};
 let currentBot = 'ml';
-const apiPath = (path) => {
+let availableBots = [];
+const apiPathForBot = (path, botName) => {
   const join = path.includes('?') ? '&' : '?';
-  return `${path}${join}bot=${encodeURIComponent(currentBot)}`;
+  return `${path}${join}bot=${encodeURIComponent(botName)}`;
+};
+const apiPath = (path) => apiPathForBot(path, currentBot);
+
+const normalizeSeries = (points, valueKey) => {
+  const clean = (points || [])
+    .map(point => ({
+      ts: Number(new Date(point.ts)),
+      value: Number(point[valueKey]),
+    }))
+    .filter(point => Number.isFinite(point.ts) && Number.isFinite(point.value))
+    .sort((a, b) => a.ts - b.ts);
+  if (!clean.length) return [];
+  const base = clean[0].value;
+  if (!Number.isFinite(base) || base === 0) return [];
+  return clean.map(point => ({
+    x: point.ts,
+    y: (point.value / base) * 100,
+    raw: point.value,
+  }));
 };
 
 async function loadBots() {
   const res = await fetch('/api/bots', { headers: apiHeaders });
   const data = await res.json();
   const selector = document.getElementById('botSelector');
+  availableBots = data.data || [];
   selector.innerHTML = '';
-  (data.data || []).forEach(item => {
+  availableBots.forEach(item => {
     const option = document.createElement('option');
     option.value = item.name;
     option.textContent = item.label;
     selector.appendChild(option);
   });
+  if (!availableBots.some(item => item.name === currentBot) && availableBots.length) {
+    currentBot = availableBots[0].name;
+  }
   selector.value = currentBot;
   selector.addEventListener('change', async (event) => {
     currentBot = event.target.value || 'ml';
@@ -495,65 +519,130 @@ async function loadSummary() {
 }
 
 async function loadEquity() {
-  const res = await fetch(apiPath('/api/equity'), { headers: apiHeaders });
-  const data = await res.json();
-  const points = data.data || [];
+  const botList = availableBots.length ? availableBots : [{ name: currentBot, label: currentBot.toUpperCase() }];
+  const botCurves = await Promise.all(botList.map(async (bot, index) => {
+    const res = await fetch(apiPathForBot('/api/equity', bot.name), { headers: apiHeaders });
+    const data = await res.json();
+    return {
+      ...bot,
+      index,
+      points: data.data || [],
+    };
+  }));
+
+  const selectedCurve = botCurves.find(bot => bot.name === currentBot) || botCurves[0];
+  const secondaryPalette = [
+    { color: '#34d399', label: 'Green' },
+    { color: '#f59e0b', label: 'Amber' },
+    { color: '#f472b6', label: 'Pink' },
+    { color: '#60a5fa', label: 'Blue' },
+  ];
+  let paletteIndex = 0;
+  const equitySeries = botCurves.map(bot => {
+    const normalized = normalizeSeries(bot.points, 'equity');
+    if (bot.name === currentBot) {
+      return {
+        ...bot,
+        normalized,
+        color: '#22d3ee',
+        colorLabel: 'Cyan',
+        lineWidth: 3,
+      };
+    }
+    const palette = secondaryPalette[paletteIndex % secondaryPalette.length];
+    paletteIndex += 1;
+    return {
+      ...bot,
+      normalized,
+      color: palette.color,
+      colorLabel: palette.label,
+      lineWidth: 2,
+    };
+  }).filter(bot => bot.normalized.length >= 2);
+
+  const spySeries = selectedCurve ? normalizeSeries(selectedCurve.points, 'spy') : [];
   const canvas = document.getElementById('equityChart');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  if (points.length < 2) {
+  if (!equitySeries.length) {
     ctx.fillStyle = '#94a3b8';
     ctx.font = '14px Helvetica';
     ctx.fillText('No equity history yet.', 20, 30);
     document.getElementById('equityHint').textContent = '';
+    document.getElementById('alpha20').textContent = '--';
+    document.getElementById('trackErr').textContent = '--';
     return;
   }
-  const values = points.map(p => p.equity);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+
+  const allLines = equitySeries.map(bot => ({
+    label: bot.label,
+    color: bot.color,
+    colorLabel: bot.colorLabel,
+    lineWidth: bot.lineWidth,
+    points: bot.normalized,
+  }));
+  if (spySeries.length >= 2) {
+    allLines.push({
+      label: `${selectedCurve.label} SPY`,
+      color: '#a78bfa',
+      colorLabel: 'Purple dashed',
+      lineWidth: 2,
+      dash: [6, 6],
+      points: spySeries,
+    });
+  }
+
+  const xValues = allLines.flatMap(line => line.points.map(point => point.x));
+  const yValues = allLines.flatMap(line => line.points.map(point => point.y));
+  const min = Math.min(...yValues);
+  const max = Math.max(...yValues);
+  const xMin = Math.min(...xValues);
+  const xMax = Math.max(...xValues);
   const pad = 20;
-  const scaleX = (i) => pad + (canvas.width - pad * 2) * (i / (values.length - 1));
-  const scaleY = (v) => canvas.height - pad - (canvas.height - pad * 2) * ((v - min) / (max - min || 1));
+  const yPad = Math.max((max - min) * 0.12, 2);
+  const scaleX = (value) => pad + (canvas.width - pad * 2) * ((value - xMin) / (xMax - xMin || 1));
+  const scaleY = (value) => canvas.height - pad - (canvas.height - pad * 2) * ((value - (min - yPad)) / ((max - min) + yPad * 2 || 1));
 
-  ctx.strokeStyle = '#22d3ee';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  values.forEach((v, i) => {
-    const x = scaleX(i);
-    const y = scaleY(v);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-
-  // SPY curve normalized to strategy start
-  const spySeries = points.map(p => p.spy).filter(v => v !== null && v !== undefined);
-  if (spySeries.length > 1) {
-    const spyStart = points[0].spy || spySeries[0];
-    const eqStart = values[0];
-    const spyNorm = points.map(p => {
-      if (p.spy === null || p.spy === undefined || spyStart === 0) return null;
-      return (p.spy / spyStart) * eqStart;
-    });
-    ctx.strokeStyle = '#a78bfa';
-    ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 4; i++) {
+    const y = pad + ((canvas.height - pad * 2) * i) / 3;
     ctx.beginPath();
-    spyNorm.forEach((v, i) => {
-      if (v === null) return;
-      const x = scaleX(i);
-      const y = scaleY(v);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
+    ctx.moveTo(pad, y);
+    ctx.lineTo(canvas.width - pad, y);
     ctx.stroke();
   }
 
-  document.getElementById('equityHint').textContent = `Min: ${fmt(min)} • Max: ${fmt(max)} • Cyan: Bot • Purple: SPY`;
+  allLines.forEach(line => {
+    ctx.save();
+    ctx.strokeStyle = line.color;
+    ctx.lineWidth = line.lineWidth || 2;
+    ctx.setLineDash(line.dash || []);
+    ctx.beginPath();
+    line.points.forEach((point, index) => {
+      const x = scaleX(point.x);
+      const y = scaleY(point.y);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  const legend = allLines.map(line => `${line.colorLabel}: ${line.label}`).join(' • ');
+  document.getElementById('equityHint').textContent = `Normalized to 100 at each bot's first snapshot • Range: ${min.toFixed(1)} to ${max.toFixed(1)} • ${legend}`;
 
   // Alpha + tracking error (20D) if we have SPY values
-  const aligned = points.filter(p => p.spy !== null && p.spy !== undefined);
+  const aligned = (selectedCurve?.points || [])
+    .map(point => ({
+      equity: Number(point.equity),
+      spy: Number(point.spy),
+      ts: Number(new Date(point.ts)),
+    }))
+    .filter(point => Number.isFinite(point.ts) && Number.isFinite(point.equity) && Number.isFinite(point.spy))
+    .sort((a, b) => a.ts - b.ts);
   if (aligned.length >= 21) {
     const window = aligned.slice(-21);
     const botRet = (window[window.length - 1].equity / window[0].equity) - 1;

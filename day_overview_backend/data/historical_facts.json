@@ -1,0 +1,62 @@
+[
+  {
+    "id": "declaration_of_independence_1776",
+    "fact": "On July 4, 1776, the Continental Congress adopted the Declaration of Independence.",
+    "source": "https://www.archives.gov/milestone-documents/declaration-of-independence"
+  },
+  {
+    "id": "us_constitution_1787",
+    "fact": "On September 17, 1787, delegates to the Constitutional Convention signed the U.S. Constitution in Philadelphia.",
+    "source": "https://www.archives.gov/founding-docs/constitution"
+  },
+  {
+    "id": "emancipation_proclamation_1863",
+    "fact": "On January 1, 1863, President Abraham Lincoln issued the Emancipation Proclamation.",
+    "source": "https://www.archives.gov/exhibits/featured-documents/emancipation-proclamation"
+  },
+  {
+    "id": "nineteenth_amendment_1920",
+    "fact": "On August 18, 1920, the 19th Amendment was ratified, guaranteeing women the right to vote in the United States.",
+    "source": "https://www.archives.gov/milestone-documents/19th-amendment"
+  },
+  {
+    "id": "wright_brothers_flight_1903",
+    "fact": "On December 17, 1903, the Wright brothers achieved the first successful powered airplane flights at Kitty Hawk, North Carolina.",
+    "source": "https://airandspace.si.edu/stories/editorial/first-powered-flight"
+  },
+  {
+    "id": "apollo_11_moon_landing_1969",
+    "fact": "On July 20, 1969, Apollo 11 landed on the Moon and Neil Armstrong became the first person to walk on its surface.",
+    "source": "https://www.nasa.gov/mission/apollo-11/"
+  },
+  {
+    "id": "hubble_launch_1990",
+    "fact": "In April 1990, the Hubble Space Telescope was launched as the first mission in NASA's Great Observatories program.",
+    "source": "https://www.nasa.gov/image-article/april-1990-hubble-space-telescope-hst-launched/"
+  },
+  {
+    "id": "un_charter_1945",
+    "fact": "On June 26, 1945, the United Nations Charter was signed in San Francisco, establishing the United Nations.",
+    "source": "https://www.archives.gov/milestone-documents/united-nations-charter"
+  },
+  {
+    "id": "who_constitution_1948",
+    "fact": "On April 7, 1948, the Constitution of the World Health Organization came into force, marking the agency\u2019s founding.",
+    "source": "https://www.who.int/about/history"
+  },
+  {
+    "id": "berlin_wall_falls_1989",
+    "fact": "On November 9, 1989, the Berlin Wall opened, and its fall became a defining symbol of the end of the Cold War.",
+    "source": "https://www.britannica.com/topic/Berlin-Wall"
+  },
+  {
+    "id": "suez_canal_opens_1869",
+    "fact": "On November 17, 1869, the Suez Canal opened, creating a sea-level route linking the Mediterranean and Red seas.",
+    "source": "https://www.britannica.com/topic/Suez-Canal"
+  },
+  {
+    "id": "nobel_prizes_begin_1901",
+    "fact": "In 1901, the first Nobel Prizes were awarded in Stockholm and Oslo.",
+    "source": "https://www.britannica.com/topic/Nobel-Prize"
+  }
+]

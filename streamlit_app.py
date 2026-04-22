@@ -23,7 +23,7 @@ DATA_URL = _secret("DATA_URL")
 
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
 st.title("Broker Bot Dashboard")
-st.caption("ML Bot and LLM Bot are shown separately so their trades, reports, and account curves stay easy to compare.")
+st.caption("The top chart overlays both bots on one graph for quick comparison, while the tabs below keep each bot's trades, reports, and positions separate.")
 
 
 @st.cache_data(ttl=60)
@@ -152,6 +152,16 @@ def _alpha_tracking(df: pd.DataFrame) -> tuple[float | None, float | None]:
     return float(bot_ret - spy_ret), float(diffs.std())
 
 
+def _normalized_series(series: pd.Series) -> pd.Series:
+    clean = pd.to_numeric(series, errors="coerce").dropna()
+    if clean.empty:
+        return clean
+    base = float(clean.iloc[0])
+    if base == 0:
+        return clean
+    return (clean / base) * 100.0
+
+
 def _fmt_money(value) -> str:
     if value is None:
         return "--"
@@ -168,12 +178,21 @@ bot_names = _load_bot_names()
 comparison_frames: dict[str, pd.DataFrame] = {name: _equity_df(name) for name, _ in bot_names}
 
 st.subheader("Bot Comparison")
+st.caption("Indexed performance, normalized to 100 at each bot's first snapshot.")
 comparison_df = pd.DataFrame()
+spy_comparison = pd.Series(dtype=float)
 for name, label in bot_names:
     df = comparison_frames.get(name, pd.DataFrame())
     if df.empty:
         continue
-    comparison_df[label] = df["equity"]
+    comparison_df[label] = _normalized_series(df["equity"])
+    if spy_comparison.empty and "spy" in df.columns and df["spy"].notna().sum() > 1:
+        spy_comparison = _normalized_series(df["spy"])
+
+if not spy_comparison.empty:
+    comparison_df["SPY"] = spy_comparison
+
+comparison_df = comparison_df.sort_index()
 
 if not comparison_df.empty:
     try:
@@ -181,15 +200,23 @@ if not comparison_df.empty:
 
         fig = go.Figure()
         for column in comparison_df.columns:
+            trace_kwargs = {}
+            if column == "SPY":
+                trace_kwargs["line"] = {"dash": "dash"}
             fig.add_trace(
                 go.Scatter(
                     x=comparison_df.index,
                     y=comparison_df[column],
                     mode="lines+markers",
                     name=column,
+                    **trace_kwargs,
                 )
             )
-        fig.update_layout(height=360, margin={"l": 10, "r": 10, "t": 10, "b": 10})
+        fig.update_layout(
+            height=360,
+            margin={"l": 10, "r": 10, "t": 10, "b": 10},
+            yaxis_title="Indexed Performance",
+        )
         st.plotly_chart(fig, use_container_width=True)
     except Exception:
         st.line_chart(comparison_df)

@@ -1,0 +1,134 @@
+[
+  {
+    "id": "ardsnet_low_tidal_volume_2000",
+    "category": "landmark",
+    "name": "ARDSNet Low Tidal Volume Ventilation",
+    "year": 2000,
+    "question": "Does low tidal volume ventilation improve outcomes in adults with acute lung injury/ARDS?",
+    "population": "Adults with acute lung injury or ARDS receiving mechanical ventilation.",
+    "primary_outcome": "Death before discharge and ventilator-free days at 28 days.",
+    "summary": "In a multicenter randomized trial, low tidal volume ventilation (6 mL/kg predicted body weight) was compared with traditional tidal volumes (12 mL/kg). The low tidal volume strategy reduced mortality and increased ventilator-free days over the first 28 days.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/10793162/"
+  },
+  {
+    "id": "proseva_prone_2013",
+    "category": "landmark",
+    "name": "PROSEVA (Prone Positioning in Severe ARDS)",
+    "year": 2013,
+    "question": "Does early, prolonged prone positioning reduce mortality in severe ARDS?",
+    "population": "Adults with severe ARDS (PaO2/FiO2 <150 on lung-protective ventilation).",
+    "primary_outcome": "All-cause mortality at 28 days.",
+    "summary": "Patients with severe ARDS were randomized to early prone sessions (at least 16 hours) or supine positioning. Prone positioning significantly reduced 28-day mortality and improved 90-day survival.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/23688302/"
+  },
+  {
+    "id": "tricc_transfusion_1999",
+    "category": "landmark",
+    "name": "TRICC (Transfusion Requirements in Critical Care)",
+    "year": 1999,
+    "question": "Is a restrictive transfusion strategy equivalent or better than a liberal strategy in critically ill patients?",
+    "population": "Critically ill ICU patients with hemoglobin < 9 g/dL after initial stabilization.",
+    "primary_outcome": "30-day all-cause mortality and severity of organ dysfunction.",
+    "summary": "Restrictive transfusion (transfuse if Hb <7 g/dL) was compared with liberal transfusion (Hb <10 g/dL). Overall 30-day mortality was similar; some less-acutely ill and younger subgroups had lower mortality with the restrictive strategy, and in-hospital mortality was lower with restrictive transfusion.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/9971864/"
+  },
+  {
+    "id": "safe_albumin_saline_2004",
+    "category": "landmark",
+    "name": "SAFE (Albumin vs Saline in ICU Resuscitation)",
+    "year": 2004,
+    "question": "Does albumin vs normal saline affect mortality in ICU fluid resuscitation?",
+    "population": "General ICU patients requiring intravascular fluid resuscitation.",
+    "primary_outcome": "28-day all-cause mortality.",
+    "summary": "Patients were randomized to receive 4% albumin or normal saline for resuscitation. There was no significant difference in 28-day mortality or new organ failure between groups.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/15163774/"
+  },
+  {
+    "id": "factt_fluid_strategy_2006",
+    "category": "landmark",
+    "name": "FACTT (Conservative vs Liberal Fluid Strategy in ALI/ARDS)",
+    "year": 2006,
+    "question": "Does conservative fluid management improve outcomes in acute lung injury?",
+    "population": "Adults with acute lung injury randomized to conservative vs liberal fluid strategies.",
+    "primary_outcome": "60-day mortality.",
+    "summary": "Conservative fluid management did not significantly reduce 60-day mortality compared with a liberal strategy. It improved oxygenation and increased ventilator-free and ICU-free days without increasing shock or dialysis.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/16714767/"
+  },
+  {
+    "id": "rivers_egdt_2001",
+    "category": "landmark",
+    "name": "Early Goal-Directed Therapy (Rivers et al.)",
+    "year": 2001,
+    "question": "Does early goal-directed therapy reduce mortality in severe sepsis and septic shock?",
+    "population": "Emergency department patients with severe sepsis or septic shock.",
+    "primary_outcome": "In-hospital mortality.",
+    "summary": "Patients receiving a 6-hour early goal-directed therapy protocol before ICU admission had lower in-hospital mortality than those receiving standard therapy. Physiologic targets such as central venous oxygen saturation also improved.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/11794169/"
+  },
+  {
+    "id": "process_egdt_2014",
+    "category": "recent",
+    "name": "ProCESS (Protocol-Based Care for Early Septic Shock)",
+    "year": 2014,
+    "question": "Do protocol-based resuscitation strategies improve outcomes compared with usual care in early septic shock?",
+    "population": "Emergency department patients with septic shock.",
+    "primary_outcome": "60-day in-hospital mortality.",
+    "summary": "Patients were randomized to protocol-based EGDT, protocol-based standard therapy, or usual care. There were no significant differences in 60-day mortality, 90-day mortality, 1-year mortality, or need for organ support.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/24635773/"
+  },
+  {
+    "id": "smart_crystalloids_2018",
+    "category": "recent",
+    "name": "SMART (Balanced Crystalloids vs Saline in ICU)",
+    "year": 2018,
+    "question": "Do balanced crystalloids improve outcomes compared with saline in critically ill adults?",
+    "population": "Critically ill adults admitted to ICUs.",
+    "primary_outcome": "Major adverse kidney events within 30 days (death, new renal-replacement therapy, or persistent renal dysfunction).",
+    "summary": "Balanced crystalloids were associated with a lower rate of major adverse kidney events compared with saline. Thirty-day mortality was not significantly different between groups.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/29485925/"
+  },
+  {
+    "id": "adrenal_hydrocortisone_2018",
+    "category": "recent",
+    "name": "ADRENAL (Hydrocortisone in Septic Shock)",
+    "year": 2018,
+    "question": "Does hydrocortisone reduce mortality in ventilated patients with septic shock?",
+    "population": "Patients with septic shock receiving mechanical ventilation.",
+    "primary_outcome": "90-day all-cause mortality.",
+    "summary": "Hydrocortisone (200 mg/day) did not significantly reduce 90-day mortality compared with placebo. Hydrocortisone was associated with faster resolution of shock.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/29347874/"
+  },
+  {
+    "id": "aprocchss_hydrocortisone_fludrocortisone_2018",
+    "category": "recent",
+    "name": "APROCCHSS (Hydrocortisone + Fludrocortisone in Septic Shock)",
+    "year": 2018,
+    "question": "Does hydrocortisone plus fludrocortisone improve survival in septic shock?",
+    "population": "Adults with septic shock.",
+    "primary_outcome": "90-day all-cause mortality.",
+    "summary": "Hydrocortisone plus fludrocortisone reduced 90-day all-cause mortality compared with placebo in septic shock.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/29490185/"
+  },
+  {
+    "id": "classic_restrictive_fluids_2022",
+    "category": "recent",
+    "name": "CLASSIC (Restricted vs Standard IV Fluids in Septic Shock)",
+    "year": 2022,
+    "question": "Does restricting IV fluids reduce mortality in ICU patients with septic shock?",
+    "population": "ICU patients with septic shock after at least 1 liter of IV fluid.",
+    "primary_outcome": "90-day all-cause mortality.",
+    "summary": "Restricted IV fluid therapy did not reduce 90-day mortality compared with standard fluid therapy. Serious adverse events and days alive without life support were similar between groups.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/35709019/"
+  },
+  {
+    "id": "clovers_restrictive_liberal_2023",
+    "category": "recent",
+    "name": "CLOVERS (Restrictive vs Liberal Fluids in Sepsis-Induced Hypotension)",
+    "year": 2023,
+    "question": "Does an early restrictive fluid strategy improve outcomes compared with a liberal strategy in sepsis-induced hypotension?",
+    "population": "Patients with sepsis-induced hypotension after initial fluid resuscitation.",
+    "primary_outcome": "90-day all-cause mortality.",
+    "summary": "An early restrictive strategy prioritizing vasopressors did not significantly reduce 90-day mortality compared with a liberal fluid strategy. Serious adverse events were similar between groups.",
+    "source": "https://pubmed.ncbi.nlm.nih.gov/36688507/"
+  }
+]

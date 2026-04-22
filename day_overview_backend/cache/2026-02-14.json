@@ -1,0 +1,13 @@
+{
+  "date": "2026-02-14",
+  "news": [
+    {
+      "headline": "News feeds unavailable",
+      "summary": "Could not fetch news. Check feed URLs and network access.",
+      "source": "system"
+    }
+  ],
+  "icu_trial_summary": "An early restrictive strategy prioritizing vasopressors did not significantly reduce 90-day mortality compared with a liberal fluid strategy. Serious adverse events were similar between groups.",
+  "historical_fact": "On July 20, 1969, Apollo 11 landed on the Moon and Neil Armstrong became the first person to walk on its surface.",
+  "generated_at": "2026-02-15T03:23:21.959853Z"
+}
