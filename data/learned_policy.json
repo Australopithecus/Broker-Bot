@@ -1,6 +1,6 @@
 {
   "component_metrics": {},
-  "generated_at": "2026-04-22T03:09:45.053239+00:00",
+  "generated_at": "2026-04-19T04:28:07.055575+00:00",
   "summary": "Evaluated 0 mature decisions this run; recent hit rate 0.0%, average signed return 0.00%.",
   "weights": {
     "llm_weight": 0.8,
