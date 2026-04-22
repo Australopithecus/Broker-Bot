@@ -122,6 +122,15 @@ jobs:
             echo "LEARNED_POLICY_PATH=${LEARNED_POLICY_PATH}"
           } >> "$GITHUB_ENV"
 
+      - name: Detect whether LLM bot credentials are configured
+        id: llm_bot_config
+        run: |
+          if [ -n "${ALPACA_LLM_API_KEY}" ] && [ -n "${ALPACA_LLM_SECRET_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Verify Alpaca trading and market data access
         run: |
           python - <<'PY'
@@ -197,17 +206,17 @@ jobs:
           python -m broker_bot.cli strategy-report
 
       - name: Rebalance LLM paper portfolio
-        if: ${{ secrets.ALPACA_LLM_API_KEY != '' && secrets.ALPACA_LLM_SECRET_KEY != '' }}
+        if: ${{ steps.llm_bot_config.outputs.enabled == 'true' }}
         run: |
           python -m broker_bot.cli rebalance-llm
 
       - name: Snapshot LLM account
-        if: ${{ secrets.ALPACA_LLM_API_KEY != '' && secrets.ALPACA_LLM_SECRET_KEY != '' }}
+        if: ${{ steps.llm_bot_config.outputs.enabled == 'true' }}
         run: |
           python -m broker_bot.cli snapshot-llm
 
       - name: Generate LLM coach report
-        if: ${{ secrets.ALPACA_LLM_API_KEY != '' && secrets.ALPACA_LLM_SECRET_KEY != '' }}
+        if: ${{ steps.llm_bot_config.outputs.enabled == 'true' }}
         run: |
           python -m broker_bot.cli review-decisions-llm
 
