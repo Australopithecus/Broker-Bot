@@ -1,6 +1,11 @@
 # Broker Bot (Paper Trading)
 
-A Python-based paper-trading bot for Alpaca paper accounts that combines machine learning, market data, lightweight news interpretation, optional LLM judgment, and a self-review loop. It logs what it decided, why it decided it, how those decisions performed later, and small bounded policy changes it wants to make.
+A Python-based paper-trading project for Alpaca paper accounts with two named bots:
+
+- `ML Bot`: the original machine-learning ensemble bot
+- `LLM Bot`: a second bot that uses a network of LLM roles for stock selection, analysis, trading, and coaching
+
+Each bot keeps its own paper-account history, reports, and dashboard sections so you can compare them side by side.
 
 **Disclaimer:** This project is for educational purposes only and is not financial advice.
 
@@ -27,14 +32,24 @@ python3 scripts/setup_env.py
 
 ## Architecture
 
-The current version is built as a bounded ensemble rather than a single black-box model:
+`ML Bot` is the original bounded ensemble:
 
 - Base model: a Random Forest predicts short-horizon returns from momentum, volatility, and market context features.
 - Market overlays: Alpaca snapshots, market movers, most-active symbols, and recent news headlines can nudge the base prediction up or down.
 - Optional LLM overlay: an LLM can review the strongest candidates and add a small explainable adjustment, but only within tight limits.
 - Memory: the bot scores symbols partly by how well its past decisions on those symbols have worked.
 - Learning loop: mature decisions are evaluated after the prediction horizon passes, component weights are adjusted within bounds, and the learned policy is saved in `data/learned_policy.json`.
-- Reporting: markdown strategy and learning reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots.
+
+`LLM Bot` is a multi-role decision system:
+
+- `Stock Selector`: chooses the watchlist
+- `Analyst`: writes daily memos for each watchlist stock
+- `Trader`: reads the analyst memos plus coach guidance and makes today’s long/short decisions
+- `Coach`: reviews mature outcomes and writes the next feedback report for the trader
+
+Both bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate Alpaca paper accounts.
+
+Reporting: markdown reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots.
 
 ## Commands
 
@@ -66,6 +81,12 @@ Rebalance the paper portfolio using the latest signals:
 python3 -m broker_bot.cli rebalance
 ```
 
+Rebalance the separate LLM bot paper account:
+
+```bash
+python3 -m broker_bot.cli rebalance-llm
+```
+
 Review mature past decisions, score what worked, and update learned component weights:
 
 ```bash
@@ -78,10 +99,29 @@ Generate a strategy report explaining recent decisions, lessons, and proposed ch
 python3 -m broker_bot.cli strategy-report
 ```
 
+Refresh the LLM bot reporting/coaching loop:
+
+```bash
+python3 -m broker_bot.cli review-decisions-llm
+python3 -m broker_bot.cli strategy-report-llm
+```
+
+Generate a paper-only options scaffold report that turns the strongest stock ideas into defined-risk vertical spread candidates:
+
+```bash
+python3 -m broker_bot.cli options-report
+```
+
 Snapshot account + positions (no trades):
 
 ```bash
 python3 -m broker_bot.cli snapshot
+```
+
+Snapshot the LLM bot account:
+
+```bash
+python3 -m broker_bot.cli snapshot-llm
 ```
 
 Launch the desktop dashboard (Tkinter):
@@ -120,7 +160,7 @@ You can deploy the UI via Streamlit Community Cloud using `streamlit_app.py`. Th
      `https://raw.githubusercontent.com/<user>/<repo>/main/data/dashboard_snapshot.json`
 
 The Streamlit app calls your bot API endpoints and shows:
-Equity vs SPY, positions, trades, advisor reports, strategy-report snapshots, and recent decision rationale.
+Equity vs SPY, positions, trades, analyst/trader/coach reports, strategy-report snapshots, and recent decision rationale for both bots in separate sections.
 
 ### GitHub Actions (Full Scheduled Cloud Run)
 
@@ -141,6 +181,8 @@ Workflow file: `.github/workflows/advisor_snapshot.yml`
 - `ALPACA_SECRET_KEY`
 - `ALPACA_PAPER_URL` (optional, defaults to paper endpoint)
 - `ALPACA_DATA_FEED` (optional)
+- `ALPACA_LLM_API_KEY` and `ALPACA_LLM_SECRET_KEY` for the second paper account used by the LLM bot
+- `ALPACA_LLM_PAPER_URL` and `ALPACA_LLM_DATA_FEED` (optional)
 - `OPENAI_API_KEY` (if `LLM_ENABLED=1`)
 - `LLM_ENABLED` (`1` to enable LLM advisor)
 - `LLM_MODEL` (e.g. `gpt-5-mini`)
@@ -157,6 +199,10 @@ python3 -m broker_bot.cli snapshot
 python3 -m broker_bot.cli review-decisions
 python3 -m broker_bot.cli advisor-report
 python3 -m broker_bot.cli strategy-report
+python3 -m broker_bot.cli rebalance-llm
+python3 -m broker_bot.cli snapshot-llm
+python3 -m broker_bot.cli review-decisions-llm
+python3 -m broker_bot.cli options-report
 python3 scripts/build_snapshot.py
 ```
 
@@ -182,6 +228,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - The bot uses long/short signals with inverse-volatility sizing and an SPY regime filter (reduces leverage in bear regimes).
 - The base model is a Random Forest regressor on momentum/volatility features with market context.
 - The live signal stack can blend in Alpaca snapshots, market movers, most-active names, recent Alpaca news headlines, symbol memory, and optional LLM watchlist judgments.
+- The new LLM bot keeps its own watchlist, analyst daily reports, trader daily reports, and coach reports.
 - The backtest uses walk-forward retraining, weekly rebalancing, and transaction cost estimates for realism.
 - The backtest now better matches the live ensemble by simulating bounded overlay components offline from historical price/volume structure.
 - Advisor overrides are stored in `data/advisor_overrides.json` and applied at startup when enabled.
@@ -196,6 +243,15 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - `VOL_TARGET` + `VOL_WINDOW` scales leverage down in high-volatility regimes.
 - `MAX_DRAWDOWN`, `MIN_LEVERAGE`, and `DRAWDOWN_WINDOW` apply drawdown guardrails.
 - `TECHNICAL_WEIGHT`, `SNAPSHOT_WEIGHT`, `SCREENER_WEIGHT`, `NEWS_WEIGHT`, `MEMORY_WEIGHT`, and `LLM_WEIGHT` set the ensemble blend before learned-policy updates.
+- `EXECUTION_ORDER_MODE=simple` keeps the old behavior: market orders are submitted only when the bot runs.
+- `EXECUTION_ORDER_MODE=bracket` tells Alpaca to hold server-side take-profit and stop-loss exits for fresh entries using `BRACKET_TAKE_PROFIT_PCT` and `BRACKET_STOP_LOSS_PCT`.
+- `TRAILING_STOP_ENABLED=1` adds Alpaca-side trailing-stop protection for positions that remain after rebalance. Use either `TRAILING_STOP_PERCENT` or `TRAILING_STOP_PRICE`.
+- Advanced Alpaca order types are handled conservatively in this project: if a bracket order is rejected, the bot falls back to a simple market order, and trailing stops are only attached when the position size is compatible with whole-share handling.
+- `ALPACA_LLM_API_KEY`, `ALPACA_LLM_SECRET_KEY`, `ALPACA_LLM_PAPER_URL`, and `ALPACA_LLM_DATA_FEED` configure the second paper account used by the LLM bot.
+- The local dashboard and Streamlit snapshot now show broker-side protection summaries per position so you can see whether exits are resting at Alpaca.
+- The dashboard is multi-bot aware: ML and LLM equity, positions, trades, decisions, and reports are stored separately and displayed separately.
+- `OPTIONS_MIN_DTE`, `OPTIONS_MAX_DTE`, `OPTIONS_IDEA_LIMIT`, and `OPTIONS_SPREAD_WIDTH_PCT` control the paper-only options scaffold report.
+- The current options scaffold intentionally stays conservative: it suggests bull call debit spreads for bullish ideas and bear put debit spreads for bearish ideas, using recent option contract close prices as rough planning inputs rather than live spread-aware execution logic.
 - Backtest-only reliability simulation:
   - `MISS_REBALANCE_PROB` simulates skipped rebalances (e.g., CI delays/failures).
   - `REBALANCE_DELAY_DAYS` delays a missed rebalance by N days.

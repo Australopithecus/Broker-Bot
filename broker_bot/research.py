@@ -9,7 +9,7 @@ from alpaca.data.enums import MarketType, MostActivesBy
 from alpaca.data.historical import NewsClient, ScreenerClient, StockHistoricalDataClient
 from alpaca.data.requests import MarketMoversRequest, MostActivesRequest, NewsRequest, StockSnapshotRequest
 
-from .config import Config
+from .config import Config, get_bot_account_config
 from .llm_utils import call_json_llm
 
 
@@ -167,9 +167,10 @@ def _snapshot_signal(snapshot: Any) -> float:
     return _clip(raw, -1.0, 1.0)
 
 
-def _fetch_screener_context(config: Config, context: ResearchContext) -> None:
+def _fetch_screener_context(config: Config, context: ResearchContext, bot_name: str = "ml") -> None:
+    account = get_bot_account_config(config, bot_name)
     try:
-        client = ScreenerClient(config.alpaca_api_key, config.alpaca_secret_key)
+        client = ScreenerClient(account.api_key, account.secret_key)
         movers = client.get_market_movers(MarketMoversRequest(top=10, market_type=MarketType.STOCKS))
         actives = client.get_most_actives(MostActivesRequest(top=10, by=MostActivesBy.VOLUME))
     except Exception as exc:
@@ -181,15 +182,16 @@ def _fetch_screener_context(config: Config, context: ResearchContext) -> None:
     context.most_active = [item.symbol for item in getattr(actives, "most_actives", []) or []]
 
 
-def _fetch_snapshot_context(config: Config, context: ResearchContext) -> None:
+def _fetch_snapshot_context(config: Config, context: ResearchContext, bot_name: str = "ml") -> None:
     if not context.candidate_symbols:
         return
+    account = get_bot_account_config(config, bot_name)
     try:
-        client = StockHistoricalDataClient(config.alpaca_api_key, config.alpaca_secret_key)
+        client = StockHistoricalDataClient(account.api_key, account.secret_key)
         snapshots = client.get_stock_snapshot(
             StockSnapshotRequest(
                 symbol_or_symbols=context.candidate_symbols,
-                feed=config.alpaca_data_feed,
+                feed=account.data_feed,
             )
         )
     except Exception as exc:
@@ -202,11 +204,12 @@ def _fetch_snapshot_context(config: Config, context: ResearchContext) -> None:
         context.snapshot_scores[symbol] = _snapshot_signal(snapshot)
 
 
-def _fetch_news_context(config: Config, context: ResearchContext) -> None:
+def _fetch_news_context(config: Config, context: ResearchContext, bot_name: str = "ml") -> None:
     if not context.candidate_symbols:
         return
+    account = get_bot_account_config(config, bot_name)
     try:
-        client = NewsClient(config.alpaca_api_key, config.alpaca_secret_key)
+        client = NewsClient(account.api_key, account.secret_key)
         request = NewsRequest(
             symbols=",".join(context.candidate_symbols),
             start=datetime.now(timezone.utc) - timedelta(days=config.news_lookback_days),
@@ -318,6 +321,7 @@ def build_research_overlay(
     config: Config,
     latest: pd.DataFrame,
     symbol_memory: dict[str, float] | None = None,
+    bot_name: str = "ml",
 ) -> tuple[pd.DataFrame, ResearchContext]:
     symbol_memory = symbol_memory or {}
     overlay = latest.copy()
@@ -335,9 +339,9 @@ def build_research_overlay(
     overlay["technical_adjustment"] = technical_raw * TECHNICAL_MAX_ADJ * config.technical_weight
 
     context = ResearchContext(candidate_symbols=_candidate_symbols(overlay, config.research_candidate_limit))
-    _fetch_screener_context(config, context)
-    _fetch_snapshot_context(config, context)
-    _fetch_news_context(config, context)
+    _fetch_screener_context(config, context, bot_name=bot_name)
+    _fetch_snapshot_context(config, context, bot_name=bot_name)
+    _fetch_news_context(config, context, bot_name=bot_name)
     _fetch_llm_overlay(config, overlay, context, symbol_memory)
 
     screener_raw: list[float] = []

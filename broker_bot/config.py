@@ -1,10 +1,23 @@
+from __future__ import annotations
+
 import json
 import os
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
+from .bots import LLM_BOT_NAME, ML_BOT_NAME, normalize_bot_name
+
 load_dotenv()
+
+
+@dataclass(frozen=True)
+class BrokerAccountConfig:
+    bot_name: str
+    api_key: str
+    secret_key: str
+    paper_url: str
+    data_feed: str
 
 
 @dataclass(frozen=True)
@@ -13,6 +26,10 @@ class Config:
     alpaca_secret_key: str
     alpaca_paper_url: str
     alpaca_data_feed: str
+    llm_alpaca_api_key: str
+    llm_alpaca_secret_key: str
+    llm_alpaca_paper_url: str
+    llm_alpaca_data_feed: str
     universe_path: str
     db_path: str
     model_dir: str
@@ -51,6 +68,17 @@ class Config:
     news_weight: float
     memory_weight: float
     llm_weight: float
+    execution_order_mode: str
+    bracket_take_profit_pct: float
+    bracket_stop_loss_pct: float
+    trailing_stop_enabled: bool
+    trailing_stop_percent: float
+    trailing_stop_price: float
+    trailing_stop_time_in_force: str
+    options_min_dte: int
+    options_max_dte: int
+    options_idea_limit: int
+    options_spread_width_pct: float
 
 
 def _load_json_overrides(path: str) -> dict[str, float]:
@@ -74,6 +102,10 @@ def load_config() -> Config:
     secret_key = os.getenv("ALPACA_SECRET_KEY", "").strip()
     paper_url = os.getenv("ALPACA_PAPER_URL", "https://paper-api.alpaca.markets").strip()
     data_feed = os.getenv("ALPACA_DATA_FEED", "iex").strip() or "iex"
+    llm_api_key = os.getenv("ALPACA_LLM_API_KEY", "").strip()
+    llm_secret_key = os.getenv("ALPACA_LLM_SECRET_KEY", "").strip()
+    llm_paper_url = os.getenv("ALPACA_LLM_PAPER_URL", paper_url).strip() or paper_url
+    llm_data_feed = os.getenv("ALPACA_LLM_DATA_FEED", data_feed).strip() or data_feed
     overrides_path = os.getenv("ADVISOR_OVERRIDES_PATH", "data/advisor_overrides.json").strip()
     learned_policy_path = os.getenv("LEARNED_POLICY_PATH", "data/learned_policy.json").strip()
     auto_apply_flag = os.getenv("ADVISOR_AUTO_APPLY", "1").strip().lower() in {"1", "true", "yes", "y"}
@@ -108,6 +140,10 @@ def load_config() -> Config:
         alpaca_secret_key=secret_key,
         alpaca_paper_url=paper_url,
         alpaca_data_feed=data_feed,
+        llm_alpaca_api_key=llm_api_key,
+        llm_alpaca_secret_key=llm_secret_key,
+        llm_alpaca_paper_url=llm_paper_url,
+        llm_alpaca_data_feed=llm_data_feed,
         universe_path=os.getenv("UNIVERSE_PATH", "data/sp500.csv"),
         db_path=os.getenv("BROKER_BOT_DB", "data/broker_bot.sqlite"),
         model_dir=os.getenv("MODEL_DIR", "data/models"),
@@ -146,4 +182,45 @@ def load_config() -> Config:
         news_weight=_policy_override("news_weight", float(os.getenv("NEWS_WEIGHT", "0.9"))),
         memory_weight=_policy_override("memory_weight", float(os.getenv("MEMORY_WEIGHT", "0.8"))),
         llm_weight=_policy_override("llm_weight", float(os.getenv("LLM_WEIGHT", "0.8"))),
+        execution_order_mode=os.getenv("EXECUTION_ORDER_MODE", "simple").strip().lower() or "simple",
+        bracket_take_profit_pct=float(os.getenv("BRACKET_TAKE_PROFIT_PCT", "0.04")),
+        bracket_stop_loss_pct=float(os.getenv("BRACKET_STOP_LOSS_PCT", "0.02")),
+        trailing_stop_enabled=os.getenv("TRAILING_STOP_ENABLED", "0").strip().lower() in {"1", "true", "yes", "y"},
+        trailing_stop_percent=float(os.getenv("TRAILING_STOP_PERCENT", "0.0")),
+        trailing_stop_price=float(os.getenv("TRAILING_STOP_PRICE", "0.0")),
+        trailing_stop_time_in_force=os.getenv("TRAILING_STOP_TIF", "gtc").strip().lower() or "gtc",
+        options_min_dte=int(os.getenv("OPTIONS_MIN_DTE", "14")),
+        options_max_dte=int(os.getenv("OPTIONS_MAX_DTE", "45")),
+        options_idea_limit=int(os.getenv("OPTIONS_IDEA_LIMIT", "6")),
+        options_spread_width_pct=float(os.getenv("OPTIONS_SPREAD_WIDTH_PCT", "0.05")),
     )
+
+
+def get_bot_account_config(config: Config, bot_name: str | None = None) -> BrokerAccountConfig:
+    normalized = normalize_bot_name(bot_name)
+    if normalized == LLM_BOT_NAME:
+        if not config.llm_alpaca_api_key or not config.llm_alpaca_secret_key:
+            raise RuntimeError(
+                "Missing ALPACA_LLM_API_KEY or ALPACA_LLM_SECRET_KEY in environment for the LLM bot."
+            )
+        return BrokerAccountConfig(
+            bot_name=LLM_BOT_NAME,
+            api_key=config.llm_alpaca_api_key,
+            secret_key=config.llm_alpaca_secret_key,
+            paper_url=config.llm_alpaca_paper_url,
+            data_feed=config.llm_alpaca_data_feed,
+        )
+    return BrokerAccountConfig(
+        bot_name=ML_BOT_NAME,
+        api_key=config.alpaca_api_key,
+        secret_key=config.alpaca_secret_key,
+        paper_url=config.alpaca_paper_url,
+        data_feed=config.alpaca_data_feed,
+    )
+
+
+def configured_bot_names(config: Config) -> list[str]:
+    bots = [ML_BOT_NAME]
+    if config.llm_alpaca_api_key and config.llm_alpaca_secret_key:
+        bots.append(LLM_BOT_NAME)
+    return bots

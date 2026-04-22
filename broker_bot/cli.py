@@ -24,6 +24,9 @@ from .universe import load_universe
 from .dashboard_tk import launch_dashboard
 from .dashboard_web import create_app
 from .advisor import generate_advisor_report, save_overrides
+from .bots import LLM_BOT_NAME, ML_BOT_NAME
+from .llm_bot import generate_llm_bot_status_report, generate_llm_coach_report, rebalance_llm_bot
+from .options import generate_options_scaffold_report
 
 
 def _load_symbols(config) -> list[str]:
@@ -69,20 +72,24 @@ def cmd_backtest(args: argparse.Namespace) -> None:
 
 
 def cmd_rebalance(args: argparse.Namespace) -> None:
+    _cmd_rebalance_for_bot(ML_BOT_NAME)
+
+
+def _cmd_rebalance_for_bot(bot_name: str) -> None:
     config = load_config()
     init_db(config.db_path)
     review_summary = "Learning skipped."
     try:
-        review_report = review_and_learn(config)
+        review_report = review_and_learn(config, bot_name=bot_name)
         review_summary = review_report.summary
     except Exception as exc:
         review_summary = f"Learning skipped: {exc}"
     config = load_config()
     symbols = _load_symbols(config)
 
-    ts, orders, signals, decision_context = rebalance_portfolio(config, symbols)
+    ts, orders, signals, decision_context = rebalance_portfolio(config, symbols, bot_name=bot_name)
     if orders:
-        log_trades(config.db_path, orders)
+        log_trades(config.db_path, orders, bot_name=bot_name)
 
     log_decision_run(
         config.db_path,
@@ -90,6 +97,7 @@ def cmd_rebalance(args: argparse.Namespace) -> None:
         float(decision_context.get("effective_leverage", 0.0)),
         float(decision_context.get("spy_vol", 0.0)),
         json.dumps(decision_context),
+        bot_name=bot_name,
     )
     log_decision_logs(
         config.db_path,
@@ -106,38 +114,94 @@ def cmd_rebalance(args: argparse.Namespace) -> None:
             )
             for signal in signals
         ],
+        bot_name=bot_name,
     )
 
     log_signals(
         config.db_path,
         ts,
         [(s.symbol, s.score, s.side) for s in signals],
+        bot_name=bot_name,
     )
 
-    ts_pos, positions = snapshot_positions(config)
-    log_positions(config.db_path, ts_pos, positions)
+    ts_pos, positions = snapshot_positions(config, bot_name=bot_name)
+    log_positions(config.db_path, ts_pos, positions, bot_name=bot_name)
 
-    spy_value = fetch_latest_close(config, "SPY")
-    ts_eq, equity, cash, port = snapshot_equity(config)
-    log_equity(config.db_path, ts_eq, equity, cash, port, spy_value=spy_value)
+    spy_value = fetch_latest_close(config, "SPY", bot_name=bot_name)
+    ts_eq, equity, cash, port = snapshot_equity(config, bot_name=bot_name)
+    log_equity(config.db_path, ts_eq, equity, cash, port, spy_value=spy_value, bot_name=bot_name)
 
     print(
-        f"Rebalanced at {ts} with {len(orders)} orders. "
+        f"{bot_name.upper()} rebalanced at {ts} with {len(orders)} orders. "
         f"Learning summary: {review_summary}"
     )
 
 
 def cmd_snapshot(args: argparse.Namespace) -> None:
+    _cmd_snapshot_for_bot(ML_BOT_NAME)
+
+
+def _cmd_snapshot_for_bot(bot_name: str) -> None:
     config = load_config()
     init_db(config.db_path)
-    ts_pos, positions = snapshot_positions(config)
-    log_positions(config.db_path, ts_pos, positions)
+    ts_pos, positions = snapshot_positions(config, bot_name=bot_name)
+    log_positions(config.db_path, ts_pos, positions, bot_name=bot_name)
 
-    spy_value = fetch_latest_close(config, "SPY")
-    ts_eq, equity, cash, port = snapshot_equity(config)
-    log_equity(config.db_path, ts_eq, equity, cash, port, spy_value=spy_value)
+    spy_value = fetch_latest_close(config, "SPY", bot_name=bot_name)
+    ts_eq, equity, cash, port = snapshot_equity(config, bot_name=bot_name)
+    log_equity(config.db_path, ts_eq, equity, cash, port, spy_value=spy_value, bot_name=bot_name)
 
-    print(f"Snapshot saved at {ts_eq}.")
+    print(f"{bot_name.upper()} snapshot saved at {ts_eq}.")
+
+
+def cmd_rebalance_llm(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    symbols = _load_symbols(config)
+    result = rebalance_llm_bot(config, symbols)
+    if result.orders:
+        log_trades(config.db_path, result.orders, bot_name=LLM_BOT_NAME)
+    log_decision_run(
+        config.db_path,
+        result.ts,
+        float(result.decision_context.get("effective_leverage", 0.0)),
+        float(result.decision_context.get("spy_vol", 0.0)),
+        json.dumps(result.decision_context),
+        bot_name=LLM_BOT_NAME,
+    )
+    log_decision_logs(
+        config.db_path,
+        result.ts,
+        [
+            (
+                signal.symbol,
+                signal.side,
+                1 if signal.selected else 0,
+                float(signal.base_score if signal.base_score is not None else signal.score),
+                float(signal.score),
+                json.dumps(signal.components or {}, sort_keys=True),
+                signal.rationale or None,
+            )
+            for signal in result.signals
+        ],
+        bot_name=LLM_BOT_NAME,
+    )
+    log_signals(
+        config.db_path,
+        result.ts,
+        [(s.symbol, s.score, s.side) for s in result.signals],
+        bot_name=LLM_BOT_NAME,
+    )
+    ts_pos, positions = snapshot_positions(config, bot_name=LLM_BOT_NAME)
+    log_positions(config.db_path, ts_pos, positions, bot_name=LLM_BOT_NAME)
+    spy_value = fetch_latest_close(config, "SPY", bot_name=LLM_BOT_NAME)
+    ts_eq, equity, cash, port = snapshot_equity(config, bot_name=LLM_BOT_NAME)
+    log_equity(config.db_path, ts_eq, equity, cash, port, spy_value=spy_value, bot_name=LLM_BOT_NAME)
+    print(f"LLM rebalanced at {result.ts} with {len(result.orders)} orders.")
+
+
+def cmd_snapshot_llm(args: argparse.Namespace) -> None:
+    _cmd_snapshot_for_bot(LLM_BOT_NAME)
 
 
 def cmd_dashboard(args: argparse.Namespace) -> None:
@@ -149,7 +213,7 @@ def cmd_dashboard(args: argparse.Namespace) -> None:
 def cmd_dashboard_web(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
-    app = create_app(config.db_path)
+    app = create_app(config.db_path, config=config)
     host = os.getenv("DASHBOARD_HOST", "127.0.0.1")
     port = int(os.getenv("DASHBOARD_PORT", "8000"))
     try:
@@ -172,6 +236,7 @@ def cmd_advisor(args: argparse.Namespace) -> None:
         json.dumps(report.suggestions),
         json.dumps(report.metrics),
         json.dumps(report.overrides),
+        bot_name=ML_BOT_NAME,
     )
 
     if config.advisor_auto_apply and report.overrides:
@@ -184,16 +249,38 @@ def cmd_advisor(args: argparse.Namespace) -> None:
 def cmd_review_decisions(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
-    report = review_and_learn(config)
+    report = review_and_learn(config, bot_name=ML_BOT_NAME)
     print(f"{report.headline}: {report.summary}")
     if report.report_path:
         print(f"Saved report to {report.report_path}")
 
 
+def cmd_review_decisions_llm(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_llm_coach_report(config)
+    print(f"{report['headline']}: {report['summary']}")
+
+
 def cmd_strategy_report(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
-    report = generate_strategy_report(config)
+    report = generate_strategy_report(config, bot_name=ML_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
+def cmd_strategy_report_llm(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    print(generate_llm_bot_status_report(config))
+
+
+def cmd_options_report(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    symbols = _load_symbols(config)
+    report = generate_options_scaffold_report(config, symbols)
     print(f"{report.headline}: {report.summary}")
     print(f"Saved report to {report.report_path}")
 
@@ -206,12 +293,17 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("train")
     subparsers.add_parser("backtest")
     subparsers.add_parser("rebalance")
+    subparsers.add_parser("rebalance-llm")
     subparsers.add_parser("snapshot")
+    subparsers.add_parser("snapshot-llm")
     subparsers.add_parser("dashboard")
     subparsers.add_parser("dashboard-web")
     subparsers.add_parser("advisor-report")
     subparsers.add_parser("review-decisions")
+    subparsers.add_parser("review-decisions-llm")
     subparsers.add_parser("strategy-report")
+    subparsers.add_parser("strategy-report-llm")
+    subparsers.add_parser("options-report")
 
     return parser
 
@@ -228,8 +320,12 @@ def main() -> None:
         cmd_backtest(args)
     elif args.command == "rebalance":
         cmd_rebalance(args)
+    elif args.command == "rebalance-llm":
+        cmd_rebalance_llm(args)
     elif args.command == "snapshot":
         cmd_snapshot(args)
+    elif args.command == "snapshot-llm":
+        cmd_snapshot_llm(args)
     elif args.command == "dashboard":
         cmd_dashboard(args)
     elif args.command == "dashboard-web":
@@ -238,8 +334,14 @@ def main() -> None:
         cmd_advisor(args)
     elif args.command == "review-decisions":
         cmd_review_decisions(args)
+    elif args.command == "review-decisions-llm":
+        cmd_review_decisions_llm(args)
     elif args.command == "strategy-report":
         cmd_strategy_report(args)
+    elif args.command == "strategy-report-llm":
+        cmd_strategy_report_llm(args)
+    elif args.command == "options-report":
+        cmd_options_report(args)
 
 
 if __name__ == "__main__":

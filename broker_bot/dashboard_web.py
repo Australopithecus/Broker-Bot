@@ -9,7 +9,10 @@ import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from .bots import ML_BOT_NAME, bot_label, normalize_bot_name
+from .config import Config, configured_bot_names
 from .logging_db import (
+    read_available_bot_names,
     read_latest_advisor_reports,
     read_latest_equity,
     read_latest_positions,
@@ -17,11 +20,13 @@ from .logging_db import (
     read_latest_trades,
     read_recent_selected_decisions,
 )
+from .trader import snapshot_positions_with_protection
 
 
-def create_app(db_path: str) -> FastAPI:
+def create_app(db_path: str, config: Config | None = None) -> FastAPI:
     app = FastAPI(title="Broker Bot Dashboard")
     api_token = os.getenv("API_TOKEN", "").strip()
+    known_bots = configured_bot_names(config) if config is not None else [ML_BOT_NAME]
 
     def _check_token(request: Request) -> None:
         if not api_token:
@@ -32,6 +37,20 @@ def create_app(db_path: str) -> FastAPI:
             return
         raise HTTPException(status_code=401, detail="Unauthorized")
 
+    def _bot_name(request: Request) -> str:
+        return normalize_bot_name(request.query_params.get("bot", ML_BOT_NAME))
+
+    @app.get("/api/bots")
+    def bots(request: Request) -> JSONResponse:
+        _check_token(request)
+        discovered = set(known_bots)
+        try:
+            discovered.update(read_available_bot_names(db_path))
+        except Exception:
+            pass
+        data = [{"name": bot_name, "label": bot_label(bot_name)} for bot_name in sorted(discovered)]
+        return JSONResponse({"data": data})
+
     @app.get("/", response_class=HTMLResponse)
     def index() -> str:
         return _dashboard_html()
@@ -39,18 +58,21 @@ def create_app(db_path: str) -> FastAPI:
     @app.get("/api/summary")
     def summary(request: Request) -> JSONResponse:
         _check_token(request)
-        rows = read_latest_equity(db_path, limit=1)
+        bot_name = _bot_name(request)
+        rows = read_latest_equity(db_path, limit=1, bot_name=bot_name)
         if not rows:
             return JSONResponse(
                 {
                     "status": "empty",
-                    "message": "No equity snapshots yet. Run the bot to log data.",
+                    "message": f"No {bot_label(bot_name)} equity snapshots yet. Run the bot to log data.",
                 }
             )
         ts, equity, cash, portfolio, spy_value = rows[0]
         return JSONResponse(
             {
                 "status": "ok",
+                "bot_name": bot_name,
+                "bot_label": bot_label(bot_name),
                 "ts": ts,
                 "equity": equity,
                 "cash": cash,
@@ -62,12 +84,13 @@ def create_app(db_path: str) -> FastAPI:
     @app.get("/api/equity")
     def equity(request: Request) -> JSONResponse:
         _check_token(request)
+        bot_name = _bot_name(request)
         try:
             limit = int(request.query_params.get("limit", "1000"))
         except ValueError:
             limit = 1000
         limit = max(1, min(limit, 5000))
-        rows = read_latest_equity(db_path, limit=limit)
+        rows = read_latest_equity(db_path, limit=limit, bot_name=bot_name)
         rows = list(reversed(rows))
         data = [
             {
@@ -82,23 +105,40 @@ def create_app(db_path: str) -> FastAPI:
     @app.get("/api/positions")
     def positions(request: Request) -> JSONResponse:
         _check_token(request)
-        rows = read_latest_positions(db_path, limit=200)
-        data = [
-            {
-                "symbol": row[0],
-                "qty": row[1],
-                "avg_entry": row[2],
-                "market_value": row[3],
-                "unreal_pl": row[4],
-            }
-            for row in rows
-        ]
+        bot_name = _bot_name(request)
+        data = []
+        if config is not None:
+            try:
+                _, data = snapshot_positions_with_protection(config, bot_name=bot_name)
+            except Exception:
+                data = []
+        if not data:
+            rows = read_latest_positions(db_path, limit=200, bot_name=bot_name)
+            data = [
+                {
+                    "symbol": row[0],
+                    "qty": row[1],
+                    "avg_entry": row[2],
+                    "avg_entry_price": row[2],
+                    "market_value": row[3],
+                    "unreal_pl": row[4],
+                    "unrealized_pl": row[4],
+                    "protection_mode": "Unknown",
+                    "protection_summary": "Snapshot-only mode; no live Alpaca protection check.",
+                    "take_profit_price": None,
+                    "stop_price": None,
+                    "trailing_stop": None,
+                    "open_exit_order_count": 0,
+                }
+                for row in rows
+            ]
         return JSONResponse({"data": data})
 
     @app.get("/api/trades")
     def trades(request: Request) -> JSONResponse:
         _check_token(request)
-        rows = read_latest_trades(db_path, limit=200)
+        bot_name = _bot_name(request)
+        rows = read_latest_trades(db_path, limit=200, bot_name=bot_name)
         data = [
             {
                 "ts": row[0],
@@ -115,7 +155,8 @@ def create_app(db_path: str) -> FastAPI:
     @app.get("/api/advisor")
     def advisor(request: Request) -> JSONResponse:
         _check_token(request)
-        rows = read_latest_advisor_reports(db_path, limit=10)
+        bot_name = _bot_name(request)
+        rows = read_latest_advisor_reports(db_path, limit=10, bot_name=bot_name)
         data = []
         for row in rows:
             data.append(
@@ -133,7 +174,8 @@ def create_app(db_path: str) -> FastAPI:
     @app.get("/api/strategy")
     def strategy(request: Request) -> JSONResponse:
         _check_token(request)
-        rows = read_latest_strategy_reports(db_path, limit=10)
+        bot_name = _bot_name(request)
+        rows = read_latest_strategy_reports(db_path, limit=20, bot_name=bot_name)
         data = []
         for row in rows:
             data.append(
@@ -152,12 +194,13 @@ def create_app(db_path: str) -> FastAPI:
     @app.get("/api/decisions")
     def decisions(request: Request) -> JSONResponse:
         _check_token(request)
+        bot_name = _bot_name(request)
         try:
             limit = int(request.query_params.get("limit", "50"))
         except ValueError:
             limit = 50
         limit = max(1, min(limit, 300))
-        rows = read_recent_selected_decisions(db_path, limit=limit)
+        rows = read_recent_selected_decisions(db_path, limit=limit, bot_name=bot_name)
         data = []
         for row in rows:
             data.append(
@@ -310,6 +353,8 @@ def _dashboard_html() -> str:
     <header>
       <h1>Broker Bot Dashboard</h1>
       <p>Local paper-trading monitor • Auto-refreshes every 10s</p>
+      <label class="muted" for="botSelector">Bot</label>
+      <select id="botSelector" style="width: 180px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;"></select>
     </header>
 
     <section class="summary">
@@ -337,6 +382,7 @@ def _dashboard_html() -> str:
               <th>Avg</th>
               <th>Value</th>
               <th>Unreal</th>
+              <th>Protection</th>
             </tr>
           </thead>
           <tbody id="positionsBody"></tbody>
@@ -408,9 +454,32 @@ const stdev = (arr) => {
 
 const tokenParam = new URLSearchParams(window.location.search).get('token');
 const apiHeaders = tokenParam ? { 'X-API-Token': tokenParam } : {};
+let currentBot = 'ml';
+const apiPath = (path) => {
+  const join = path.includes('?') ? '&' : '?';
+  return `${path}${join}bot=${encodeURIComponent(currentBot)}`;
+};
+
+async function loadBots() {
+  const res = await fetch('/api/bots', { headers: apiHeaders });
+  const data = await res.json();
+  const selector = document.getElementById('botSelector');
+  selector.innerHTML = '';
+  (data.data || []).forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.name;
+    option.textContent = item.label;
+    selector.appendChild(option);
+  });
+  selector.value = currentBot;
+  selector.addEventListener('change', async (event) => {
+    currentBot = event.target.value || 'ml';
+    await refreshAll();
+  });
+}
 
 async function loadSummary() {
-  const res = await fetch('/api/summary', { headers: apiHeaders });
+  const res = await fetch(apiPath('/api/summary'), { headers: apiHeaders });
   const data = await res.json();
   if (data.status !== 'ok') {
     document.getElementById('equity').textContent = '--';
@@ -426,7 +495,7 @@ async function loadSummary() {
 }
 
 async function loadEquity() {
-  const res = await fetch('/api/equity', { headers: apiHeaders });
+  const res = await fetch(apiPath('/api/equity'), { headers: apiHeaders });
   const data = await res.json();
   const points = data.data || [];
   const canvas = document.getElementById('equityChart');
@@ -506,7 +575,7 @@ async function loadEquity() {
 }
 
 async function loadPositions() {
-  const res = await fetch('/api/positions', { headers: apiHeaders });
+  const res = await fetch(apiPath('/api/positions'), { headers: apiHeaders });
   const data = await res.json();
   const body = document.getElementById('positionsBody');
   body.innerHTML = '';
@@ -518,13 +587,14 @@ async function loadPositions() {
       <td>${fmt(row.avg_entry)}</td>
       <td>${fmt(row.market_value)}</td>
       <td>${fmt(row.unreal_pl)}</td>
+      <td>${row.protection_mode || 'None'}<br /><span class="muted">${row.protection_summary || ''}</span></td>
     `;
     body.appendChild(tr);
   });
 }
 
 async function loadTrades() {
-  const res = await fetch('/api/trades', { headers: apiHeaders });
+  const res = await fetch(apiPath('/api/trades'), { headers: apiHeaders });
   const data = await res.json();
   const body = document.getElementById('tradesBody');
   body.innerHTML = '';
@@ -544,7 +614,7 @@ async function loadTrades() {
 }
 
 async function loadAdvisor() {
-  const res = await fetch('/api/advisor', { headers: apiHeaders });
+  const res = await fetch(apiPath('/api/advisor'), { headers: apiHeaders });
   const data = await res.json();
   const reports = data.data || [];
   const container = document.getElementById('advisorReports');
@@ -581,7 +651,7 @@ function renderComponents(components) {
 }
 
 async function loadStrategy() {
-  const res = await fetch('/api/strategy', { headers: apiHeaders });
+  const res = await fetch(apiPath('/api/strategy'), { headers: apiHeaders });
   const data = await res.json();
   const reports = data.data || [];
   const container = document.getElementById('strategyReports');
@@ -590,7 +660,20 @@ async function loadStrategy() {
     return;
   }
   container.innerHTML = '';
-  reports.slice(0, 4).forEach(report => {
+  const featuredTypes = new Set(['watchlist', 'options_scaffold']);
+  reports.filter(report => featuredTypes.has(report.report_type)).slice(0, 2).forEach(report => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.marginBottom = '10px';
+    div.innerHTML = `
+      <strong>${report.headline}</strong> <span class="muted">(${report.ts})</span><br />
+      ${report.summary}<br />
+      <span class="muted">Type: ${report.report_type}</span><br />
+      <div class="muted" style="white-space: pre-wrap; margin-top: 8px;">${(report.body || '').slice(0, 1600)}</div>
+    `;
+    container.appendChild(div);
+  });
+  reports.filter(report => !featuredTypes.has(report.report_type)).slice(0, 4).forEach(report => {
     const div = document.createElement('div');
     div.className = 'card';
     div.style.marginBottom = '10px';
@@ -605,7 +688,7 @@ async function loadStrategy() {
 }
 
 async function loadDecisions() {
-  const res = await fetch('/api/decisions?limit=40', { headers: apiHeaders });
+  const res = await fetch(apiPath('/api/decisions?limit=40'), { headers: apiHeaders });
   const data = await res.json();
   const body = document.getElementById('decisionsBody');
   body.innerHTML = '';
@@ -631,7 +714,7 @@ async function refreshAll() {
   await Promise.all([loadSummary(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadStrategy(), loadDecisions()]);
 }
 
-refreshAll();
+loadBots().then(refreshAll);
 setInterval(refreshAll, 10000);
 </script>
 </body>

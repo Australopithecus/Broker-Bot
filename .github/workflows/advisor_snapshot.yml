@@ -37,6 +37,10 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           ALPACA_PAPER_URL: ${{ secrets.ALPACA_PAPER_URL }}
           ALPACA_DATA_FEED: ${{ secrets.ALPACA_DATA_FEED }}
+          ALPACA_LLM_API_KEY: ${{ secrets.ALPACA_LLM_API_KEY }}
+          ALPACA_LLM_SECRET_KEY: ${{ secrets.ALPACA_LLM_SECRET_KEY }}
+          ALPACA_LLM_PAPER_URL: ${{ secrets.ALPACA_LLM_PAPER_URL }}
+          ALPACA_LLM_DATA_FEED: ${{ secrets.ALPACA_LLM_DATA_FEED }}
         run: |
           python scripts/restore_db_from_snapshot.py
 
@@ -46,6 +50,10 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           ALPACA_PAPER_URL: ${{ secrets.ALPACA_PAPER_URL }}
           ALPACA_DATA_FEED: ${{ secrets.ALPACA_DATA_FEED }}
+          ALPACA_LLM_API_KEY: ${{ secrets.ALPACA_LLM_API_KEY }}
+          ALPACA_LLM_SECRET_KEY: ${{ secrets.ALPACA_LLM_SECRET_KEY }}
+          ALPACA_LLM_PAPER_URL: ${{ secrets.ALPACA_LLM_PAPER_URL }}
+          ALPACA_LLM_DATA_FEED: ${{ secrets.ALPACA_LLM_DATA_FEED }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_ENABLED: ${{ secrets.LLM_ENABLED }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
@@ -54,7 +62,18 @@ jobs:
           python - <<'PY'
           import os
           required = ["ALPACA_API_KEY", "ALPACA_SECRET_KEY"]
-          optional = ["ALPACA_PAPER_URL", "ALPACA_DATA_FEED", "OPENAI_API_KEY", "LLM_ENABLED", "LLM_MODEL", "API_TOKEN"]
+          optional = [
+              "ALPACA_PAPER_URL",
+              "ALPACA_DATA_FEED",
+              "ALPACA_LLM_API_KEY",
+              "ALPACA_LLM_SECRET_KEY",
+              "ALPACA_LLM_PAPER_URL",
+              "ALPACA_LLM_DATA_FEED",
+              "OPENAI_API_KEY",
+              "LLM_ENABLED",
+              "LLM_MODEL",
+              "API_TOKEN",
+          ]
           missing = [name for name in required if not os.getenv(name, "").strip()]
           if missing:
               raise SystemExit(f"Missing required GitHub Actions secrets: {', '.join(missing)}")
@@ -69,6 +88,10 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           ALPACA_PAPER_URL: ${{ secrets.ALPACA_PAPER_URL }}
           ALPACA_DATA_FEED: ${{ secrets.ALPACA_DATA_FEED }}
+          ALPACA_LLM_API_KEY: ${{ secrets.ALPACA_LLM_API_KEY }}
+          ALPACA_LLM_SECRET_KEY: ${{ secrets.ALPACA_LLM_SECRET_KEY }}
+          ALPACA_LLM_PAPER_URL: ${{ secrets.ALPACA_LLM_PAPER_URL }}
+          ALPACA_LLM_DATA_FEED: ${{ secrets.ALPACA_LLM_DATA_FEED }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_ENABLED: ${{ secrets.LLM_ENABLED }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
@@ -84,6 +107,10 @@ jobs:
             echo "ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}"
             echo "ALPACA_PAPER_URL=${ALPACA_PAPER_URL}"
             echo "ALPACA_DATA_FEED=${ALPACA_DATA_FEED}"
+            echo "ALPACA_LLM_API_KEY=${ALPACA_LLM_API_KEY}"
+            echo "ALPACA_LLM_SECRET_KEY=${ALPACA_LLM_SECRET_KEY}"
+            echo "ALPACA_LLM_PAPER_URL=${ALPACA_LLM_PAPER_URL}"
+            echo "ALPACA_LLM_DATA_FEED=${ALPACA_LLM_DATA_FEED}"
             echo "OPENAI_API_KEY=${OPENAI_API_KEY}"
             echo "LLM_ENABLED=${LLM_ENABLED}"
             echo "LLM_MODEL=${LLM_MODEL}"
@@ -168,6 +195,25 @@ jobs:
       - name: Generate strategy report
         run: |
           python -m broker_bot.cli strategy-report
+
+      - name: Rebalance LLM paper portfolio
+        if: ${{ secrets.ALPACA_LLM_API_KEY != '' && secrets.ALPACA_LLM_SECRET_KEY != '' }}
+        run: |
+          python -m broker_bot.cli rebalance-llm
+
+      - name: Snapshot LLM account
+        if: ${{ secrets.ALPACA_LLM_API_KEY != '' && secrets.ALPACA_LLM_SECRET_KEY != '' }}
+        run: |
+          python -m broker_bot.cli snapshot-llm
+
+      - name: Generate LLM coach report
+        if: ${{ secrets.ALPACA_LLM_API_KEY != '' && secrets.ALPACA_LLM_SECRET_KEY != '' }}
+        run: |
+          python -m broker_bot.cli review-decisions-llm
+
+      - name: Generate options scaffold report
+        run: |
+          python -m broker_bot.cli options-report
 
       - name: Build dashboard snapshot
         run: |

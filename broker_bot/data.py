@@ -9,7 +9,7 @@ from alpaca.data import StockBarsRequest
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.timeframe import TimeFrame
 
-from .config import Config
+from .config import Config, get_bot_account_config
 
 @dataclass
 class MarketData:
@@ -22,14 +22,21 @@ def _to_utc(dt: datetime) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
-def fetch_daily_bars(config: Config, symbols: Iterable[str], start: datetime, end: datetime) -> MarketData:
-    client = StockHistoricalDataClient(config.alpaca_api_key, config.alpaca_secret_key)
+def fetch_daily_bars(
+    config: Config,
+    symbols: Iterable[str],
+    start: datetime,
+    end: datetime,
+    bot_name: str = "ml",
+) -> MarketData:
+    account = get_bot_account_config(config, bot_name)
+    client = StockHistoricalDataClient(account.api_key, account.secret_key)
     request = StockBarsRequest(
         symbol_or_symbols=list(symbols),
         timeframe=TimeFrame.Day,
         start=_to_utc(start),
         end=_to_utc(end),
-        feed=config.alpaca_data_feed,
+        feed=account.data_feed,
     )
     bars = client.get_stock_bars(request).df
     if bars.empty:
@@ -44,10 +51,10 @@ def default_lookback_window(days: int) -> tuple[datetime, datetime]:
     return start, end
 
 
-def fetch_latest_close(config: Config, symbol: str) -> float | None:
+def fetch_latest_close(config: Config, symbol: str, bot_name: str = "ml") -> float | None:
     end = datetime.now(timezone.utc)
     start = end - timedelta(days=10)
-    data = fetch_daily_bars(config, [symbol], start, end).bars
+    data = fetch_daily_bars(config, [symbol], start, end, bot_name=bot_name).bars
     if data.empty:
         return None
     latest = data.sort_values("timestamp").iloc[-1]

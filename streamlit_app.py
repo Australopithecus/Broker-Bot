@@ -1,6 +1,7 @@
 import os
-import json
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
+
+import pandas as pd
 import requests
 import streamlit as st
 
@@ -21,29 +22,58 @@ API_TOKEN = _secret("API_TOKEN")
 DATA_URL = _secret("DATA_URL")
 
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
-
 st.title("Broker Bot Dashboard")
-st.caption("Streamlit UI (reads from the Broker Bot API)")
+st.caption("ML Bot and LLM Bot are shown separately so their trades, reports, and account curves stay easy to compare.")
+
+
+@st.cache_data(ttl=60)
+def _load_snapshot() -> dict:
+    if not DATA_URL:
+        return {}
+    resp = requests.get(DATA_URL, timeout=20)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def _bot_query(path: str) -> str | None:
+    parsed = urlsplit(path)
+    params = parse_qs(parsed.query)
+    values = params.get("bot")
+    return values[0] if values else None
+
 
 def fetch(path: str):
     route = urlsplit(path).path
     if API_BASE:
         headers = {"X-API-Token": API_TOKEN} if API_TOKEN else {}
         url = API_BASE.rstrip("/") + path
-        resp = requests.get(url, headers=headers, timeout=15)
+        resp = requests.get(url, headers=headers, timeout=20)
         resp.raise_for_status()
         return resp.json()
     if DATA_URL:
-        resp = requests.get(DATA_URL, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
+        data = _load_snapshot()
+        bots = data.get("bots", {})
+        if not isinstance(bots, dict) or not bots:
+            bots = {"ml": data}
+        requested_bot = (_bot_query(path) or "ml").lower()
+        bot_payload = bots.get(requested_bot, {})
+
+        if route == "/api/bots":
+            return {
+                "data": [
+                    {"name": name, "label": payload.get("label", name.upper())}
+                    for name, payload in bots.items()
+                ]
+            }
         if route == "/api/summary":
-            equity = data.get("equity", [])
+            equity = bot_payload.get("equity", [])
             if not equity:
                 return {"status": "empty", "message": "No equity snapshots yet."}
             latest = equity[-1]
             return {
                 "status": "ok",
+                "bot_name": requested_bot,
+                "bot_label": bot_payload.get("label", requested_bot.upper()),
                 "ts": latest["ts"],
                 "equity": latest["equity"],
                 "cash": latest.get("cash", 0.0),
@@ -51,313 +81,228 @@ def fetch(path: str):
                 "spy": latest.get("spy_value"),
             }
         if route == "/api/equity":
-            rows = data.get("equity", [])
-            normalized = []
-            for row in rows:
-                normalized.append(
+            rows = bot_payload.get("equity", [])
+            return {
+                "data": [
                     {
                         "ts": row.get("ts"),
                         "equity": row.get("equity"),
                         "spy": row.get("spy", row.get("spy_value")),
                     }
-                )
-            return {"data": normalized}
+                    for row in rows
+                ]
+            }
         if route == "/api/positions":
-            return {"data": data.get("positions", [])}
+            return {"data": bot_payload.get("positions", [])}
         if route == "/api/trades":
-            return {"data": data.get("trades", [])}
+            return {"data": bot_payload.get("trades", [])}
         if route == "/api/advisor":
-            return {"data": data.get("advisor_reports", [])}
+            return {"data": bot_payload.get("advisor_reports", [])}
         if route == "/api/strategy":
-            return {"data": data.get("strategy_reports", [])}
+            return {"data": bot_payload.get("strategy_reports", [])}
         if route == "/api/decisions":
-            return {"data": data.get("decisions", [])}
+            return {"data": bot_payload.get("decisions", [])}
         return {}
     st.error("Set API_BASE_URL or DATA_URL in Streamlit secrets.")
     st.stop()
 
 
-try:
-    summary = fetch("/api/summary")
-except Exception as exc:
-    st.error(f"Failed to load summary: {exc}")
-    st.stop()
-
-if summary.get("status") != "ok":
-    st.warning(summary.get("message", "No data"))
-    st.stop()
-
-col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Equity", f"${summary['equity']:,.2f}")
-col2.metric("Cash", f"${summary['cash']:,.2f}")
-col3.metric("Portfolio", f"${summary['portfolio']:,.2f}")
-col4.metric("SPY", f"${summary['spy']:,.2f}" if summary.get("spy") else "--")
-col5.metric("Alpha 20D", "--")
-col6.metric("Tracking Error", "--")
+def _load_bot_names() -> list[tuple[str, str]]:
+    try:
+        response = fetch("/api/bots")
+    except Exception:
+        return [("ml", "ML Bot")]
+    rows = response.get("data", [])
+    names = []
+    for row in rows:
+        name = str(row.get("name", "")).strip().lower()
+        label = str(row.get("label", name.upper())).strip()
+        if name:
+            names.append((name, label))
+    return names or [("ml", "ML Bot")]
 
 
-equity = fetch("/api/equity?limit=1000").get("data", [])
-if equity:
-    import pandas as pd
-
-    df = pd.DataFrame(equity)
+def _equity_df(bot_name: str) -> pd.DataFrame:
+    rows = fetch(f"/api/equity?bot={bot_name}&limit=1000").get("data", [])
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
     if "spy" not in df.columns and "spy_value" in df.columns:
         df["spy"] = df["spy_value"]
     df["equity"] = pd.to_numeric(df["equity"], errors="coerce")
     if "spy" in df.columns:
         df["spy"] = pd.to_numeric(df["spy"], errors="coerce")
-    df["ts"] = pd.to_datetime(df["ts"])
+    df["ts"] = pd.to_datetime(df["ts"], errors="coerce")
     df = df.dropna(subset=["ts", "equity"]).sort_values("ts")
+    if df.empty:
+        return df
     df = df.set_index("ts")
-    df = df[~df.index.duplicated(keep="last")]
-    st.subheader("Equity vs SPY")
+    return df[~df.index.duplicated(keep="last")]
 
-    coverage_days = max((df.index.max() - df.index.min()).days, 0)
-    coverage_label = (
-        f"Data coverage: {coverage_days} day(s) • {len(df)} point(s) • "
-        f"latest: {df.index.max().strftime('%Y-%m-%d %H:%M')}"
-    )
-    st.caption(coverage_label)
 
-    range_options = {
-        "24h": pd.Timedelta(hours=24),
-        "7 days": pd.Timedelta(days=7),
-        "28 days": pd.Timedelta(days=28),
-        "90 days": pd.Timedelta(days=90),
-        "180 days": pd.Timedelta(days=180),
-        "1 year": pd.Timedelta(days=365),
-        "All": None,
-    }
-    selected_range = st.radio(
-        "X-axis range",
-        options=list(range_options.keys()),
-        index=3,
-        horizontal=True,
-    )
+def _alpha_tracking(df: pd.DataFrame) -> tuple[float | None, float | None]:
+    if df.empty or "spy" not in df.columns:
+        return None, None
+    window = df[["equity", "spy"]].dropna().tail(21)
+    if len(window) < 21:
+        return None, None
+    bot_ret = window["equity"].iloc[-1] / window["equity"].iloc[0] - 1
+    spy_ret = window["spy"].iloc[-1] / window["spy"].iloc[0] - 1
+    diffs = window["equity"].pct_change().dropna() - window["spy"].pct_change().dropna()
+    return float(bot_ret - spy_ret), float(diffs.std())
 
-    chart_source = df.copy()
-    lookback = range_options[selected_range]
-    if lookback is not None and not chart_source.empty:
-        cutoff = chart_source.index.max() - lookback
-        chart_source = chart_source[chart_source.index >= cutoff]
 
-    if chart_source.empty:
-        st.caption("No equity points in the selected range yet.")
-        chart_source = df.copy()
+def _fmt_money(value) -> str:
+    if value is None:
+        return "--"
+    return f"${float(value):,.2f}"
 
-    st.caption(
-        f"Window: {chart_source.index.min().strftime('%Y-%m-%d %H:%M')} to "
-        f"{chart_source.index.max().strftime('%Y-%m-%d %H:%M')} "
-        f"({len(chart_source)} points)"
-    )
-    if len(chart_source) < 3:
-        st.info("Limited history in this window, so the curve may look flat or sparse.")
 
-    plot_df = chart_source[["equity"]].copy()
-    if "spy" in chart_source.columns and chart_source["spy"].notna().sum() > 1:
-        base_equity = chart_source["equity"].iloc[0]
-        spy_base = chart_source["spy"].dropna().iloc[0]
-        spy_norm = (chart_source["spy"] / spy_base) * base_equity
-        plot_df["spy"] = spy_norm
+def _fmt_pct(value) -> str:
+    if value is None:
+        return "--"
+    return f"{float(value) * 100:.2f}%"
 
-        # Alpha and tracking error (20D)
-        window = df[["equity", "spy"]].dropna().tail(21)
-        if len(window) >= 21:
-            bot_ret = window["equity"].iloc[-1] / window["equity"].iloc[0] - 1
-            spy_ret = window["spy"].iloc[-1] / window["spy"].iloc[0] - 1
-            alpha = bot_ret - spy_ret
-            diffs = window["equity"].pct_change().dropna() - window["spy"].pct_change().dropna()
-            tracking_error = diffs.std()
-            col5.metric("Alpha 20D", f"{alpha * 100:.2f}%")
-            col6.metric("Tracking Error", f"{tracking_error * 100:.2f}%")
 
+bot_names = _load_bot_names()
+comparison_frames: dict[str, pd.DataFrame] = {name: _equity_df(name) for name, _ in bot_names}
+
+st.subheader("Bot Comparison")
+comparison_df = pd.DataFrame()
+for name, label in bot_names:
+    df = comparison_frames.get(name, pd.DataFrame())
+    if df.empty:
+        continue
+    comparison_df[label] = df["equity"]
+
+if not comparison_df.empty:
     try:
         import plotly.graph_objects as go
 
-        overlap_with_spy = False
-        if "spy" in plot_df.columns:
-            aligned = plot_df[["equity", "spy"]].dropna()
-            if not aligned.empty:
-                max_diff = (aligned["equity"] - aligned["spy"]).abs().max()
-                scale = max(float(aligned["equity"].abs().max()), 1.0)
-                overlap_with_spy = max_diff <= (scale * 1e-6)
-
         fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=plot_df.index,
-                y=plot_df["equity"],
-                mode="lines+markers",
-                name="Bot",
-                line={"width": 3, "color": "#1f77b4"},
-                marker={"size": 7},
-            )
-        )
-        if "spy" in plot_df.columns:
-            spy_mode = "markers" if overlap_with_spy else "lines+markers"
+        for column in comparison_df.columns:
             fig.add_trace(
                 go.Scatter(
-                    x=plot_df.index,
-                    y=plot_df["spy"],
-                    mode=spy_mode,
-                    name="S&P 500 (normalized)",
-                    line={"width": 2, "dash": "dot", "color": "#79bdf2"},
-                    marker={"size": 10 if overlap_with_spy else 7, "symbol": "x"},
-                    opacity=0.85,
+                    x=comparison_df.index,
+                    y=comparison_df[column],
+                    mode="lines+markers",
+                    name=column,
                 )
             )
-        fig.update_layout(
-            height=360,
-            margin={"l": 10, "r": 10, "t": 10, "b": 10},
-            legend={"orientation": "h", "y": 1.02, "x": 0},
-        )
+        fig.update_layout(height=360, margin={"l": 10, "r": 10, "t": 10, "b": 10})
         st.plotly_chart(fig, use_container_width=True)
-        if overlap_with_spy:
-            st.caption("Bot and S&P 500 are nearly identical in this window; S&P is shown as X markers so both remain visible.")
     except Exception:
-        st.line_chart(plot_df)
+        st.line_chart(comparison_df)
+else:
+    st.caption("No bot equity history available yet.")
 
-positions = fetch("/api/positions").get("data", [])
-trades = fetch("/api/trades").get("data", [])
-advisor = fetch("/api/advisor").get("data", [])
-strategy_reports = fetch("/api/strategy").get("data", [])
-decisions = fetch("/api/decisions?limit=50").get("data", [])
+tabs = st.tabs([label for _, label in bot_names])
 
-st.subheader("Positions")
-if positions:
-    st.dataframe(positions, use_container_width=True)
+for tab, (bot_name, bot_label_text) in zip(tabs, bot_names):
+    with tab:
+        summary = fetch(f"/api/summary?bot={bot_name}")
+        if summary.get("status") != "ok":
+            st.warning(summary.get("message", f"No {bot_label_text} data yet."))
+            continue
 
-    try:
-        import pandas as pd
-        pos_df = pd.DataFrame(positions)
-        if "market_value" in pos_df.columns:
-            pos_df["market_value"] = pd.to_numeric(pos_df["market_value"], errors="coerce").fillna(0.0)
-            pos_df = pos_df[pos_df["market_value"] != 0]
-            if not pos_df.empty:
-                pos_df["abs_value"] = pos_df["market_value"].abs()
-                pos_df["side"] = pos_df["market_value"].apply(lambda v: "Short" if v < 0 else "Long")
-                chart_df = pos_df.set_index("symbol")["abs_value"]
-                st.subheader("Holdings Allocation")
-                st.caption("Ring chart based on absolute market value. Shorts are slightly separated.")
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        col1.metric("Equity", _fmt_money(summary.get("equity")))
+        col2.metric("Cash", _fmt_money(summary.get("cash")))
+        col3.metric("Portfolio", _fmt_money(summary.get("portfolio")))
+        col4.metric("SPY", _fmt_money(summary.get("spy")) if summary.get("spy") is not None else "--")
 
-                # Add cash as a slice if available
-                cash_value = summary.get("cash")
-                chart_labels = chart_df.index.tolist()
-                chart_values = chart_df.values.tolist()
-                chart_pulls = [0.08 if s == "Short" else 0.0 for s in pos_df["side"]]
+        df = comparison_frames.get(bot_name, pd.DataFrame())
+        alpha, tracking_error = _alpha_tracking(df)
+        col5.metric("Alpha 20D", _fmt_pct(alpha))
+        col6.metric("Tracking Error", _fmt_pct(tracking_error))
 
-                if cash_value is not None:
-                    chart_labels.append("CASH")
-                    chart_values.append(abs(float(cash_value)))
-                    chart_pulls.append(0.0)
+        if not df.empty:
+            st.subheader(f"{bot_label_text} Equity vs SPY")
+            plot_df = df[["equity"]].copy()
+            if "spy" in df.columns and df["spy"].notna().sum() > 1:
+                base_equity = df["equity"].iloc[0]
+                spy_base = df["spy"].dropna().iloc[0]
+                plot_df["spy"] = (df["spy"] / spy_base) * base_equity
+            try:
+                import plotly.graph_objects as go
 
-                long_count = int((pos_df["side"] == "Long").sum())
-                short_count = int((pos_df["side"] == "Short").sum())
-                st.caption(f"Legend counts — Long: {long_count} | Short: {short_count}")
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df["equity"], mode="lines+markers", name=bot_label_text))
+                if "spy" in plot_df.columns:
+                    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df["spy"], mode="lines+markers", name="SPY (normalized)"))
+                fig.update_layout(height=320, margin={"l": 10, "r": 10, "t": 10, "b": 10})
+                st.plotly_chart(fig, use_container_width=True)
+            except Exception:
+                st.line_chart(plot_df)
 
-                st.plotly_chart(
-                    {
-                        "data": [
-                            {
-                                "labels": chart_labels,
-                                "values": chart_values,
-                                "type": "pie",
-                                "hole": 0.5,
-                                "pull": chart_pulls,
-                                "hovertemplate": "%{label}<br>$%{value:,.2f}<br>%{percent}<extra></extra>",
-                            }
-                        ],
-                        "layout": {"showlegend": True},
-                    },
-                    use_container_width=True,
+        positions = fetch(f"/api/positions?bot={bot_name}").get("data", [])
+        trades = fetch(f"/api/trades?bot={bot_name}").get("data", [])
+        advisor = fetch(f"/api/advisor?bot={bot_name}").get("data", [])
+        strategy_reports = fetch(f"/api/strategy?bot={bot_name}").get("data", [])
+        decisions = fetch(f"/api/decisions?bot={bot_name}&limit=50").get("data", [])
+
+        st.subheader("Positions")
+        if positions:
+            if any(row.get("protection_mode") for row in positions):
+                st.caption("Broker-side protection is shown when Alpaca has exits resting for this bot's account.")
+            st.dataframe(positions, use_container_width=True)
+        else:
+            st.caption("No positions logged yet.")
+
+        st.subheader("Recent Trades")
+        if trades:
+            st.dataframe(trades, use_container_width=True)
+        else:
+            st.caption("No trades logged yet.")
+
+        st.subheader("Reports")
+        if advisor:
+            st.markdown("**Advisor Reports**")
+            for report in advisor[:3]:
+                st.markdown(f"**{report.get('headline','Advisor Report')}** — {report.get('ts','')}")
+                st.write(report.get("summary", ""))
+                st.divider()
+
+        if strategy_reports:
+            for report in strategy_reports[:8]:
+                st.markdown(f"**[{report.get('report_type','report')}] {report.get('headline','Report')}** — {report.get('ts','')}")
+                st.write(report.get("summary", ""))
+                with st.expander("Show report body"):
+                    st.markdown(report.get("body", ""))
+                st.divider()
+        else:
+            st.caption("No strategy reports yet.")
+
+        st.subheader("Recent Decisions")
+        if decisions:
+            decision_df = pd.DataFrame(decisions)
+            for column in ["base_score", "final_score", "signed_return", "beat_spy"]:
+                if column in decision_df.columns:
+                    decision_df[column] = pd.to_numeric(decision_df[column], errors="coerce")
+            if "components" in decision_df.columns:
+                decision_df["component_summary"] = decision_df["components"].apply(
+                    lambda comp: ", ".join(
+                        f"{k.replace('_adjustment', '')}={float(v):+.4f}"
+                        for k, v in sorted((comp or {}).items(), key=lambda item: abs(float(item[1])), reverse=True)
+                        if abs(float(v)) >= 0.0001
+                    )[:220]
+                    if isinstance(comp, dict)
+                    else ""
                 )
-    except Exception:
-        pass
-else:
-    st.caption("No positions logged yet.")
-
-st.subheader("Recent Trades")
-if trades:
-    st.dataframe(trades, use_container_width=True)
-else:
-    st.caption("No trades logged yet.")
-
-st.subheader("Advisor Reports")
-if advisor:
-    for report in advisor[:5]:
-        st.markdown(f"**{report.get('headline','Advisor Report')}** — {report.get('ts','')}")
-        st.write(report.get("summary", ""))
-        suggestions = report.get("suggestions", [])
-        if suggestions:
-            st.markdown("**Suggestions**")
-            for s in suggestions:
-                st.markdown(f"- {s}")
-        overrides = report.get("overrides", {})
-        if overrides:
-            st.caption("Overrides: " + ", ".join([f"{k}={v}" for k, v in overrides.items()]))
-        st.divider()
-else:
-    st.caption("No advisor reports yet.")
-
-st.subheader("Strategy Reports")
-if strategy_reports:
-    watchlist_reports = [report for report in strategy_reports if report.get("report_type") == "watchlist"]
-    standard_reports = [report for report in strategy_reports if report.get("report_type") != "watchlist"]
-
-    if watchlist_reports:
-        latest_watchlist = watchlist_reports[0]
-        st.markdown(f"**{latest_watchlist.get('headline','Watchlist Report')}** — {latest_watchlist.get('ts','')}")
-        st.write(latest_watchlist.get("summary", ""))
-        st.markdown(latest_watchlist.get("body", ""))
-        st.divider()
-
-    for report in standard_reports[:5]:
-        st.markdown(f"**{report.get('headline','Strategy Report')}** — {report.get('ts','')}")
-        st.write(report.get("summary", ""))
-        changes = report.get("changes", {})
-        if changes:
-            st.caption("Changes: " + ", ".join([f"{k}={v}" for k, v in changes.items()]))
-        with st.expander("Show full report body"):
-            st.markdown(report.get("body", ""))
-        st.divider()
-else:
-    st.caption("No strategy reports yet.")
-
-st.subheader("Recent Decisions")
-if decisions:
-    try:
-        import pandas as pd
-
-        decision_df = pd.DataFrame(decisions)
-        for column in ["base_score", "final_score", "signed_return", "beat_spy"]:
-            if column in decision_df.columns:
-                decision_df[column] = pd.to_numeric(decision_df[column], errors="coerce")
-        if "components" in decision_df.columns:
-            decision_df["component_summary"] = decision_df["components"].apply(
-                lambda comp: ", ".join(
-                    f"{k.replace('_adjustment', '')}={float(v):+.4f}"
-                    for k, v in sorted((comp or {}).items(), key=lambda item: abs(float(item[1])), reverse=True)
-                    if abs(float(v)) >= 0.0001
-                )[:200]
-                if isinstance(comp, dict)
-                else ""
-            )
-        display_cols = [
-            col for col in [
-                "ts",
-                "symbol",
-                "side",
-                "base_score",
-                "final_score",
-                "signed_return",
-                "beat_spy",
-                "outcome_label",
-                "rationale",
-                "component_summary",
-            ] if col in decision_df.columns
-        ]
-        st.dataframe(decision_df[display_cols], use_container_width=True)
-    except Exception:
-        st.write(decisions)
-else:
-    st.caption("No decision logs yet.")
+            display_cols = [
+                col for col in [
+                    "ts",
+                    "symbol",
+                    "side",
+                    "base_score",
+                    "final_score",
+                    "signed_return",
+                    "beat_spy",
+                    "outcome_label",
+                    "rationale",
+                    "component_summary",
+                ] if col in decision_df.columns
+            ]
+            st.dataframe(decision_df[display_cols], use_container_width=True)
+        else:
+            st.caption("No decision logs yet.")
