@@ -328,6 +328,8 @@ with trend_col:
                 margin={"l": 10, "r": 10, "t": 10, "b": 10},
                 yaxis_title="Indexed Performance",
             )
+            if global_latest is not None:
+                fig.update_xaxes(range=[global_latest - selected_window, global_latest])
             st.plotly_chart(fig, use_container_width=True)
         except Exception:
             st.line_chart(trend_df)

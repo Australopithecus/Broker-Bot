@@ -718,8 +718,8 @@ async function loadEquity() {
   const yValues = allLines.flatMap(line => line.points.map(point => point.y));
   const min = Math.min(...yValues);
   const max = Math.max(...yValues);
-  const xMin = Math.min(...xValues);
-  const xMax = Math.max(...xValues);
+  const xMin = cutoffTs === null ? Math.min(...xValues) : cutoffTs;
+  const xMax = latestTs === null ? Math.max(...xValues) : latestTs;
   const pad = 20;
   const yPad = Math.max((max - min) * 0.12, 2);
   const scaleX = (value) => pad + (canvas.width - pad * 2) * ((value - xMin) / (xMax - xMin || 1));
@@ -753,7 +753,9 @@ async function loadEquity() {
 
   const legend = allLines.map(line => `${line.colorLabel}: ${line.label}`).join(' • ');
   const omittedText = omittedBots.length ? ` • No data in window: ${omittedBots.join(', ')}` : '';
-  document.getElementById('equityHint').textContent = `${currentRange} window • Normalized to 100 at the start of the selected window • Range: ${min.toFixed(1)} to ${max.toFixed(1)} • ${legend}${omittedText}`;
+  const xStartLabel = new Date(xMin).toLocaleString();
+  const xEndLabel = new Date(xMax).toLocaleString();
+  document.getElementById('equityHint').textContent = `${currentRange} window (${xStartLabel} to ${xEndLabel}) • Normalized to 100 at the start of the selected window • Range: ${min.toFixed(1)} to ${max.toFixed(1)} • ${legend}${omittedText}`;
 
   // Alpha + tracking error (20D) if we have SPY values
   const aligned = (selectedCurve?.points || [])
