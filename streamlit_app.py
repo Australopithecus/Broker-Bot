@@ -183,7 +183,13 @@ def _filter_frame_to_window(df: pd.DataFrame, window: pd.Timedelta, anchor_ts=No
         return df
     latest = anchor_ts if anchor_ts is not None else df.index.max()
     cutoff = latest - window
-    filtered = df[df.index >= cutoff]
+    before_cutoff = df[df.index < cutoff].tail(1)
+    in_window = df[df.index >= cutoff]
+    if in_window.empty:
+        fallback = df.tail(2)
+        return fallback.sort_index()
+    filtered = pd.concat([before_cutoff, in_window])
+    filtered = filtered[~filtered.index.duplicated(keep="last")]
     return filtered.sort_index()
 
 
@@ -208,6 +214,48 @@ def _fmt_pct(value) -> str:
     return f"{float(value) * 100:.2f}%"
 
 
+def _positions_df(bot_name: str) -> pd.DataFrame:
+    rows = fetch(f"/api/positions?bot={bot_name}").get("data", [])
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    for column in ["qty", "avg_entry", "avg_entry_price", "market_value", "unreal_pl", "unrealized_pl"]:
+        if column in df.columns:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+    return df
+
+
+def _holdings_slices(selected_bots: list[tuple[str, str]]) -> pd.DataFrame:
+    slices: list[dict[str, object]] = []
+    multi_bot = len(selected_bots) > 1
+    for bot_name, bot_label in selected_bots:
+        positions_df = _positions_df(bot_name)
+        if positions_df.empty or "market_value" not in positions_df.columns:
+            continue
+        positions_df = positions_df.dropna(subset=["market_value"])
+        positions_df = positions_df[positions_df["market_value"] != 0]
+        if positions_df.empty:
+            continue
+        positions_df["abs_value"] = positions_df["market_value"].abs()
+        positions_df["side"] = positions_df["market_value"].apply(lambda value: "Short" if value < 0 else "Long")
+        for row in positions_df.to_dict(orient="records"):
+            symbol = str(row.get("symbol", "")).strip() or "Unknown"
+            label = f"{bot_label}: {symbol}" if multi_bot else symbol
+            slices.append(
+                {
+                    "label": label,
+                    "bot_label": bot_label,
+                    "symbol": symbol,
+                    "value": float(row.get("abs_value", 0.0)),
+                    "side": row.get("side", "Long"),
+                }
+            )
+    if not slices:
+        return pd.DataFrame()
+    holdings_df = pd.DataFrame(slices).sort_values("value", ascending=False)
+    return holdings_df[holdings_df["value"] > 0]
+
+
 bot_names = _load_bot_names()
 comparison_frames: dict[str, pd.DataFrame] = {name: _equity_df(name) for name, _ in bot_names}
 snapshot_meta = _load_snapshot() if DATA_URL else {}
@@ -229,9 +277,11 @@ elif DATA_URL:
 else:
     st.caption("Using live API data.")
 trend_df = pd.DataFrame()
+spy_trend = pd.Series(dtype=float)
 global_latest = max((df.index.max() for df in comparison_frames.values() if not df.empty), default=None)
 excluded_labels: list[str] = []
 selected_labels = set(display_labels if selected_display == "Both models" else [selected_display])
+selected_bots = [(name, label) for name, label in bot_names if label in selected_labels]
 for name, label in bot_names:
     df = comparison_frames.get(name, pd.DataFrame())
     if df.empty:
@@ -242,34 +292,76 @@ for name, label in bot_names:
     if len(filtered) < 2:
         excluded_labels.append(label)
         continue
-    trend_df[label] = filtered["equity"]
+    trend_df[label] = _normalized_series(filtered["equity"])
+    if spy_trend.empty and "spy" in filtered.columns and filtered["spy"].notna().sum() > 1:
+        spy_trend = _normalized_series(filtered["spy"])
+
+if not spy_trend.empty:
+    trend_df["SPY"] = spy_trend
 
 trend_df = trend_df.sort_index()
 
-if not trend_df.empty:
-    try:
-        import plotly.graph_objects as go
+trend_col, holdings_col = st.columns([2.2, 1])
 
-        fig = go.Figure()
-        for column in trend_df.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=trend_df.index,
-                    y=trend_df[column],
-                    mode="lines",
-                    name=column,
+with trend_col:
+    st.caption("Indexed to 100 at the first visible point in the selected window.")
+    if not trend_df.empty:
+        try:
+            import plotly.graph_objects as go
+
+            fig = go.Figure()
+            for column in trend_df.columns:
+                trace_kwargs = {}
+                if column == "SPY":
+                    trace_kwargs["line"] = {"dash": "dash"}
+                fig.add_trace(
+                    go.Scatter(
+                        x=trend_df.index,
+                        y=trend_df[column],
+                        mode="lines+markers",
+                        name=column,
+                        **trace_kwargs,
+                    )
                 )
+            fig.update_layout(
+                height=360,
+                margin={"l": 10, "r": 10, "t": 10, "b": 10},
+                yaxis_title="Indexed Performance",
             )
-        fig.update_layout(
-            height=360,
-            margin={"l": 10, "r": 10, "t": 10, "b": 10},
-            yaxis_title="Equity ($)",
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    except Exception:
-        st.line_chart(trend_df)
-else:
-    st.caption("No bot equity history is available for the selected date range.")
+            st.plotly_chart(fig, use_container_width=True)
+        except Exception:
+            st.line_chart(trend_df)
+    else:
+        st.caption("No bot equity history is available for the selected date range.")
+
+with holdings_col:
+    st.subheader("Current Holdings")
+    holdings_df = _holdings_slices(selected_bots)
+    if not holdings_df.empty:
+        try:
+            import plotly.graph_objects as go
+
+            colors = ["#34d399" if side == "Long" else "#f87171" for side in holdings_df["side"]]
+            fig = go.Figure(
+                data=[
+                    go.Pie(
+                        labels=holdings_df["label"],
+                        values=holdings_df["value"],
+                        hole=0.56,
+                        marker={"colors": colors},
+                        hovertemplate="%{label}<br>$%{value:,.2f}<br>%{percent}<extra></extra>",
+                    )
+                ]
+            )
+            fig.update_layout(height=360, margin={"l": 10, "r": 10, "t": 10, "b": 10})
+            st.plotly_chart(fig, use_container_width=True)
+            long_count = int((holdings_df["side"] == "Long").sum())
+            short_count = int((holdings_df["side"] == "Short").sum())
+            st.caption(f"Long slices: {long_count} • Short slices: {short_count}")
+        except Exception:
+            st.dataframe(holdings_df[["label", "value", "side"]], use_container_width=True)
+    else:
+        st.caption("No current holdings are available for the selected model view.")
 
 if excluded_labels:
     st.caption(f"No recent data in the selected date range for: {', '.join(excluded_labels)}")

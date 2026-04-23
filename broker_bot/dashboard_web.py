@@ -341,6 +341,32 @@ def _dashboard_html() -> str:
       display: grid;
       gap: 10px;
     }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .inline-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .choice-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .choice-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
 
     @media (max-width: 900px) {
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -368,26 +394,48 @@ def _dashboard_html() -> str:
 
     <section class="grid">
       <div class="panel">
-        <h2>Bot Performance Comparison</h2>
+        <div class="panel-header">
+          <h2>Bot Performance Comparison</h2>
+          <div class="inline-controls">
+            <div class="choice-row" id="displaySelector"></div>
+            <label class="muted" for="rangeSelector">Window
+              <select id="rangeSelector" style="margin-left: 8px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;">
+                <option value="24h">24h</option>
+                <option value="7d">7d</option>
+                <option value="14d">14d</option>
+                <option value="28d">28d</option>
+                <option value="90d" selected>90d</option>
+                <option value="180d">180d</option>
+                <option value="360d">360d</option>
+              </select>
+            </label>
+          </div>
+        </div>
         <canvas id="equityChart" width="900" height="240"></canvas>
         <div class="muted" id="equityHint"></div>
       </div>
       <div class="panel">
-        <h2>Positions</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Symbol</th>
-              <th>Qty</th>
-              <th>Avg</th>
-              <th>Value</th>
-              <th>Unreal</th>
-              <th>Protection</th>
-            </tr>
-          </thead>
-          <tbody id="positionsBody"></tbody>
-        </table>
+        <h2>Current Holdings</h2>
+        <canvas id="holdingsChart" width="360" height="240"></canvas>
+        <div class="muted" id="holdingsHint"></div>
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>Positions</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Qty</th>
+            <th>Avg</th>
+            <th>Value</th>
+            <th>Unreal</th>
+            <th>Protection</th>
+          </tr>
+        </thead>
+        <tbody id="positionsBody"></tbody>
+      </table>
     </section>
 
     <section class="panel">
@@ -455,21 +503,43 @@ const stdev = (arr) => {
 const tokenParam = new URLSearchParams(window.location.search).get('token');
 const apiHeaders = tokenParam ? { 'X-API-Token': tokenParam } : {};
 let currentBot = 'ml';
+let currentRange = '90d';
+let currentDisplay = 'both';
 let availableBots = [];
+const RANGE_WINDOWS_MS = {
+  '24h': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
+  '14d': 14 * 24 * 60 * 60 * 1000,
+  '28d': 28 * 24 * 60 * 60 * 1000,
+  '90d': 90 * 24 * 60 * 60 * 1000,
+  '180d': 180 * 24 * 60 * 60 * 1000,
+  '360d': 360 * 24 * 60 * 60 * 1000,
+};
 const apiPathForBot = (path, botName) => {
   const join = path.includes('?') ? '&' : '?';
   return `${path}${join}bot=${encodeURIComponent(botName)}`;
 };
 const apiPath = (path) => apiPathForBot(path, currentBot);
 
-const normalizeSeries = (points, valueKey) => {
-  const clean = (points || [])
+const filterSeriesToWindow = (clean, cutoffTs) => {
+  if (cutoffTs === null) return clean;
+  const before = clean.filter(point => point.ts < cutoffTs);
+  const after = clean.filter(point => point.ts >= cutoffTs);
+  if (!after.length) return clean.slice(-2);
+  return before.length ? [before[before.length - 1], ...after] : after;
+};
+
+const cleanSeries = (points, valueKey) => {
+  return (points || [])
     .map(point => ({
       ts: Number(new Date(point.ts)),
       value: Number(point[valueKey]),
     }))
     .filter(point => Number.isFinite(point.ts) && Number.isFinite(point.value))
     .sort((a, b) => a.ts - b.ts);
+};
+
+const normalizeSeries = (clean) => {
   if (!clean.length) return [];
   const base = clean[0].value;
   if (!Number.isFinite(base) || base === 0) return [];
@@ -478,6 +548,31 @@ const normalizeSeries = (points, valueKey) => {
     y: (point.value / base) * 100,
     raw: point.value,
   }));
+};
+
+const renderDisplaySelector = () => {
+  const container = document.getElementById('displaySelector');
+  if (!container) return;
+  const options = [{ value: 'both', label: 'Both models' }, ...availableBots.map(bot => ({ value: bot.name, label: bot.label }))];
+  if (currentDisplay !== 'both' && !availableBots.some(bot => bot.name === currentDisplay)) {
+    currentDisplay = 'both';
+  }
+  container.innerHTML = '';
+  options.forEach(option => {
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'displayMode';
+    input.value = option.value;
+    input.checked = currentDisplay === option.value;
+    input.addEventListener('change', async (event) => {
+      currentDisplay = event.target.value || 'both';
+      await loadEquity();
+    });
+    label.appendChild(input);
+    label.append(` ${option.label}`);
+    container.appendChild(label);
+  });
 };
 
 async function loadBots() {
@@ -499,6 +594,13 @@ async function loadBots() {
   selector.addEventListener('change', async (event) => {
     currentBot = event.target.value || 'ml';
     await refreshAll();
+  });
+  renderDisplaySelector();
+  const rangeSelector = document.getElementById('rangeSelector');
+  rangeSelector.value = currentRange;
+  rangeSelector.addEventListener('change', async (event) => {
+    currentRange = event.target.value || '90d';
+    await loadEquity();
   });
 }
 
@@ -530,7 +632,17 @@ async function loadEquity() {
     };
   }));
 
-  const selectedCurve = botCurves.find(bot => bot.name === currentBot) || botCurves[0];
+  const visibleCurves = currentDisplay === 'both'
+    ? botCurves
+    : botCurves.filter(bot => bot.name === currentDisplay);
+  const selectedCurve = visibleCurves.find(bot => bot.name === currentBot)
+    || visibleCurves[0]
+    || botCurves.find(bot => bot.name === currentBot)
+    || botCurves[0];
+  const allTimestamps = botCurves.flatMap(bot => cleanSeries(bot.points, 'equity').map(point => point.ts));
+  const latestTs = allTimestamps.length ? Math.max(...allTimestamps) : null;
+  const windowMs = RANGE_WINDOWS_MS[currentRange] || RANGE_WINDOWS_MS['90d'];
+  const cutoffTs = latestTs === null ? null : latestTs - windowMs;
   const secondaryPalette = [
     { color: '#34d399', label: 'Green' },
     { color: '#f59e0b', label: 'Amber' },
@@ -538,8 +650,14 @@ async function loadEquity() {
     { color: '#60a5fa', label: 'Blue' },
   ];
   let paletteIndex = 0;
-  const equitySeries = botCurves.map(bot => {
-    const normalized = normalizeSeries(bot.points, 'equity');
+  const omittedBots = [];
+  const equitySeries = visibleCurves.map(bot => {
+    const cleaned = cleanSeries(bot.points, 'equity');
+    const filtered = filterSeriesToWindow(cleaned, cutoffTs);
+    const normalized = normalizeSeries(filtered);
+    if (cleaned.length >= 2 && filtered.length < 2) {
+      omittedBots.push(bot.label);
+    }
     if (bot.name === currentBot) {
       return {
         ...bot,
@@ -560,7 +678,9 @@ async function loadEquity() {
     };
   }).filter(bot => bot.normalized.length >= 2);
 
-  const spySeries = selectedCurve ? normalizeSeries(selectedCurve.points, 'spy') : [];
+  const selectedSpyClean = selectedCurve ? cleanSeries(selectedCurve.points, 'spy') : [];
+  const selectedSpyFiltered = filterSeriesToWindow(selectedSpyClean, cutoffTs);
+  const spySeries = normalizeSeries(selectedSpyFiltered);
   const canvas = document.getElementById('equityChart');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -569,7 +689,7 @@ async function loadEquity() {
   if (!equitySeries.length) {
     ctx.fillStyle = '#94a3b8';
     ctx.font = '14px Helvetica';
-    ctx.fillText('No equity history yet.', 20, 30);
+    ctx.fillText(`No equity history available for ${currentRange}.`, 20, 30);
     document.getElementById('equityHint').textContent = '';
     document.getElementById('alpha20').textContent = '--';
     document.getElementById('trackErr').textContent = '--';
@@ -632,7 +752,8 @@ async function loadEquity() {
   });
 
   const legend = allLines.map(line => `${line.colorLabel}: ${line.label}`).join(' • ');
-  document.getElementById('equityHint').textContent = `Normalized to 100 at each bot's first snapshot • Range: ${min.toFixed(1)} to ${max.toFixed(1)} • ${legend}`;
+  const omittedText = omittedBots.length ? ` • No data in window: ${omittedBots.join(', ')}` : '';
+  document.getElementById('equityHint').textContent = `${currentRange} window • Normalized to 100 at the start of the selected window • Range: ${min.toFixed(1)} to ${max.toFixed(1)} • ${legend}${omittedText}`;
 
   // Alpha + tracking error (20D) if we have SPY values
   const aligned = (selectedCurve?.points || [])
@@ -663,12 +784,80 @@ async function loadEquity() {
   }
 }
 
+function drawHoldingsChart(rows) {
+  const canvas = document.getElementById('holdingsChart');
+  const hint = document.getElementById('holdingsHint');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const entries = (rows || [])
+    .map(row => ({
+      symbol: row.symbol || 'Unknown',
+      value: Math.abs(Number(row.market_value || 0)),
+      side: Number(row.market_value || 0) < 0 ? 'Short' : 'Long',
+    }))
+    .filter(row => Number.isFinite(row.value) && row.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  if (!entries.length) {
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px Helvetica';
+    ctx.fillText('No current holdings.', 20, 30);
+    hint.textContent = '';
+    return;
+  }
+
+  const total = entries.reduce((sum, row) => sum + row.value, 0);
+  const palette = ['#22d3ee', '#34d399', '#f59e0b', '#f472b6', '#60a5fa', '#f87171', '#c084fc', '#facc15'];
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const outer = Math.min(canvas.width, canvas.height) * 0.38;
+  const inner = outer * 0.55;
+  let start = -Math.PI / 2;
+
+  entries.forEach((entry, index) => {
+    const angle = (entry.value / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, outer, start, start + angle);
+    ctx.closePath();
+    ctx.fillStyle = palette[index % palette.length];
+    ctx.fill();
+    start += angle;
+  });
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+  ctx.fillStyle = '#111827';
+  ctx.fill();
+
+  ctx.fillStyle = '#e5e7eb';
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 16px Helvetica';
+  ctx.fillText(currentBot.toUpperCase(), cx, cy - 8);
+  ctx.font = '12px Helvetica';
+  ctx.fillStyle = '#9ca3af';
+  ctx.fillText(fmt(total), cx, cy + 14);
+  ctx.textAlign = 'left';
+
+  const summary = entries
+    .slice(0, 5)
+    .map(entry => `${entry.symbol}: ${fmt(entry.value)}`)
+    .join(' • ');
+  const longCount = entries.filter(entry => entry.side === 'Long').length;
+  const shortCount = entries.filter(entry => entry.side === 'Short').length;
+  hint.textContent = `Top holdings • ${summary} • Long: ${longCount} • Short: ${shortCount}`;
+}
+
 async function loadPositions() {
   const res = await fetch(apiPath('/api/positions'), { headers: apiHeaders });
   const data = await res.json();
+  const rows = data.data || [];
   const body = document.getElementById('positionsBody');
   body.innerHTML = '';
-  (data.data || []).forEach(row => {
+  rows.forEach(row => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${row.symbol}</td>
@@ -680,6 +869,7 @@ async function loadPositions() {
     `;
     body.appendChild(tr);
   });
+  drawHoldingsChart(rows);
 }
 
 async function loadTrades() {
