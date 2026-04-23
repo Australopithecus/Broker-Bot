@@ -20,17 +20,33 @@ def _secret(name: str) -> str:
 API_BASE = _secret("API_BASE_URL")
 API_TOKEN = _secret("API_TOKEN")
 DATA_URL = _secret("DATA_URL")
+WINDOW_OPTIONS = {
+    "24h": pd.Timedelta(hours=24),
+    "7d": pd.Timedelta(days=7),
+    "14d": pd.Timedelta(days=14),
+    "28d": pd.Timedelta(days=28),
+    "90d": pd.Timedelta(days=90),
+    "180d": pd.Timedelta(days=180),
+    "360d": pd.Timedelta(days=360),
+}
 
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
 st.title("Broker Bot Dashboard")
-st.caption("The top chart overlays both bots on one graph for quick comparison, while the tabs below keep each bot's trades, reports, and positions separate.")
+st.caption("A single trend graph sits at the top, while the sections below keep each bot's trades, reports, and positions separate.")
 
 
 @st.cache_data(ttl=60)
 def _load_snapshot() -> dict:
     if not DATA_URL:
         return {}
-    resp = requests.get(DATA_URL, timeout=20)
+    resp = requests.get(
+        DATA_URL,
+        timeout=20,
+        headers={
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        },
+    )
     resp.raise_for_status()
     return resp.json()
 
@@ -162,6 +178,24 @@ def _normalized_series(series: pd.Series) -> pd.Series:
     return (clean / base) * 100.0
 
 
+def _filter_frame_to_window(df: pd.DataFrame, window: pd.Timedelta, anchor_ts=None) -> pd.DataFrame:
+    if df.empty:
+        return df
+    latest = anchor_ts if anchor_ts is not None else df.index.max()
+    cutoff = latest - window
+    filtered = df[df.index >= cutoff]
+    return filtered.sort_index()
+
+
+def _format_snapshot_timestamp(raw_ts: str | None) -> str | None:
+    if not raw_ts:
+        return None
+    ts = pd.to_datetime(raw_ts, errors="coerce", utc=True)
+    if pd.isna(ts):
+        return raw_ts
+    return ts.strftime("%Y-%m-%d %H:%M UTC")
+
+
 def _fmt_money(value) -> str:
     if value is None:
         return "--"
@@ -176,52 +210,69 @@ def _fmt_pct(value) -> str:
 
 bot_names = _load_bot_names()
 comparison_frames: dict[str, pd.DataFrame] = {name: _equity_df(name) for name, _ in bot_names}
+snapshot_meta = _load_snapshot() if DATA_URL else {}
+snapshot_updated = _format_snapshot_timestamp(snapshot_meta.get("generated_at") if isinstance(snapshot_meta, dict) else None)
 
-st.subheader("Bot Comparison")
-st.caption("Indexed performance, normalized to 100 at each bot's first snapshot.")
-comparison_df = pd.DataFrame()
-spy_comparison = pd.Series(dtype=float)
+st.subheader("Trend Graph")
+control_col1, control_col2 = st.columns([1, 2])
+with control_col1:
+    selected_window_key = st.selectbox("Date range", list(WINDOW_OPTIONS.keys()), index=4)
+display_labels = [label for _, label in bot_names]
+display_options = ["Both models"] + display_labels
+with control_col2:
+    selected_display = st.radio("Show", display_options, horizontal=True)
+selected_window = WINDOW_OPTIONS[selected_window_key]
+if snapshot_updated:
+    st.caption(f"Snapshot updated: {snapshot_updated}")
+elif DATA_URL:
+    st.caption("Snapshot source is configured, but no snapshot timestamp was found.")
+else:
+    st.caption("Using live API data.")
+trend_df = pd.DataFrame()
+global_latest = max((df.index.max() for df in comparison_frames.values() if not df.empty), default=None)
+excluded_labels: list[str] = []
+selected_labels = set(display_labels if selected_display == "Both models" else [selected_display])
 for name, label in bot_names:
     df = comparison_frames.get(name, pd.DataFrame())
     if df.empty:
         continue
-    comparison_df[label] = _normalized_series(df["equity"])
-    if spy_comparison.empty and "spy" in df.columns and df["spy"].notna().sum() > 1:
-        spy_comparison = _normalized_series(df["spy"])
+    if label not in selected_labels:
+        continue
+    filtered = _filter_frame_to_window(df, selected_window, anchor_ts=global_latest)
+    if len(filtered) < 2:
+        excluded_labels.append(label)
+        continue
+    trend_df[label] = filtered["equity"]
 
-if not spy_comparison.empty:
-    comparison_df["SPY"] = spy_comparison
+trend_df = trend_df.sort_index()
 
-comparison_df = comparison_df.sort_index()
-
-if not comparison_df.empty:
+if not trend_df.empty:
     try:
         import plotly.graph_objects as go
 
         fig = go.Figure()
-        for column in comparison_df.columns:
-            trace_kwargs = {}
-            if column == "SPY":
-                trace_kwargs["line"] = {"dash": "dash"}
+        for column in trend_df.columns:
             fig.add_trace(
                 go.Scatter(
-                    x=comparison_df.index,
-                    y=comparison_df[column],
-                    mode="lines+markers",
+                    x=trend_df.index,
+                    y=trend_df[column],
+                    mode="lines",
                     name=column,
-                    **trace_kwargs,
                 )
             )
         fig.update_layout(
             height=360,
             margin={"l": 10, "r": 10, "t": 10, "b": 10},
-            yaxis_title="Indexed Performance",
+            yaxis_title="Equity ($)",
         )
         st.plotly_chart(fig, use_container_width=True)
     except Exception:
-        st.line_chart(comparison_df)
+        st.line_chart(trend_df)
 else:
-    st.caption("No bot equity history available yet.")
+    st.caption("No bot equity history is available for the selected date range.")
+
+if excluded_labels:
+    st.caption(f"No recent data in the selected date range for: {', '.join(excluded_labels)}")
 
 tabs = st.tabs([label for _, label in bot_names])
 
@@ -242,25 +293,6 @@ for tab, (bot_name, bot_label_text) in zip(tabs, bot_names):
         alpha, tracking_error = _alpha_tracking(df)
         col5.metric("Alpha 20D", _fmt_pct(alpha))
         col6.metric("Tracking Error", _fmt_pct(tracking_error))
-
-        if not df.empty:
-            st.subheader(f"{bot_label_text} Equity vs SPY")
-            plot_df = df[["equity"]].copy()
-            if "spy" in df.columns and df["spy"].notna().sum() > 1:
-                base_equity = df["equity"].iloc[0]
-                spy_base = df["spy"].dropna().iloc[0]
-                plot_df["spy"] = (df["spy"] / spy_base) * base_equity
-            try:
-                import plotly.graph_objects as go
-
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df["equity"], mode="lines+markers", name=bot_label_text))
-                if "spy" in plot_df.columns:
-                    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df["spy"], mode="lines+markers", name="SPY (normalized)"))
-                fig.update_layout(height=320, margin={"l": 10, "r": 10, "t": 10, "b": 10})
-                st.plotly_chart(fig, use_container_width=True)
-            except Exception:
-                st.line_chart(plot_df)
 
         positions = fetch(f"/api/positions?bot={bot_name}").get("data", [])
         trades = fetch(f"/api/trades?bot={bot_name}").get("data", [])
