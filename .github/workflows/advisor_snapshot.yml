@@ -238,6 +238,7 @@ jobs:
         env:
           TARGET_BRANCH: ${{ github.ref_name }}
         run: |
+          set -e
           git config user.name "broker-bot"
           git config user.email "broker-bot@users.noreply.github.com"
           git add data/dashboard_snapshot.json data/learned_policy.json data/reports
@@ -246,6 +247,14 @@ jobs:
             exit 0
           fi
           git commit -m "Update broker bot cloud outputs"
-          git fetch origin "${TARGET_BRANCH}"
-          git rebase "origin/${TARGET_BRANCH}"
-          git push origin "HEAD:${TARGET_BRANCH}"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${TARGET_BRANCH}"
+            git rebase "origin/${TARGET_BRANCH}"
+            if git push origin "HEAD:${TARGET_BRANCH}"; then
+              exit 0
+            fi
+            echo "Push rejected on attempt ${attempt}; retrying after a short pause."
+            sleep 5
+          done
+          echo "Unable to push broker bot outputs after 5 attempts."
+          exit 1
