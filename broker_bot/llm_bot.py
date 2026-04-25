@@ -133,7 +133,7 @@ def _select_watchlist(config: Config, candidates: list[dict], research: dict) ->
     return symbols, summary
 
 
-def _build_fallback_analyst_report(row: dict, research: dict) -> dict:
+def _build_fallback_analyst_report(row: dict, research: dict, prediction_horizon_days: int) -> dict:
     symbol = row["symbol"]
     headlines = ((research.get("news_headlines") or {}).get(symbol) or [])[:3]
     thesis = [
@@ -152,7 +152,7 @@ def _build_fallback_analyst_report(row: dict, research: dict) -> dict:
         "current_events": current_events,
         "catalysts": ["Recent signal strength and market-data overlays put this name on the watchlist."],
         "contrary_evidence": ["The setup may be mostly model-driven if current news is thin."],
-        "time_horizon": f"{max(config.prediction_horizon_days, 1)} trading day(s)",
+        "time_horizon": f"{max(prediction_horizon_days, 1)} trading day(s)",
         "confidence": 0.55,
         "outlook": row["rationale"] or "No extra rationale recorded.",
         "risks": risks,
@@ -163,7 +163,7 @@ def _analyst_reports(config: Config, watchlist: list[dict], research: dict) -> l
     if not watchlist:
         return []
     if not llm_is_available(config):
-        return [_build_fallback_analyst_report(row, research) for row in watchlist]
+        return [_build_fallback_analyst_report(row, research, config.prediction_horizon_days) for row in watchlist]
 
     payload = {
         "objective": "Write a daily analyst memo for each watchlist stock.",
@@ -196,9 +196,12 @@ def _analyst_reports(config: Config, watchlist: list[dict], research: dict) -> l
         max_output_tokens=2600,
     )
     if not response or not isinstance(response.get("reports"), list):
-        return [_build_fallback_analyst_report(row, research) for row in watchlist]
+        return [_build_fallback_analyst_report(row, research, config.prediction_horizon_days) for row in watchlist]
 
-    reports_by_symbol = {row["symbol"]: _build_fallback_analyst_report(row, research) for row in watchlist}
+    reports_by_symbol = {
+        row["symbol"]: _build_fallback_analyst_report(row, research, config.prediction_horizon_days)
+        for row in watchlist
+    }
     for item in response.get("reports", []):
         if not isinstance(item, dict):
             continue
