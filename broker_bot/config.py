@@ -71,14 +71,25 @@ class Config:
     execution_order_mode: str
     bracket_take_profit_pct: float
     bracket_stop_loss_pct: float
+    adaptive_exits_enabled: bool
+    stop_loss_vol_multiple: float
+    take_profit_reward_multiple: float
+    min_stop_loss_pct: float
+    max_stop_loss_pct: float
     trailing_stop_enabled: bool
     trailing_stop_percent: float
     trailing_stop_price: float
     trailing_stop_time_in_force: str
+    max_sector_exposure_pct: float
+    max_correlated_exposure_pct: float
+    correlation_threshold: float
+    correlation_window: int
     options_min_dte: int
     options_max_dte: int
     options_idea_limit: int
     options_spread_width_pct: float
+    options_min_reward_risk: float
+    options_max_debit_pct_of_width: float
 
 
 def _load_json_overrides(path: str) -> dict[str, float]:
@@ -185,14 +196,25 @@ def load_config() -> Config:
         execution_order_mode=os.getenv("EXECUTION_ORDER_MODE", "simple").strip().lower() or "simple",
         bracket_take_profit_pct=float(os.getenv("BRACKET_TAKE_PROFIT_PCT", "0.04")),
         bracket_stop_loss_pct=float(os.getenv("BRACKET_STOP_LOSS_PCT", "0.02")),
+        adaptive_exits_enabled=os.getenv("ADAPTIVE_EXITS_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
+        stop_loss_vol_multiple=float(os.getenv("STOP_LOSS_VOL_MULTIPLE", "1.25")),
+        take_profit_reward_multiple=float(os.getenv("TAKE_PROFIT_REWARD_MULTIPLE", "2.0")),
+        min_stop_loss_pct=float(os.getenv("MIN_STOP_LOSS_PCT", "0.015")),
+        max_stop_loss_pct=float(os.getenv("MAX_STOP_LOSS_PCT", "0.12")),
         trailing_stop_enabled=os.getenv("TRAILING_STOP_ENABLED", "0").strip().lower() in {"1", "true", "yes", "y"},
         trailing_stop_percent=float(os.getenv("TRAILING_STOP_PERCENT", "0.0")),
         trailing_stop_price=float(os.getenv("TRAILING_STOP_PRICE", "0.0")),
         trailing_stop_time_in_force=os.getenv("TRAILING_STOP_TIF", "gtc").strip().lower() or "gtc",
+        max_sector_exposure_pct=_advisor_override("max_sector_exposure_pct", float(os.getenv("MAX_SECTOR_EXPOSURE_PCT", "0.35"))),
+        max_correlated_exposure_pct=_advisor_override("max_correlated_exposure_pct", float(os.getenv("MAX_CORRELATED_EXPOSURE_PCT", "0.35"))),
+        correlation_threshold=_advisor_override("correlation_threshold", float(os.getenv("CORRELATION_THRESHOLD", "0.85"))),
+        correlation_window=_advisor_override_int("correlation_window", int(os.getenv("CORRELATION_WINDOW", "90"))),
         options_min_dte=int(os.getenv("OPTIONS_MIN_DTE", "14")),
         options_max_dte=int(os.getenv("OPTIONS_MAX_DTE", "45")),
         options_idea_limit=int(os.getenv("OPTIONS_IDEA_LIMIT", "6")),
         options_spread_width_pct=float(os.getenv("OPTIONS_SPREAD_WIDTH_PCT", "0.05")),
+        options_min_reward_risk=float(os.getenv("OPTIONS_MIN_REWARD_RISK", "0.9")),
+        options_max_debit_pct_of_width=float(os.getenv("OPTIONS_MAX_DEBIT_PCT_OF_WIDTH", "0.55")),
     )
 
 

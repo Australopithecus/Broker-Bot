@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 import json
@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from .bots import ML_BOT_NAME, bot_label, normalize_bot_name
 from .config import Config, configured_bot_names
+from .dashboard_metrics import WINDOW_OPTIONS, agreement_summary, comparison_table, freshness_status
 from .logging_db import (
     read_available_bot_names,
     read_latest_advisor_reports,
@@ -222,6 +223,71 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
             )
         return JSONResponse({"data": data})
 
+    @app.get("/api/health")
+    def health(request: Request) -> JSONResponse:
+        _check_token(request)
+        discovered = set(known_bots)
+        try:
+            discovered.update(read_available_bot_names(db_path))
+        except Exception:
+            pass
+        bots_payload = {}
+        latest_ts = None
+        for bot_name in sorted(discovered):
+            equity_rows = list(reversed(read_latest_equity(db_path, limit=365, bot_name=bot_name)))
+            trades_rows = read_latest_trades(db_path, limit=1000, bot_name=bot_name)
+            decision_rows = read_recent_selected_decisions(db_path, limit=150, bot_name=bot_name)
+            positions_rows = read_latest_positions(db_path, limit=500, bot_name=bot_name)
+            payload = {
+                "label": bot_label(bot_name),
+                "equity": [
+                    {"ts": row[0], "equity": row[1], "cash": row[2], "portfolio_value": row[3], "spy_value": row[4]}
+                    for row in equity_rows
+                ],
+                "trades": [
+                    {"ts": row[0], "symbol": row[1], "side": row[2], "qty": row[3], "price": row[4], "status": row[5]}
+                    for row in trades_rows
+                ],
+                "positions": [
+                    {"symbol": row[0], "qty": row[1], "avg_entry": row[2], "market_value": row[3], "unreal_pl": row[4]}
+                    for row in positions_rows
+                ],
+                "decisions": [
+                    {
+                        "ts": row[0],
+                        "symbol": row[1],
+                        "side": row[2],
+                        "base_score": row[3],
+                        "final_score": row[4],
+                        "components": json.loads(row[5]) if row[5] else {},
+                        "rationale": row[6],
+                        "evaluated_ts": row[7],
+                        "horizon_days": row[8],
+                        "realized_return": row[9],
+                        "signed_return": row[10],
+                        "beat_spy": row[11],
+                        "outcome_label": row[12],
+                    }
+                    for row in decision_rows
+                ],
+            }
+            bots_payload[bot_name] = payload
+            if equity_rows:
+                ts = equity_rows[-1][0]
+                latest_ts = ts if latest_ts is None or ts > latest_ts else latest_ts
+        generated_at = datetime.now(timezone.utc).isoformat()
+        return JSONResponse(
+            {
+                "generated_at": generated_at,
+                "freshness": freshness_status(latest_ts),
+                "comparison": {
+                    key: comparison_table(bots_payload, window_key=key)
+                    for key in WINDOW_OPTIONS
+                },
+                "agreement": agreement_summary(bots_payload),
+            }
+        )
+
     return app
 
 
@@ -378,10 +444,17 @@ def _dashboard_html() -> str:
   <div class="container">
     <header>
       <h1>Broker Bot Dashboard</h1>
-      <p>Local paper-trading monitor • Auto-refreshes every 10s • Selector controls the detail panels, while the main chart compares all bots together.</p>
+      <p>Local paper-trading cockpit • Auto-refreshes every 10s • The chart compares bot performance while the panels explain health, risk, decisions, and reports.</p>
       <label class="muted" for="botSelector">Bot</label>
       <select id="botSelector" style="width: 180px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;"></select>
     </header>
+
+    <section class="summary">
+      <div class="card"><h3>Data Freshness</h3><div class="value" id="freshness">--</div></div>
+      <div class="card"><h3>Source</h3><div class="value">Local API</div></div>
+      <div class="card"><h3>Bots Seen</h3><div class="value" id="botsSeen">--</div></div>
+      <div class="card"><h3>Agreement</h3><div class="value" id="agreementRate">--</div></div>
+    </section>
 
     <section class="summary">
       <div class="card"><h3>Equity</h3><div class="value" id="equity">--</div></div>
@@ -390,6 +463,10 @@ def _dashboard_html() -> str:
       <div class="card"><h3>SPY Close</h3><div class="value" id="spy">--</div></div>
       <div class="card"><h3>Alpha 20D</h3><div class="value" id="alpha20">--</div></div>
       <div class="card"><h3>Tracking Error</h3><div class="value" id="trackErr">--</div></div>
+      <div class="card"><h3>Window Return</h3><div class="value" id="windowRet">--</div></div>
+      <div class="card"><h3>Max Drawdown</h3><div class="value" id="maxDd">--</div></div>
+      <div class="card"><h3>Win Rate</h3><div class="value" id="winRate">--</div></div>
+      <div class="card"><h3>Gross Exposure</h3><div class="value" id="grossExposure">--</div></div>
     </section>
 
     <section class="grid">
@@ -419,6 +496,38 @@ def _dashboard_html() -> str:
         <canvas id="holdingsChart" width="360" height="240"></canvas>
         <div class="muted" id="holdingsHint"></div>
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>Bot Comparison</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Bot</th>
+            <th>Return</th>
+            <th>Vs SPY</th>
+            <th>Max DD</th>
+            <th>Win Rate</th>
+            <th>Gross Exp</th>
+            <th>Protected</th>
+          </tr>
+        </thead>
+        <tbody id="comparisonBody"></tbody>
+      </table>
+      <div class="muted" id="comparisonHint"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Risk Cockpit</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody id="riskBody"></tbody>
+      </table>
     </section>
 
     <section class="panel">
@@ -467,6 +576,20 @@ def _dashboard_html() -> str:
 
     <section class="panel">
       <h2>Recent Decisions</h2>
+      <div class="inline-controls">
+        <label class="muted" for="decisionSymbol">Symbol
+          <input id="decisionSymbol" placeholder="All" style="margin-left: 8px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937; width: 110px;">
+        </label>
+        <label class="muted" for="decisionOutcome">Outcome
+          <select id="decisionOutcome" style="margin-left: 8px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="win">Win</option>
+            <option value="loss">Loss</option>
+            <option value="flat">Flat</option>
+          </select>
+        </label>
+      </div>
       <table>
         <thead>
           <tr>
@@ -506,6 +629,8 @@ let currentBot = 'ml';
 let currentRange = '90d';
 let currentDisplay = 'both';
 let availableBots = [];
+let latestPositions = [];
+let latestDecisions = [];
 const RANGE_WINDOWS_MS = {
   '24h': 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,
@@ -549,6 +674,33 @@ const normalizeSeries = (clean) => {
     raw: point.value,
   }));
 };
+
+const pctChange = (current, prior) => {
+  if (!Number.isFinite(current) || !Number.isFinite(prior) || prior === 0) return null;
+  return (current / prior) - 1;
+};
+
+const maxDrawdown = (values) => {
+  if (!values.length) return 0;
+  let peak = values[0];
+  let maxDd = 0;
+  values.forEach(value => {
+    peak = Math.max(peak, value);
+    if (peak > 0) maxDd = Math.max(maxDd, (peak - value) / peak);
+  });
+  return maxDd;
+};
+
+const nearestY = (points, ts) => {
+  const prior = points.filter(point => point.x <= ts);
+  if (prior.length) return prior[prior.length - 1].y;
+  return points.length ? points[0].y : null;
+};
+
+function setMetric(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
 
 const renderDisplaySelector = () => {
   const container = document.getElementById('displaySelector');
@@ -600,8 +752,10 @@ async function loadBots() {
   rangeSelector.value = currentRange;
   rangeSelector.addEventListener('change', async (event) => {
     currentRange = event.target.value || '90d';
-    await loadEquity();
+    await Promise.all([loadEquity(), loadHealth()]);
   });
+  document.getElementById('decisionSymbol')?.addEventListener('input', loadDecisions);
+  document.getElementById('decisionOutcome')?.addEventListener('change', loadDecisions);
 }
 
 async function loadSummary() {
@@ -618,6 +772,75 @@ async function loadSummary() {
   document.getElementById('cash').textContent = fmt(data.cash);
   document.getElementById('portfolio').textContent = fmt(data.portfolio);
   document.getElementById('spy').textContent = data.spy ? fmt(data.spy) : '--';
+}
+
+async function loadHealth() {
+  try {
+    const res = await fetch('/api/health', { headers: apiHeaders });
+    const data = await res.json();
+    const fresh = data.freshness || {};
+    setMetric('freshness', fresh.status ? `${fresh.status}` : '--');
+    setMetric('botsSeen', String(availableBots.length || 0));
+    const agreement = data.agreement || {};
+    setMetric('agreementRate', agreement.agreement_rate === null || agreement.agreement_rate === undefined ? '--' : pct(agreement.agreement_rate));
+
+    const rows = ((data.comparison || {})[currentRange] || []);
+    const body = document.getElementById('comparisonBody');
+    body.innerHTML = '';
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.label || row.bot}</td>
+        <td>${pct(row.window_return)}</td>
+        <td>${pct(row.window_alpha)}</td>
+        <td>${pct(row.max_drawdown)}</td>
+        <td>${pct(row.win_rate)}</td>
+        <td>${pct(row.gross_exposure_pct)}</td>
+        <td>${pct(row.protection_rate)}</td>
+      `;
+      body.appendChild(tr);
+    });
+    const agreements = (agreement.agreements || []).slice(0, 6).join(', ') || 'none';
+    const disagreements = (agreement.disagreements || []).slice(0, 6).join(', ') || 'none';
+    document.getElementById('comparisonHint').textContent = `Overlap: ${agreement.overlap || 0} • Agreements: ${agreements} • Disagreements: ${disagreements}`;
+  } catch (_) {
+    setMetric('freshness', '--');
+    setMetric('botsSeen', String(availableBots.length || 0));
+  }
+}
+
+function renderRisk() {
+  const totalValue = latestPositions.reduce((sum, row) => sum + Math.abs(Number(row.market_value || 0)), 0);
+  const longValue = latestPositions
+    .filter(row => Number(row.market_value || 0) > 0)
+    .reduce((sum, row) => sum + Number(row.market_value || 0), 0);
+  const shortValue = latestPositions
+    .filter(row => Number(row.market_value || 0) < 0)
+    .reduce((sum, row) => sum + Math.abs(Number(row.market_value || 0)), 0);
+  const protectedCount = latestPositions.filter(row => {
+    const mode = String(row.protection_mode || '').toLowerCase();
+    return mode && mode !== 'none' && mode !== 'unknown';
+  }).length;
+  const evaluated = latestDecisions.filter(row => row.signed_return !== null && row.signed_return !== undefined);
+  const wins = evaluated.filter(row => Number(row.signed_return) > 0).length;
+  document.getElementById('grossExposure').textContent = fmt(totalValue);
+  document.getElementById('winRate').textContent = evaluated.length ? pct(wins / evaluated.length) : '--';
+
+  const rows = [
+    ['Gross exposure', fmt(totalValue)],
+    ['Long exposure', fmt(longValue)],
+    ['Short exposure', fmt(shortValue)],
+    ['Largest position', fmt(Math.max(0, ...latestPositions.map(row => Math.abs(Number(row.market_value || 0)))))],
+    ['Protected positions', `${protectedCount}/${latestPositions.length}`],
+    ['Evaluated decisions', String(evaluated.length)],
+  ];
+  const body = document.getElementById('riskBody');
+  body.innerHTML = '';
+  rows.forEach(([name, value]) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${name}</td><td>${value}</td>`;
+    body.appendChild(tr);
+  });
 }
 
 async function loadEquity() {
@@ -693,6 +916,8 @@ async function loadEquity() {
     document.getElementById('equityHint').textContent = '';
     document.getElementById('alpha20').textContent = '--';
     document.getElementById('trackErr').textContent = '--';
+    document.getElementById('windowRet').textContent = '--';
+    document.getElementById('maxDd').textContent = '--';
     return;
   }
 
@@ -724,6 +949,16 @@ async function loadEquity() {
   const yPad = Math.max((max - min) * 0.12, 2);
   const scaleX = (value) => pad + (canvas.width - pad * 2) * ((value - xMin) / (xMax - xMin || 1));
   const scaleY = (value) => canvas.height - pad - (canvas.height - pad * 2) * ((value - (min - yPad)) / ((max - min) + yPad * 2 || 1));
+  const selectedClean = selectedCurve ? cleanSeries(selectedCurve.points, 'equity') : [];
+  const selectedFiltered = filterSeriesToWindow(selectedClean, cutoffTs);
+  if (selectedFiltered.length >= 2) {
+    const ret = pctChange(selectedFiltered[selectedFiltered.length - 1].value, selectedFiltered[0].value);
+    document.getElementById('windowRet').textContent = pct(ret);
+    document.getElementById('maxDd').textContent = pct(maxDrawdown(selectedFiltered.map(point => point.value)));
+  } else {
+    document.getElementById('windowRet').textContent = '--';
+    document.getElementById('maxDd').textContent = '--';
+  }
 
   ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
   ctx.lineWidth = 1;
@@ -751,11 +986,50 @@ async function loadEquity() {
     ctx.restore();
   });
 
+  const tradePayloads = await Promise.all(visibleCurves.map(async bot => {
+    try {
+      const res = await fetch(apiPathForBot('/api/trades', bot.name), { headers: apiHeaders });
+      const data = await res.json();
+      return { bot, rows: data.data || [] };
+    } catch (_) {
+      return { bot, rows: [] };
+    }
+  }));
+  const botLineByName = Object.fromEntries(equitySeries.map(bot => [bot.name, bot.normalized]));
+  let markerCount = 0;
+  tradePayloads.forEach(({ bot, rows }) => {
+    const points = botLineByName[bot.name] || [];
+    rows.forEach(row => {
+      const ts = Number(new Date(row.ts));
+      if (!Number.isFinite(ts) || ts < xMin || ts > xMax) return;
+      const yValue = nearestY(points, ts);
+      if (yValue === null) return;
+      const x = scaleX(ts);
+      const y = scaleY(yValue);
+      const isBuy = String(row.side || '').toLowerCase() === 'buy';
+      ctx.fillStyle = isBuy ? '#34d399' : '#f87171';
+      ctx.beginPath();
+      if (isBuy) {
+        ctx.moveTo(x, y - 7);
+        ctx.lineTo(x - 6, y + 6);
+        ctx.lineTo(x + 6, y + 6);
+      } else {
+        ctx.moveTo(x, y + 7);
+        ctx.lineTo(x - 6, y - 6);
+        ctx.lineTo(x + 6, y - 6);
+      }
+      ctx.closePath();
+      ctx.fill();
+      markerCount += 1;
+    });
+  });
+
   const legend = allLines.map(line => `${line.colorLabel}: ${line.label}`).join(' • ');
   const omittedText = omittedBots.length ? ` • No data in window: ${omittedBots.join(', ')}` : '';
   const xStartLabel = new Date(xMin).toLocaleString();
   const xEndLabel = new Date(xMax).toLocaleString();
-  document.getElementById('equityHint').textContent = `${currentRange} window (${xStartLabel} to ${xEndLabel}) • Normalized to 100 at the start of the selected window • Range: ${min.toFixed(1)} to ${max.toFixed(1)} • ${legend}${omittedText}`;
+  const markerText = markerCount ? ` • Trade markers: ${markerCount}` : '';
+  document.getElementById('equityHint').textContent = `${currentRange} window (${xStartLabel} to ${xEndLabel}) • Normalized to 100 at the start of the selected window • Range: ${min.toFixed(1)} to ${max.toFixed(1)} • ${legend}${omittedText}${markerText}`;
 
   // Alpha + tracking error (20D) if we have SPY values
   const aligned = (selectedCurve?.points || [])
@@ -857,6 +1131,7 @@ async function loadPositions() {
   const res = await fetch(apiPath('/api/positions'), { headers: apiHeaders });
   const data = await res.json();
   const rows = data.data || [];
+  latestPositions = rows;
   const body = document.getElementById('positionsBody');
   body.innerHTML = '';
   rows.forEach(row => {
@@ -872,6 +1147,7 @@ async function loadPositions() {
     body.appendChild(tr);
   });
   drawHoldingsChart(rows);
+  renderRisk();
 }
 
 async function loadTrades() {
@@ -931,6 +1207,17 @@ function renderComponents(components) {
   return entries.map(([key, value]) => `${key.replace('_adjustment', '')}: ${Number(value).toFixed(4)}`).join(' • ');
 }
 
+function renderTakeaways(body) {
+  const items = String(body || '')
+    .split('\\n')
+    .map(line => line.trim())
+    .filter(line => line.startsWith('- ') && line.length > 10)
+    .slice(0, 5)
+    .map(line => `<li>${line.slice(2)}</li>`)
+    .join('');
+  return items ? `<ul class="muted">${items}</ul>` : '';
+}
+
 async function loadStrategy() {
   const res = await fetch(apiPath('/api/strategy'), { headers: apiHeaders });
   const data = await res.json();
@@ -950,6 +1237,7 @@ async function loadStrategy() {
       <strong>${report.headline}</strong> <span class="muted">(${report.ts})</span><br />
       ${report.summary}<br />
       <span class="muted">Type: ${report.report_type}</span><br />
+      ${renderTakeaways(report.body)}
       <div class="muted" style="white-space: pre-wrap; margin-top: 8px;">${(report.body || '').slice(0, 1600)}</div>
     `;
     container.appendChild(div);
@@ -962,6 +1250,7 @@ async function loadStrategy() {
     div.innerHTML = `
       <strong>${report.headline}</strong> <span class="muted">(${report.ts})</span><br />
       ${report.summary}<br />
+      ${renderTakeaways(report.body)}
       <span class="muted">Type: ${report.report_type}${changes.length ? ` • Changes: ${changes.join(', ')}` : ''}</span>
     `;
     container.appendChild(div);
@@ -971,9 +1260,15 @@ async function loadStrategy() {
 async function loadDecisions() {
   const res = await fetch(apiPath('/api/decisions?limit=40'), { headers: apiHeaders });
   const data = await res.json();
+  latestDecisions = data.data || [];
   const body = document.getElementById('decisionsBody');
   body.innerHTML = '';
-  (data.data || []).forEach(row => {
+  const symbolFilter = String(document.getElementById('decisionSymbol')?.value || '').trim().toUpperCase();
+  const outcomeFilter = String(document.getElementById('decisionOutcome')?.value || '').trim().toLowerCase();
+  latestDecisions
+    .filter(row => !symbolFilter || String(row.symbol || '').toUpperCase().includes(symbolFilter))
+    .filter(row => !outcomeFilter || String(row.outcome_label || 'pending').toLowerCase() === outcomeFilter)
+    .forEach(row => {
     const tr = document.createElement('tr');
     const sideClass = row.side === 'LONG' ? 'buy' : 'sell';
     const outcome = row.outcome_label ? `${row.outcome_label}${row.signed_return !== null && row.signed_return !== undefined ? ` (${pct(row.signed_return)})` : ''}` : '--';
@@ -989,10 +1284,11 @@ async function loadDecisions() {
     `;
     body.appendChild(tr);
   });
+  renderRisk();
 }
 
 async function refreshAll() {
-  await Promise.all([loadSummary(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadStrategy(), loadDecisions()]);
+  await Promise.all([loadSummary(), loadHealth(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadStrategy(), loadDecisions()]);
 }
 
 loadBots().then(refreshAll);

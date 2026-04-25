@@ -23,6 +23,12 @@ from .learning import build_symbol_memory
 from .model import load_model, predict_return
 from .research import build_research_overlay
 from .logging_db import read_latest_equity
+from .risk import (
+    apply_portfolio_risk_limits,
+    classify_market_regime,
+    estimate_correlation_clusters,
+    load_sector_map,
+)
 
 
 @dataclass
@@ -41,20 +47,6 @@ def _latest_date(df: pd.DataFrame) -> datetime:
     return pd.to_datetime(df["timestamp"]).max().to_pydatetime()
 
 
-def _regime_leverage(spy_df: pd.DataFrame, gross_leverage: float, bear_leverage: float) -> float:
-    if spy_df.empty:
-        return gross_leverage
-    spy_df = spy_df.sort_values("timestamp")
-    closes = spy_df["close"]
-    if len(closes) < 200:
-        return gross_leverage
-    ma50 = closes.rolling(50).mean().iloc[-1]
-    ma200 = closes.rolling(200).mean().iloc[-1]
-    if ma50 < ma200:
-        return bear_leverage
-    return gross_leverage
-
-
 def _compute_drawdown(values: list[float]) -> float:
     if not values:
         return 0.0
@@ -67,16 +59,6 @@ def _compute_drawdown(values: list[float]) -> float:
         if dd > max_dd:
             max_dd = dd
     return max_dd
-
-
-def _spy_volatility(spy_df: pd.DataFrame, window: int) -> float:
-    if spy_df.empty or window <= 1:
-        return 0.0
-    spy_df = spy_df.sort_values("timestamp")
-    returns = spy_df["close"].pct_change().dropna()
-    if len(returns) < window:
-        return 0.0
-    return float(returns.rolling(window).std().iloc[-1])
 
 
 def _asset_info(trading: TradingClient, symbol: str, cache: dict[str, dict[str, bool]]) -> dict[str, bool]:
@@ -123,16 +105,21 @@ def _build_bracket_order(
     side: OrderSide,
     price: float,
     config: Config,
+    take_profit_pct: float | None = None,
+    stop_loss_pct: float | None = None,
 ) -> MarketOrderRequest | None:
     if qty <= 0 or price <= 0:
         return None
 
+    take_profit_pct = config.bracket_take_profit_pct if take_profit_pct is None else take_profit_pct
+    stop_loss_pct = config.bracket_stop_loss_pct if stop_loss_pct is None else stop_loss_pct
+
     if side == OrderSide.BUY:
-        take_profit_price = _round_order_price(price * (1.0 + max(config.bracket_take_profit_pct, 0.0)))
-        stop_price = _round_order_price(price * (1.0 - max(config.bracket_stop_loss_pct, 0.0)))
+        take_profit_price = _round_order_price(price * (1.0 + max(take_profit_pct, 0.0)))
+        stop_price = _round_order_price(price * (1.0 - max(stop_loss_pct, 0.0)))
     else:
-        take_profit_price = _round_order_price(price * (1.0 - max(config.bracket_take_profit_pct, 0.0)))
-        stop_price = _round_order_price(price * (1.0 + max(config.bracket_stop_loss_pct, 0.0)))
+        take_profit_price = _round_order_price(price * (1.0 - max(take_profit_pct, 0.0)))
+        stop_price = _round_order_price(price * (1.0 + max(stop_loss_pct, 0.0)))
 
     if take_profit_price <= 0 or stop_price <= 0:
         return None
@@ -277,11 +264,14 @@ def _build_trailing_stop_order(
     qty: float,
     side: OrderSide,
     config: Config,
+    trail_percent_override: float | None = None,
 ) -> TrailingStopOrderRequest | None:
     if qty <= 0 or not _is_whole_share_qty(qty):
         return None
 
-    trail_percent = config.trailing_stop_percent if config.trailing_stop_percent > 0 else None
+    trail_percent = trail_percent_override if trail_percent_override and trail_percent_override > 0 else None
+    if trail_percent is None:
+        trail_percent = config.trailing_stop_percent if config.trailing_stop_percent > 0 else None
     trail_price = _round_order_price(config.trailing_stop_price) if config.trailing_stop_price > 0 else None
     if trail_percent is None and trail_price is None:
         return None
@@ -305,6 +295,26 @@ def _component_payload(row: pd.Series) -> dict[str, float]:
         "memory_adjustment": float(row.get("memory_adjustment", 0.0)),
         "llm_adjustment": float(row.get("llm_adjustment", 0.0)),
     }
+
+
+def _adaptive_exit_pcts(signal: Signal | None, config: Config) -> tuple[float, float]:
+    fixed_stop = max(config.bracket_stop_loss_pct, 0.0)
+    fixed_take_profit = max(config.bracket_take_profit_pct, 0.0)
+    if not config.adaptive_exits_enabled or signal is None or not signal.vol:
+        return fixed_take_profit, fixed_stop
+
+    stop_pct = float(signal.vol) * max(config.stop_loss_vol_multiple, 0.0)
+    stop_pct = max(config.min_stop_loss_pct, fixed_stop, stop_pct)
+    stop_pct = min(max(config.max_stop_loss_pct, stop_pct), 0.50)
+    take_profit_pct = max(fixed_take_profit, stop_pct * max(config.take_profit_reward_multiple, 1.0))
+    return take_profit_pct, stop_pct
+
+
+def _adaptive_trail_percent(signal: Signal | None, config: Config) -> float | None:
+    if config.trailing_stop_percent > 0 or not config.adaptive_exits_enabled or signal is None or not signal.vol:
+        return None
+    _, stop_pct = _adaptive_exit_pcts(signal, config)
+    return round(stop_pct * 100.0, 2)
 
 
 def generate_signals(
@@ -387,16 +397,32 @@ def generate_signals(
             )
 
     spy_df = bars[bars["Symbol"] == "SPY"]
-    regime_lev = _regime_leverage(spy_df, config.gross_leverage, config.bear_leverage)
-    spy_vol = _spy_volatility(spy_df, config.vol_window)
+    regime = classify_market_regime(
+        spy_df,
+        gross_leverage=config.gross_leverage,
+        bear_leverage=config.bear_leverage,
+        vol_target=config.vol_target,
+        vol_window=config.vol_window,
+    )
+    correlation_clusters = estimate_correlation_clusters(
+        bars,
+        sorted(selected_symbols),
+        threshold=config.correlation_threshold,
+        window=config.correlation_window,
+    )
     decision_context = {
         "candidate_count": int(len(latest)),
         "selected_long_count": int(len(longs)),
         "selected_short_count": int(len(shorts)),
         "memory_symbol_count": int(len(symbol_memory)),
+        "market_regime": {
+            "label": regime.label,
+            "notes": regime.notes,
+        },
+        "correlation_clusters": correlation_clusters,
         "research": research_context.to_dict(),
     }
-    return latest, signals, regime_lev, spy_vol, decision_context
+    return latest, signals, regime.leverage, regime.spy_vol, decision_context
 
 
 def _target_weights(
@@ -452,12 +478,8 @@ def execute_signals(
         shorting_enabled = bool(shorting_flag)
     asset_cache: dict[str, dict[str, bool]] = {}
 
-    # Vol targeting and drawdown guardrails
+    # Regime classification already applies SPY volatility targeting; drawdown adds an account-level guardrail.
     leverage = regime_lev
-    if config.vol_target > 0 and spy_vol > 0:
-        vol_scale = min(1.0, config.vol_target / spy_vol)
-        leverage *= vol_scale
-
     dd_rows = read_latest_equity(config.db_path, limit=config.drawdown_window, bot_name=bot_name)
     equities = [row[1] for row in reversed(dd_rows)]
     dd = _compute_drawdown(equities) if len(equities) > 1 else 0.0
@@ -474,6 +496,17 @@ def execute_signals(
         allow_shorts=shorting_enabled,
     )
 
+    sector_map = load_sector_map(config.sector_map_path)
+    weights, risk_summary = apply_portfolio_risk_limits(
+        weights,
+        sector_map=sector_map,
+        correlation_clusters=decision_context.get("correlation_clusters", [])
+        if isinstance(decision_context.get("correlation_clusters"), list)
+        else [],
+        max_sector_exposure_pct=config.max_sector_exposure_pct,
+        max_correlated_exposure_pct=config.max_correlated_exposure_pct,
+    )
+
     # Enforce tradable/shortable filters
     filtered: dict[str, float] = {}
     for sym, w in weights.items():
@@ -488,6 +521,7 @@ def execute_signals(
     decision_context["spy_vol"] = float(spy_vol)
     decision_context["selected_weights"] = {symbol: float(weight) for symbol, weight in weights.items()}
     decision_context["shorting_enabled"] = bool(shorting_enabled)
+    decision_context["portfolio_risk"] = risk_summary
 
     equity = float(account.equity)
 
@@ -496,6 +530,7 @@ def execute_signals(
 
     # Current positions
     current_positions = {p.symbol: float(p.qty) for p in trading.get_all_positions()}
+    signal_by_symbol = {signal.symbol: signal for signal in signals}
 
     orders_to_log = []
 
@@ -562,6 +597,8 @@ def execute_signals(
                 side=side,
                 price=price,
                 config=config,
+                take_profit_pct=_adaptive_exit_pcts(signal_by_symbol.get(symbol), config)[0],
+                stop_loss_pct=_adaptive_exit_pcts(signal_by_symbol.get(symbol), config)[1],
             )
             if bracket_order is not None:
                 order = bracket_order
@@ -674,7 +711,13 @@ def execute_signals(
             if symbol not in weights or abs(qty) < 1e-3 or symbol in open_order_symbols:
                 continue
             trail_side = OrderSide.SELL if qty > 0 else OrderSide.BUY
-            trailing_order = _build_trailing_stop_order(symbol, abs(qty), trail_side, config)
+            trailing_order = _build_trailing_stop_order(
+                symbol,
+                abs(qty),
+                trail_side,
+                config,
+                trail_percent_override=_adaptive_trail_percent(signal_by_symbol.get(symbol), config),
+            )
             if trailing_order is None:
                 continue
             try:

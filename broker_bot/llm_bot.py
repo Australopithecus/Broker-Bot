@@ -39,7 +39,27 @@ def _round_pct(value: float | None) -> float | None:
     return round(float(value), 6)
 
 
+def _bounded_float(value: object, default: float, low: float, high: float) -> float:
+    try:
+        parsed = float(value)
+    except Exception:
+        parsed = default
+    return max(low, min(parsed, high))
+
+
+def _parse_pct_value(value: object, default: float = 0.0) -> float:
+    try:
+        parsed = float(value)
+    except Exception:
+        parsed = default
+    if parsed > 1.0:
+        parsed /= 100.0
+    return max(0.0, parsed)
+
+
 def _safe_text_list(values: list[object], limit: int = 4) -> list[str]:
+    if isinstance(values, str):
+        values = [values]
     cleaned: list[str] = []
     for value in values:
         text = str(value).strip()
@@ -130,6 +150,10 @@ def _build_fallback_analyst_report(row: dict, research: dict) -> dict:
         "market_analysis": f"{symbol} is being monitored as a {row['side']} candidate based on the current signal stack.",
         "historical_trends": thesis[0],
         "current_events": current_events,
+        "catalysts": ["Recent signal strength and market-data overlays put this name on the watchlist."],
+        "contrary_evidence": ["The setup may be mostly model-driven if current news is thin."],
+        "time_horizon": f"{max(config.prediction_horizon_days, 1)} trading day(s)",
+        "confidence": 0.55,
         "outlook": row["rationale"] or "No extra rationale recorded.",
         "risks": risks,
     }
@@ -151,6 +175,10 @@ def _analyst_reports(config: Config, watchlist: list[dict], research: dict) -> l
                     "market_analysis": "paragraph",
                     "historical_trends": "paragraph",
                     "current_events": ["bullet", "bullet"],
+                    "catalysts": ["bullet", "bullet"],
+                    "contrary_evidence": ["bullet", "bullet"],
+                    "time_horizon": "short phrase",
+                    "confidence": 0.65,
                     "outlook": "paragraph",
                     "risks": ["bullet", "bullet"],
                 }
@@ -162,7 +190,7 @@ def _analyst_reports(config: Config, watchlist: list[dict], research: dict) -> l
         system_prompt=(
             "You are the Analyst for a paper-trading bot. "
             "Return JSON only. For each stock, write an informative daily memo using only the supplied evidence. "
-            "Be concrete about current events, historical pattern, thesis, and risks."
+            "Be concrete about current events, historical pattern, thesis, catalysts, contrary evidence, and risks."
         ),
         payload=payload,
         max_output_tokens=2600,
@@ -182,6 +210,10 @@ def _analyst_reports(config: Config, watchlist: list[dict], research: dict) -> l
             "market_analysis": str(item.get("market_analysis", "")).strip() or reports_by_symbol[symbol]["market_analysis"],
             "historical_trends": str(item.get("historical_trends", "")).strip() or reports_by_symbol[symbol]["historical_trends"],
             "current_events": _safe_text_list(item.get("current_events", [])) or reports_by_symbol[symbol]["current_events"],
+            "catalysts": _safe_text_list(item.get("catalysts", [])) or reports_by_symbol[symbol]["catalysts"],
+            "contrary_evidence": _safe_text_list(item.get("contrary_evidence", [])) or reports_by_symbol[symbol]["contrary_evidence"],
+            "time_horizon": str(item.get("time_horizon", "")).strip() or reports_by_symbol[symbol]["time_horizon"],
+            "confidence": _bounded_float(item.get("confidence", reports_by_symbol[symbol]["confidence"]), reports_by_symbol[symbol]["confidence"], 0.0, 1.0),
             "outlook": str(item.get("outlook", "")).strip() or reports_by_symbol[symbol]["outlook"],
             "risks": _safe_text_list(item.get("risks", [])) or reports_by_symbol[symbol]["risks"],
         }
@@ -288,7 +320,7 @@ def generate_llm_coach_report(config: Config) -> dict:
         system_prompt=(
             "You are the Coach for a paper-trading bot. "
             "Return JSON only. Identify what the trader is doing well, what is going poorly, and what should change next. "
-            "Be specific, evidence-bound, and constructive."
+            "Be specific, evidence-bound, and constructive. Recommend behavior changes only when multiple outcomes support the pattern."
         ),
         payload=payload,
         max_output_tokens=1800,
@@ -328,6 +360,11 @@ def _fallback_trader_decisions(watchlist: list[dict], coach_report: dict) -> tup
                 "symbol": row["symbol"],
                 "side": row["side"],
                 "conviction": 0.6,
+                "expected_upside_pct": abs(float(row["final_score"])) * 2.0,
+                "expected_downside_pct": max(float(row.get("vol", 0.02)), 0.01),
+                "time_horizon": "short swing",
+                "why_now": row["rationale"] or "Current model score ranks highly among available candidates.",
+                "disconfirming_evidence": "Fallback trader did not receive a full LLM contradiction review.",
                 "thesis": row["rationale"] or coach_report.get("trader_guidance", ""),
                 "risk_note": "Fallback trader used existing model direction with moderate conviction.",
             }
@@ -358,6 +395,11 @@ def _trader_decisions(config: Config, watchlist: list[dict], analyst_reports: li
                     "symbol": "ticker",
                     "side": "LONG",
                     "conviction": 0.7,
+                    "expected_upside_pct": 0.03,
+                    "expected_downside_pct": 0.015,
+                    "time_horizon": "1-5 trading days",
+                    "why_now": "one sentence",
+                    "disconfirming_evidence": "one sentence",
                     "thesis": "one sentence",
                     "risk_note": "one sentence",
                 }
@@ -369,7 +411,8 @@ def _trader_decisions(config: Config, watchlist: list[dict], analyst_reports: li
         system_prompt=(
             "You are the Trader for a paper-trading bot. "
             "Return JSON only. Read the analyst reports and coach guidance, then choose which stocks to trade today. "
-            "Be selective, explicit about thesis and risk, and avoid inventing facts not present in the reports."
+            "Be selective, explicit about thesis, why-now timing, expected upside/downside, disconfirming evidence, and risk. "
+            "Avoid inventing facts not present in the reports."
         ),
         payload=payload,
         max_output_tokens=2200,
@@ -390,11 +433,18 @@ def _trader_decisions(config: Config, watchlist: list[dict], analyst_reports: li
             conviction = float(item.get("conviction", 0.5))
         except Exception:
             conviction = 0.5
+        expected_upside = _parse_pct_value(item.get("expected_upside_pct", 0.0))
+        expected_downside = _parse_pct_value(item.get("expected_downside_pct", 0.0))
         decisions.append(
             {
                 "symbol": symbol,
                 "side": side,
                 "conviction": max(0.05, min(conviction, 1.0)),
+                "expected_upside_pct": min(expected_upside, 0.50),
+                "expected_downside_pct": min(expected_downside, 0.50),
+                "time_horizon": str(item.get("time_horizon", "")).strip(),
+                "why_now": str(item.get("why_now", "")).strip(),
+                "disconfirming_evidence": str(item.get("disconfirming_evidence", "")).strip(),
                 "thesis": str(item.get("thesis", "")).strip(),
                 "risk_note": str(item.get("risk_note", "")).strip(),
             }
@@ -415,8 +465,17 @@ def _signals_from_trader(latest: pd.DataFrame, watchlist: list[dict], decisions:
         conviction = float(decision["conviction"])
         signed_score = conviction if decision["side"] == "LONG" else -conviction
         rationale = decision["thesis"]
+        if decision.get("why_now"):
+            rationale = f"{rationale} Why now: {decision['why_now']}".strip()
+        if decision.get("disconfirming_evidence"):
+            rationale = f"{rationale} Contrary evidence: {decision['disconfirming_evidence']}".strip()
         if decision.get("risk_note"):
             rationale = f"{rationale} Risk: {decision['risk_note']}".strip()
+        components = dict(source.get("components") or {})
+        components["llm_conviction_adjustment"] = conviction * 0.001
+        components["llm_expected_edge"] = (
+            float(decision.get("expected_upside_pct", 0.0)) - float(decision.get("expected_downside_pct", 0.0))
+        ) * 0.001
         signals.append(
             Signal(
                 symbol=symbol,
@@ -425,7 +484,7 @@ def _signals_from_trader(latest: pd.DataFrame, watchlist: list[dict], decisions:
                 vol=vol_by_symbol.get(symbol) or 0.02,
                 base_score=float(source.get("base_score", signed_score)),
                 selected=True,
-                components=source.get("components"),
+                components=components,
                 rationale=rationale,
             )
         )
@@ -465,6 +524,15 @@ def _analyst_body(analyst_reports: list[dict], selector_summary: str) -> str:
                 "Current events:",
                 *[f"- {item}" for item in report.get("current_events", [])],
                 "",
+                "Catalysts:",
+                *[f"- {item}" for item in report.get("catalysts", [])],
+                "",
+                "Contrary evidence:",
+                *[f"- {item}" for item in report.get("contrary_evidence", [])],
+                "",
+                f"Time horizon: {report.get('time_horizon', 'Not specified')}",
+                f"Confidence: {float(report.get('confidence', 0.0) or 0.0):.0%}",
+                "",
                 f"Outlook: {report['outlook']}",
                 "",
                 "Risks:",
@@ -490,6 +558,10 @@ def _trader_body(trader_summary: str, decisions: list[dict], coach_report: dict)
         lines.extend(
             [
                 f"- {decision['symbol']} {decision['side']} conviction={float(decision['conviction']):.2f}",
+                f"  Expected upside/downside: {float(decision.get('expected_upside_pct', 0.0)):.2%} / {float(decision.get('expected_downside_pct', 0.0)):.2%}",
+                f"  Time horizon: {decision.get('time_horizon') or 'Not specified'}",
+                f"  Why now: {decision.get('why_now') or 'Not specified'}",
+                f"  Contrary evidence: {decision.get('disconfirming_evidence') or 'Not specified'}",
                 f"  Thesis: {decision['thesis']}",
                 f"  Risk: {decision['risk_note']}",
             ]

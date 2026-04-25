@@ -3,9 +3,15 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .config import load_config
+from alpaca.data.historical import StockHistoricalDataClient
+from alpaca.data.requests import StockBarsRequest
+from alpaca.data.timeframe import TimeFrame
+from alpaca.trading.client import TradingClient
+
+from .config import configured_bot_names, get_bot_account_config, load_config
 from .logging_db import (
     init_db,
     log_advisor_report,
@@ -69,6 +75,60 @@ def cmd_backtest(args: argparse.Namespace) -> None:
         f"avg_turnover={avg_turnover:.3f}"
     )
     print(results.tail(5).to_string(index=False))
+
+
+def _credential_label(value: str) -> str:
+    value = (value or "").strip()
+    if not value:
+        return "missing"
+    return f"set, len={len(value)}"
+
+
+def cmd_doctor(args: argparse.Namespace) -> None:
+    config = load_config()
+    print("Broker Bot configuration check")
+    print(f"ALPACA_API_KEY: {_credential_label(config.alpaca_api_key)}")
+    print(f"ALPACA_SECRET_KEY: {_credential_label(config.alpaca_secret_key)}")
+    print(f"ALPACA_DATA_FEED: {config.alpaca_data_feed or 'iex'}")
+    print(f"ALPACA_LLM_API_KEY: {_credential_label(config.llm_alpaca_api_key)}")
+    print(f"ALPACA_LLM_SECRET_KEY: {_credential_label(config.llm_alpaca_secret_key)}")
+    print(f"ALPACA_LLM_DATA_FEED: {config.llm_alpaca_data_feed or config.alpaca_data_feed or 'iex'}")
+    print("")
+
+    failures = 0
+    for bot_name in configured_bot_names(config):
+        account = get_bot_account_config(config, bot_name)
+        label = account.bot_name.upper()
+        print(f"{label} account")
+        try:
+            trading_account = TradingClient(account.api_key, account.secret_key, paper=True).get_account()
+            print(f"  Trading auth: OK status={getattr(trading_account, 'status', 'unknown')}")
+        except Exception as exc:
+            failures += 1
+            print(f"  Trading auth: FAILED {type(exc).__name__}: {exc}")
+
+        try:
+            request = StockBarsRequest(
+                symbol_or_symbols=["SPY"],
+                timeframe=TimeFrame.Day,
+                start=datetime.now(timezone.utc) - timedelta(days=10),
+                end=datetime.now(timezone.utc),
+                feed=account.data_feed or "iex",
+            )
+            bars = StockHistoricalDataClient(account.api_key, account.secret_key).get_stock_bars(request).df
+            print(f"  Market data auth: OK rows={len(bars)} feed={account.data_feed or 'iex'}")
+        except Exception as exc:
+            failures += 1
+            print(f"  Market data auth: FAILED {type(exc).__name__}: {exc}")
+        print("")
+
+    if failures:
+        print(
+            "One or more Alpaca checks failed. For a 401/403, regenerate paper API keys in Alpaca, "
+            "update .env, and keep ALPACA_DATA_FEED=iex unless you have SIP access."
+        )
+        raise SystemExit(1)
+    print("All configured Alpaca checks passed.")
 
 
 def cmd_rebalance(args: argparse.Namespace) -> None:
@@ -290,6 +350,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("init-db")
+    subparsers.add_parser("doctor")
     subparsers.add_parser("train")
     subparsers.add_parser("backtest")
     subparsers.add_parser("rebalance")
@@ -312,36 +373,43 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    if args.command == "init-db":
-        cmd_init_db(args)
-    elif args.command == "train":
-        cmd_train(args)
-    elif args.command == "backtest":
-        cmd_backtest(args)
-    elif args.command == "rebalance":
-        cmd_rebalance(args)
-    elif args.command == "rebalance-llm":
-        cmd_rebalance_llm(args)
-    elif args.command == "snapshot":
-        cmd_snapshot(args)
-    elif args.command == "snapshot-llm":
-        cmd_snapshot_llm(args)
-    elif args.command == "dashboard":
-        cmd_dashboard(args)
-    elif args.command == "dashboard-web":
-        cmd_dashboard_web(args)
-    elif args.command == "advisor-report":
-        cmd_advisor(args)
-    elif args.command == "review-decisions":
-        cmd_review_decisions(args)
-    elif args.command == "review-decisions-llm":
-        cmd_review_decisions_llm(args)
-    elif args.command == "strategy-report":
-        cmd_strategy_report(args)
-    elif args.command == "strategy-report-llm":
-        cmd_strategy_report_llm(args)
-    elif args.command == "options-report":
-        cmd_options_report(args)
+    try:
+        if args.command == "init-db":
+            cmd_init_db(args)
+        elif args.command == "doctor":
+            cmd_doctor(args)
+        elif args.command == "train":
+            cmd_train(args)
+        elif args.command == "backtest":
+            cmd_backtest(args)
+        elif args.command == "rebalance":
+            cmd_rebalance(args)
+        elif args.command == "rebalance-llm":
+            cmd_rebalance_llm(args)
+        elif args.command == "snapshot":
+            cmd_snapshot(args)
+        elif args.command == "snapshot-llm":
+            cmd_snapshot_llm(args)
+        elif args.command == "dashboard":
+            cmd_dashboard(args)
+        elif args.command == "dashboard-web":
+            cmd_dashboard_web(args)
+        elif args.command == "advisor-report":
+            cmd_advisor(args)
+        elif args.command == "review-decisions":
+            cmd_review_decisions(args)
+        elif args.command == "review-decisions-llm":
+            cmd_review_decisions_llm(args)
+        elif args.command == "strategy-report":
+            cmd_strategy_report(args)
+        elif args.command == "strategy-report-llm":
+            cmd_strategy_report_llm(args)
+        elif args.command == "options-report":
+            cmd_options_report(args)
+    except RuntimeError as exc:
+        if os.getenv("BROKER_BOT_DEBUG", "").strip().lower() in {"1", "true", "yes", "y"}:
+            raise
+        raise SystemExit(f"Error: {exc}") from None
 
 
 if __name__ == "__main__":

@@ -5,11 +5,14 @@ from datetime import datetime, timedelta, timezone
 from typing import Iterable
 
 import pandas as pd
+from alpaca.common.exceptions import APIError
 from alpaca.data import StockBarsRequest
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.timeframe import TimeFrame
+from requests.exceptions import RequestException
 
 from .config import Config, get_bot_account_config
+
 
 @dataclass
 class MarketData:
@@ -38,7 +41,25 @@ def fetch_daily_bars(
         end=_to_utc(end),
         feed=account.data_feed,
     )
-    bars = client.get_stock_bars(request).df
+    try:
+        bars = client.get_stock_bars(request).df
+    except APIError as exc:
+        message = str(exc)
+        if "401" in message or "403" in message or "Authorization" in message:
+            raise RuntimeError(
+                "Alpaca rejected the historical market-data request. "
+                f"Bot={account.bot_name}, feed={account.data_feed}. "
+                "Check that the matching API key and secret in .env are current paper-trading keys, "
+                "and use ALPACA_DATA_FEED=iex unless your account has SIP entitlement. "
+                "Run `python3 -m broker_bot.cli doctor` for a focused credential check."
+            ) from exc
+        raise
+    except RequestException as exc:
+        raise RuntimeError(
+            "Could not reach Alpaca historical market data. "
+            "Check your internet connection, DNS/VPN/firewall settings, and then run "
+            "`python3 -m broker_bot.cli doctor`."
+        ) from exc
     if bars.empty:
         raise RuntimeError("No historical bars returned. Check symbols, dates, or data feed access.")
     bars = bars.reset_index().rename(columns={"symbol": "Symbol"})

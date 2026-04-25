@@ -5,19 +5,12 @@ import pandas as pd
 
 from .features import build_features
 from .model import train_model, predict_return
-
-
-def _regime_leverage(market_df: pd.DataFrame, gross_leverage: float, bear_leverage: float) -> float:
-    if market_df.empty:
-        return gross_leverage
-    closes = market_df.sort_values("timestamp")["close"]
-    if len(closes) < 200:
-        return gross_leverage
-    ma50 = closes.rolling(50).mean().iloc[-1]
-    ma200 = closes.rolling(200).mean().iloc[-1]
-    if ma50 < ma200:
-        return bear_leverage
-    return gross_leverage
+from .risk import (
+    apply_portfolio_risk_limits,
+    classify_market_regime,
+    estimate_correlation_clusters,
+    load_sector_map,
+)
 
 
 def _inverse_vol_weights(
@@ -177,6 +170,11 @@ def run_backtest(
     news_weight: float = 0.9,
     memory_weight: float = 0.8,
     llm_weight: float = 0.8,
+    sector_map_path: str = "",
+    max_sector_exposure_pct: float = 0.35,
+    max_correlated_exposure_pct: float = 0.35,
+    correlation_threshold: float = 0.85,
+    correlation_window: int = 90,
 ) -> pd.DataFrame:
     features = build_features(bars)
     features = features[features["Symbol"] != "SPY"].copy()
@@ -203,6 +201,7 @@ def run_backtest(
 
     rng = random.Random(sim_seed)
     pending_rebalance_dt = None
+    sector_map = load_sector_map(sector_map_path)
 
     for ts in sorted(features["timestamp"].unique()):
         ts_dt = pd.to_datetime(ts)
@@ -245,7 +244,14 @@ def run_backtest(
 
         if should_rebalance:
             market_df = bars[bars["Symbol"] == "SPY"]
-            regime_lev = _regime_leverage(market_df[market_df["timestamp"] <= ts_dt], gross_leverage, bear_leverage)
+            regime = classify_market_regime(
+                market_df[market_df["timestamp"] <= ts_dt],
+                gross_leverage=gross_leverage,
+                bear_leverage=bear_leverage,
+                vol_target=vol_target,
+                vol_window=vol_window,
+            )
+            regime_lev = regime.leverage
 
             # Walk-forward retraining (rolling window)
             train_start = ts_dt - pd.Timedelta(days=lookback_days)
@@ -274,14 +280,6 @@ def run_backtest(
                 symbol_memory=symbol_memory,
             )
 
-            # Vol targeting on SPY
-            spy_df = market_df[market_df["timestamp"] <= ts_dt].sort_values("timestamp")
-            spy_returns = spy_df["close"].pct_change().dropna()
-            if vol_target > 0 and len(spy_returns) >= vol_window:
-                spy_vol = spy_returns.rolling(vol_window).std().iloc[-1]
-                if spy_vol and spy_vol > 0:
-                    regime_lev = min(regime_lev, regime_lev * min(1.0, vol_target / spy_vol))
-
             # Drawdown guardrail
             if max_drawdown > 0:
                 peak = max(equity_curve) if equity_curve else equity
@@ -299,6 +297,19 @@ def run_backtest(
                 gross_leverage=regime_lev,
                 max_position_pct=max_position_pct,
                 allow_shorts=True,
+            )
+            correlation_clusters = estimate_correlation_clusters(
+                bars[bars["timestamp"] <= ts_dt],
+                list(new_weights),
+                threshold=correlation_threshold,
+                window=correlation_window,
+            )
+            new_weights, _ = apply_portfolio_risk_limits(
+                new_weights,
+                sector_map=sector_map,
+                correlation_clusters=correlation_clusters,
+                max_sector_exposure_pct=max_sector_exposure_pct,
+                max_correlated_exposure_pct=max_correlated_exposure_pct,
             )
             longs = (
                 slice_df[slice_df["pred_return"] >= min_long_return]

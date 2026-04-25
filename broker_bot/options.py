@@ -92,6 +92,8 @@ def _choose_vertical_spread(
     spot_price: float,
     contracts: list,
     width_pct: float,
+    min_reward_risk: float,
+    max_debit_pct_of_width: float,
 ) -> VerticalSpreadIdea | None:
     if not contracts or spot_price <= 0:
         return None
@@ -148,6 +150,12 @@ def _choose_vertical_spread(
         max_profit = width - net_debit
         max_loss = net_debit
         if width <= 0 or net_debit <= 0 or max_profit <= 0:
+            continue
+        reward_risk = max_profit / max_loss if max_loss > 0 else 0.0
+        debit_pct_of_width = net_debit / width if width > 0 else 1.0
+        if min_reward_risk > 0 and reward_risk < min_reward_risk:
+            continue
+        if max_debit_pct_of_width > 0 and debit_pct_of_width > max_debit_pct_of_width:
             continue
 
         return VerticalSpreadIdea(
@@ -215,6 +223,7 @@ def _report_body(ideas: list[VerticalSpreadIdea], generated_ts: str) -> str:
                 "Risk notes:",
                 "- This estimate uses Alpaca contract close prices, not live bid/ask spreads.",
                 "- Actual fill quality can be materially worse around wide spreads or low liquidity.",
+                "- The scaffold filters out spreads with weak estimated reward/risk or excessive debit relative to width.",
                 "- Defined risk does not mean low risk; time decay and volatility compression still matter.",
                 "",
             ]
@@ -247,7 +256,14 @@ def generate_options_scaffold_report(config: Config, symbols: list[str]) -> Opti
             )
         except APIError:
             continue
-        idea = _choose_vertical_spread(signal, spot_price, contracts, config.options_spread_width_pct)
+        idea = _choose_vertical_spread(
+            signal,
+            spot_price,
+            contracts,
+            config.options_spread_width_pct,
+            config.options_min_reward_risk,
+            config.options_max_debit_pct_of_width,
+        )
         if idea is not None:
             ideas.append(idea)
 
@@ -280,6 +296,8 @@ def generate_options_scaffold_report(config: Config, symbols: list[str]) -> Opti
         "min_dte": config.options_min_dte,
         "max_dte": config.options_max_dte,
         "target_width_pct": config.options_spread_width_pct,
+        "min_reward_risk": config.options_min_reward_risk,
+        "max_debit_pct_of_width": config.options_max_debit_pct_of_width,
     }
     changes = {
         "options_scaffold": "paper_only",

@@ -39,6 +39,9 @@ ALLOWED_OVERRIDES = {
     "vol_target": {"min": 0.005, "max": 0.05, "max_delta": 0.01, "type": float},
     "max_drawdown": {"min": 0.05, "max": 0.3, "max_delta": 0.05, "type": float},
     "min_leverage": {"min": 0.05, "max": 1.0, "max_delta": 0.2, "type": float},
+    "max_sector_exposure_pct": {"min": 0.15, "max": 0.60, "max_delta": 0.05, "type": float},
+    "max_correlated_exposure_pct": {"min": 0.15, "max": 0.60, "max_delta": 0.05, "type": float},
+    "correlation_threshold": {"min": 0.65, "max": 0.95, "max_delta": 0.05, "type": float},
 }
 
 
@@ -134,6 +137,9 @@ def _current_config_map(config: Config) -> dict[str, float]:
         "vol_target": config.vol_target,
         "max_drawdown": config.max_drawdown,
         "min_leverage": config.min_leverage,
+        "max_sector_exposure_pct": config.max_sector_exposure_pct,
+        "max_correlated_exposure_pct": config.max_correlated_exposure_pct,
+        "correlation_threshold": config.correlation_threshold,
     }
 
 

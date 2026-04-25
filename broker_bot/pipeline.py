@@ -61,4 +61,9 @@ def run_backtest_on_history(config: Config, symbols: list[str]) -> pd.DataFrame:
         news_weight=config.news_weight,
         memory_weight=config.memory_weight,
         llm_weight=config.llm_weight,
+        sector_map_path=config.sector_map_path,
+        max_sector_exposure_pct=config.max_sector_exposure_pct,
+        max_correlated_exposure_pct=config.max_correlated_exposure_pct,
+        correlation_threshold=config.correlation_threshold,
+        correlation_window=config.correlation_window,
     )

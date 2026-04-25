@@ -34,7 +34,7 @@ python3 scripts/setup_env.py
 
 `ML Bot` is the original bounded ensemble:
 
-- Base model: a Random Forest predicts short-horizon returns from momentum, volatility, and market context features.
+- Base model: a small supervised ensemble predicts short-horizon returns from momentum, volatility, and market context features. It includes Random Forest, Extra Trees, gradient boosting, and a linear challenger.
 - Market overlays: Alpaca snapshots, market movers, most-active symbols, and recent news headlines can nudge the base prediction up or down.
 - Optional LLM overlay: an LLM can review the strongest candidates and add a small explainable adjustment, but only within tight limits.
 - Memory: the bot scores symbols partly by how well its past decisions on those symbols have worked.
@@ -43,9 +43,9 @@ python3 scripts/setup_env.py
 `LLM Bot` is a multi-role decision system:
 
 - `Stock Selector`: chooses the watchlist
-- `Analyst`: writes daily memos for each watchlist stock
-- `Trader`: reads the analyst memos plus coach guidance and makes today’s long/short decisions
-- `Coach`: reviews mature outcomes and writes the next feedback report for the trader
+- `Analyst`: writes daily memos for each watchlist stock, including catalysts, contrary evidence, time horizon, and confidence
+- `Trader`: reads the analyst memos plus coach guidance and makes today’s long/short decisions with structured conviction and expected upside/downside
+- `Coach`: reviews mature outcomes and writes the next feedback report for the trader, avoiding behavior changes based on one-off results
 
 Both bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate Alpaca paper accounts.
 
@@ -242,9 +242,12 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - `MIN_PRICE` and `MIN_DOLLAR_VOL` filter illiquid or low-priced symbols.
 - `VOL_TARGET` + `VOL_WINDOW` scales leverage down in high-volatility regimes.
 - `MAX_DRAWDOWN`, `MIN_LEVERAGE`, and `DRAWDOWN_WINDOW` apply drawdown guardrails.
+- `MAX_SECTOR_EXPOSURE_PCT` caps total absolute exposure in one mapped sector.
+- `MAX_CORRELATED_EXPOSURE_PCT`, `CORRELATION_THRESHOLD`, and `CORRELATION_WINDOW` cap clusters of highly correlated positions.
 - `TECHNICAL_WEIGHT`, `SNAPSHOT_WEIGHT`, `SCREENER_WEIGHT`, `NEWS_WEIGHT`, `MEMORY_WEIGHT`, and `LLM_WEIGHT` set the ensemble blend before learned-policy updates.
 - `EXECUTION_ORDER_MODE=simple` keeps the old behavior: market orders are submitted only when the bot runs.
 - `EXECUTION_ORDER_MODE=bracket` tells Alpaca to hold server-side take-profit and stop-loss exits for fresh entries using `BRACKET_TAKE_PROFIT_PCT` and `BRACKET_STOP_LOSS_PCT`.
+- `ADAPTIVE_EXITS_ENABLED=1` makes bracket exits volatility-aware using `STOP_LOSS_VOL_MULTIPLE`, `TAKE_PROFIT_REWARD_MULTIPLE`, `MIN_STOP_LOSS_PCT`, and `MAX_STOP_LOSS_PCT`.
 - `TRAILING_STOP_ENABLED=1` adds Alpaca-side trailing-stop protection for positions that remain after rebalance. Use either `TRAILING_STOP_PERCENT` or `TRAILING_STOP_PRICE`.
 - Advanced Alpaca order types are handled conservatively in this project: if a bracket order is rejected, the bot falls back to a simple market order, and trailing stops are only attached when the position size is compatible with whole-share handling.
 - `ALPACA_LLM_API_KEY`, `ALPACA_LLM_SECRET_KEY`, `ALPACA_LLM_PAPER_URL`, and `ALPACA_LLM_DATA_FEED` configure the second paper account used by the LLM bot.
@@ -252,6 +255,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - The dashboard is multi-bot aware: ML and LLM equity, positions, trades, decisions, and reports are stored separately and displayed separately.
 - `OPTIONS_MIN_DTE`, `OPTIONS_MAX_DTE`, `OPTIONS_IDEA_LIMIT`, and `OPTIONS_SPREAD_WIDTH_PCT` control the paper-only options scaffold report.
 - The current options scaffold intentionally stays conservative: it suggests bull call debit spreads for bullish ideas and bear put debit spreads for bearish ideas, using recent option contract close prices as rough planning inputs rather than live spread-aware execution logic.
+- `OPTIONS_MIN_REWARD_RISK` and `OPTIONS_MAX_DEBIT_PCT_OF_WIDTH` filter out weak vertical-spread structures before they appear in the scaffold report.
 - Backtest-only reliability simulation:
   - `MISS_REBALANCE_PROB` simulates skipped rebalances (e.g., CI delays/failures).
   - `REBALANCE_DELAY_DAYS` delays a missed rebalance by N days.

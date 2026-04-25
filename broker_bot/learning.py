@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .bots import bot_label, normalize_bot_name
+from .bots import LLM_BOT_NAME, ML_BOT_NAME, bot_label, normalize_bot_name
 from .config import Config, load_config
 from .data import fetch_daily_bars
 from .llm_utils import call_json_llm
@@ -18,6 +18,7 @@ from .logging_db import (
     read_pending_decision_logs,
     read_recent_decision_logs,
     read_recent_evaluated_decisions,
+    read_recent_selected_decisions,
 )
 
 
@@ -92,6 +93,177 @@ def _component_summary(components: dict[str, float], limit: int = 4) -> str:
         if abs(float(value)) >= 0.0001
     ]
     return ", ".join(parts[:limit]) if parts else "No component breakdown recorded."
+
+
+def _outcome_breakdown(recent_rows: list[tuple[str, str, str, float, float, float | None, float | None, str | None]]) -> dict[str, dict[str, float]]:
+    by_side: dict[str, list[tuple[float, float | None]]] = {}
+    for _, side, _, _, signed_return, _, beat_spy, _ in recent_rows:
+        by_side.setdefault(side, []).append((float(signed_return), beat_spy if beat_spy is None else float(beat_spy)))
+
+    breakdown: dict[str, dict[str, float]] = {}
+    for side, values in by_side.items():
+        signed = [item[0] for item in values]
+        alpha = [item[1] for item in values if item[1] is not None]
+        breakdown[side] = {
+            "samples": float(len(values)),
+            "hit_rate": sum(1 for value in signed if value > 0) / len(signed) if signed else 0.0,
+            "avg_signed_return": sum(signed) / len(signed) if signed else 0.0,
+            "avg_beat_spy": sum(alpha) / len(alpha) if alpha else 0.0,
+        }
+    return breakdown
+
+
+def _component_attribution_lines(component_metrics: dict[str, dict[str, float]]) -> list[str]:
+    if not component_metrics:
+        return ["- Not enough evaluated decisions for component attribution yet."]
+    lines: list[str] = []
+    for component_name, stats in sorted(
+        component_metrics.items(),
+        key=lambda item: float(item[1].get("edge", 0.0)),
+        reverse=True,
+    ):
+        readable = component_name.replace("_adjustment", "").replace("_", " ")
+        edge = float(stats.get("edge", 0.0))
+        hit_rate = float(stats.get("hit_rate", 0.0))
+        samples = int(float(stats.get("samples", 0.0)))
+        verdict = "helping" if edge > 0.001 else ("hurting" if edge < -0.001 else "mixed")
+        lines.append(f"- {readable}: {verdict}; edge={edge:+.2%}, hit rate={hit_rate:.1%}, samples={samples}.")
+    return lines
+
+
+def _counterfactual_hold_scan(config: Config, cutoff_ts: str, bot_name: str) -> tuple[dict[str, float], list[str]]:
+    hold_rows = [
+        row
+        for row in read_recent_decision_logs(config.db_path, limit=300, bot_name=bot_name)
+        if row[3] == 0 and row[2] == "HOLD" and row[0] <= cutoff_ts
+    ]
+    if not hold_rows:
+        return {"hold_sample_count": 0.0}, ["- No mature HOLD candidates were available for counterfactual review."]
+
+    sample = sorted(hold_rows, key=lambda row: abs(float(row[5])), reverse=True)[:40]
+    now = datetime.now(timezone.utc)
+    oldest_ts = min(datetime.fromisoformat(row[0]) for row in sample)
+    symbols = sorted({row[1] for row in sample})
+    try:
+        bars = fetch_daily_bars(config, symbols + ["SPY"], oldest_ts - timedelta(days=10), now, bot_name=bot_name).bars
+    except Exception:
+        return {"hold_sample_count": float(len(sample))}, ["- Counterfactual HOLD scan skipped because market data was unavailable."]
+
+    prices = bars.pivot_table(index="timestamp", columns="Symbol", values="close").sort_index()
+    outcomes: list[dict[str, float | str]] = []
+    for ts, symbol, _, _, _, final_score, _, _ in sample:
+        if symbol not in prices.columns:
+            continue
+        decision_dt = pd.Timestamp(ts)
+        symbol_series = prices[symbol].dropna()
+        future_symbol = symbol_series[symbol_series.index >= decision_dt]
+        if len(future_symbol) <= config.prediction_horizon_days:
+            continue
+
+        entry_price = float(future_symbol.iloc[0])
+        exit_price = float(future_symbol.iloc[config.prediction_horizon_days])
+        raw_return = (exit_price / entry_price) - 1.0 if entry_price > 0 else 0.0
+        would_be_side = "LONG" if float(final_score) >= 0 else "SHORT"
+        signed_return = raw_return if would_be_side == "LONG" else -raw_return
+        spy_return = 0.0
+        if "SPY" in prices.columns:
+            spy_series = prices["SPY"].dropna()
+            future_spy = spy_series[spy_series.index >= decision_dt]
+            if len(future_spy) > config.prediction_horizon_days:
+                spy_entry = float(future_spy.iloc[0])
+                spy_exit = float(future_spy.iloc[config.prediction_horizon_days])
+                spy_return = (spy_exit / spy_entry) - 1.0 if spy_entry > 0 else 0.0
+        outcomes.append(
+            {
+                "symbol": symbol,
+                "side": would_be_side,
+                "score": float(final_score),
+                "signed_return": signed_return,
+                "beat_spy": signed_return - spy_return,
+            }
+        )
+
+    if not outcomes:
+        return {"hold_sample_count": float(len(sample))}, ["- HOLD scan found no candidates with enough future price data yet."]
+
+    missed = [row for row in outcomes if float(row["signed_return"]) > 0.005]
+    avoided = [row for row in outcomes if float(row["signed_return"]) < -0.005]
+    metrics = {
+        "hold_sample_count": float(len(outcomes)),
+        "hold_avg_signed_return": sum(float(row["signed_return"]) for row in outcomes) / len(outcomes),
+        "hold_avg_beat_spy": sum(float(row["beat_spy"]) for row in outcomes) / len(outcomes),
+        "missed_opportunity_rate": len(missed) / len(outcomes),
+        "avoided_loss_rate": len(avoided) / len(outcomes),
+    }
+    top_missed = sorted(missed, key=lambda row: float(row["signed_return"]), reverse=True)[:5]
+    top_avoided = sorted(avoided, key=lambda row: float(row["signed_return"]))[:5]
+    lines = [
+        (
+            f"- Reviewed {len(outcomes)} mature HOLD candidates: average would-be signed return "
+            f"{metrics['hold_avg_signed_return']:.2%}, average alpha {metrics['hold_avg_beat_spy']:.2%}."
+        ),
+        f"- Missed-opportunity rate: {metrics['missed_opportunity_rate']:.1%}; avoided-loss rate: {metrics['avoided_loss_rate']:.1%}.",
+    ]
+    if top_missed:
+        lines.append(
+            "- Best skipped setups: "
+            + "; ".join(
+                f"{row['symbol']} {row['side']} would have returned {float(row['signed_return']):.2%}"
+                for row in top_missed
+            )
+            + "."
+        )
+    if top_avoided:
+        lines.append(
+            "- Worst skipped setups avoided: "
+            + "; ".join(
+                f"{row['symbol']} {row['side']} would have returned {float(row['signed_return']):.2%}"
+                for row in top_avoided
+            )
+            + "."
+        )
+    return metrics, lines
+
+
+def _cross_bot_agreement_lines(config: Config, bot_name: str) -> tuple[dict[str, float], list[str]]:
+    normalized = normalize_bot_name(bot_name)
+    other_bot = LLM_BOT_NAME if normalized == ML_BOT_NAME else ML_BOT_NAME
+    own_rows = read_recent_selected_decisions(config.db_path, limit=80, bot_name=normalized)
+    other_rows = read_recent_selected_decisions(config.db_path, limit=80, bot_name=other_bot)
+    if not own_rows or not other_rows:
+        return {"cross_bot_overlap": 0.0}, [f"- No recent {bot_label(other_bot)} selected decisions were available for comparison."]
+
+    own_latest: dict[str, tuple[str, float]] = {}
+    for row in own_rows:
+        own_latest.setdefault(row[1], (row[2], float(row[4])))
+    other_latest: dict[str, tuple[str, float]] = {}
+    for row in other_rows:
+        other_latest.setdefault(row[1], (row[2], float(row[4])))
+
+    overlap = sorted(set(own_latest) & set(other_latest))
+    agreements = [symbol for symbol in overlap if own_latest[symbol][0] == other_latest[symbol][0]]
+    disagreements = [symbol for symbol in overlap if own_latest[symbol][0] != other_latest[symbol][0]]
+    metrics = {
+        "cross_bot_overlap": float(len(overlap)),
+        "cross_bot_agreement_count": float(len(agreements)),
+        "cross_bot_disagreement_count": float(len(disagreements)),
+        "cross_bot_agreement_rate": len(agreements) / len(overlap) if overlap else 0.0,
+    }
+    lines = [
+        f"- Compared recent selected decisions against {bot_label(other_bot)}: {len(overlap)} overlapping symbols, {len(agreements)} agreements, {len(disagreements)} disagreements.",
+    ]
+    if agreements:
+        lines.append("- Agreement names: " + ", ".join(f"{symbol} {own_latest[symbol][0]}" for symbol in agreements[:8]) + ".")
+    if disagreements:
+        lines.append(
+            "- Disagreement names: "
+            + ", ".join(
+                f"{symbol} {normalized.upper()}={own_latest[symbol][0]} vs {other_bot.upper()}={other_latest[symbol][0]}"
+                for symbol in disagreements[:8]
+            )
+            + "."
+        )
+    return metrics, lines
 
 
 def _thesis_bullets(
@@ -408,6 +580,8 @@ def review_and_learn(config: Config, bot_name: str = "ml") -> LearningReport:
 
     component_metrics = _component_metrics(config.db_path, limit=300, bot_name=normalized_bot)
     updated_weights, changed_weights = _propose_weight_updates(config, component_metrics)
+    outcome_breakdown = _outcome_breakdown(recent_rows)
+    hold_metrics, hold_lines = _counterfactual_hold_scan(config, cutoff_ts, normalized_bot)
 
     summary = (
         f"Evaluated {len(evaluated_rows)} mature decisions this run; "
@@ -423,11 +597,21 @@ def review_and_learn(config: Config, bot_name: str = "ml") -> LearningReport:
         "recent_avg_signed_return": avg_signed_return,
         "recent_avg_beat_spy": avg_beat_spy,
     }
+    metrics.update(hold_metrics)
     body = "\n".join(
         [
             f"# {bot_label(normalized_bot)} Learning Update",
             "",
             summary,
+            "",
+            "## Decision quality diagnostics",
+            json.dumps(outcome_breakdown or {"status": "not enough outcomes yet"}, indent=2, sort_keys=True),
+            "",
+            "## Component attribution",
+            *_component_attribution_lines(component_metrics),
+            "",
+            "## Counterfactual HOLD scan",
+            *hold_lines,
             "",
             "## Weight changes",
             json.dumps(changed_weights or {"status": "no bounded weight changes this run"}, indent=2, sort_keys=True),
@@ -489,6 +673,12 @@ def generate_strategy_report(config: Config, bot_name: str = "ml") -> StrategyRe
 
     recent_decisions = read_recent_decision_logs(config.db_path, limit=30, bot_name=normalized_bot)
     recent_outcomes = read_recent_evaluated_decisions(config.db_path, limit=20, bot_name=normalized_bot)
+    cross_bot_metrics, cross_bot_lines = _cross_bot_agreement_lines(current_config, normalized_bot)
+    market_regime = latest_run_context.get("market_regime", {}) if isinstance(latest_run_context.get("market_regime"), dict) else {}
+    regime_notes = market_regime.get("notes", [])
+    if not isinstance(regime_notes, list):
+        regime_notes = []
+    portfolio_risk = latest_run_context.get("portfolio_risk", {}) if isinstance(latest_run_context.get("portfolio_risk"), dict) else {}
 
     watchlist_rows: list[dict] = []
     for ts, symbol, side, selected, base_score, final_score, components_json, rationale in recent_decisions:
@@ -580,6 +770,16 @@ def generate_strategy_report(config: Config, bot_name: str = "ml") -> StrategyRe
             "## Current learned weights",
             json.dumps(current_weights, indent=2, sort_keys=True),
             "",
+            "## Market regime and risk controls",
+            f"Regime: {market_regime.get('label', 'unknown')}",
+            *(f"- {note}" for note in regime_notes if isinstance(note, str)),
+            "",
+            "Portfolio risk summary:",
+            json.dumps(portfolio_risk or {"status": "no portfolio risk summary captured"}, indent=2, sort_keys=True),
+            "",
+            "## Cross-bot agreement",
+            *cross_bot_lines,
+            "",
             "## Current watchlist",
             *(watchlist_lines or ["- No current watchlist entries were available."]),
             "",
@@ -615,6 +815,7 @@ def generate_strategy_report(config: Config, bot_name: str = "ml") -> StrategyRe
     metrics["recent_outcome_count"] = float(len(recent_outcomes))
     metrics["watchlist_count"] = float(len(watchlist_rows))
     metrics["deep_research_count"] = float(len(deep_notes))
+    metrics.update(cross_bot_metrics)
     summary = (
         f"{learning_report.summary} Advisor says: {advisor_summary}"
         if advisor_summary
