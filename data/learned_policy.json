@@ -16,14 +16,14 @@
       "samples": 20.0
     }
   },
-  "generated_at": "2026-04-25T18:48:10.575688+00:00",
+  "generated_at": "2026-04-26T13:31:28.482212+00:00",
   "summary": "Evaluated 0 mature decisions this run; recent hit rate 70.0%, average signed return 1.25%.",
   "weights": {
     "llm_weight": 0.8,
     "memory_weight": 0.8,
     "news_weight": 0.9,
     "screener_weight": 0.7,
-    "snapshot_weight": 1.7,
-    "technical_weight": 1.9
+    "snapshot_weight": 2.0,
+    "technical_weight": 2.0
   }
 }
