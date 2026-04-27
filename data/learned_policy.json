@@ -16,7 +16,7 @@
       "samples": 34.0
     }
   },
-  "generated_at": "2026-04-27T13:52:58.890121+00:00",
+  "generated_at": "2026-04-27T22:07:19.619644+00:00",
   "summary": "Evaluated 0 mature decisions this run; recent hit rate 55.9%, average signed return 0.54%.",
   "weights": {
     "llm_weight": 0.8,
