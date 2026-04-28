@@ -1,23 +1,28 @@
 {
   "component_metrics": {
+    "memory_adjustment": {
+      "edge": 0.00041794005815453463,
+      "hit_rate": 0.3448275862068966,
+      "samples": 29.0
+    },
     "screener_adjustment": {
-      "edge": 0.0221246731825393,
-      "hit_rate": 1.0,
-      "samples": 2.0
+      "edge": -0.0030619797251515055,
+      "hit_rate": 0.3333333333333333,
+      "samples": 6.0
     },
     "snapshot_adjustment": {
-      "edge": 0.0067188424800631195,
-      "hit_rate": 0.5882352941176471,
-      "samples": 34.0
+      "edge": 0.0048469856510913074,
+      "hit_rate": 0.5079365079365079,
+      "samples": 63.0
     },
     "technical_adjustment": {
-      "edge": 0.0032716051561434097,
-      "hit_rate": 0.5588235294117647,
-      "samples": 34.0
+      "edge": 0.00029755937914049165,
+      "hit_rate": 0.36507936507936506,
+      "samples": 63.0
     }
   },
-  "generated_at": "2026-04-27T22:07:19.619644+00:00",
-  "summary": "Evaluated 0 mature decisions this run; recent hit rate 55.9%, average signed return 0.54%.",
+  "generated_at": "2026-04-28T22:11:37.431075+00:00",
+  "summary": "Evaluated 0 mature decisions this run; recent hit rate 50.8%, average signed return 0.45%.",
   "weights": {
     "llm_weight": 0.8,
     "memory_weight": 0.8,
