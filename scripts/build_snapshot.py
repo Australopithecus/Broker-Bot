@@ -123,7 +123,7 @@ def main() -> None:
                     "unreal_pl": row[4],
                     "unrealized_pl": row[4],
                     "protection_mode": "Unknown",
-                    "protection_summary": "Snapshot built from DB only; no live Alpaca protection check.",
+                    "protection_summary": "Snapshot built from DB only; no live brokerage-service protection check.",
                     "take_profit_price": None,
                     "stop_price": None,
                     "trailing_stop": None,

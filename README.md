@@ -1,6 +1,6 @@
 # Broker Bot (Paper Trading)
 
-A Python-based paper-trading project for Alpaca paper accounts with two named bots:
+A Python-based paper-trading project for brokerage-service paper accounts with two named bots:
 
 - `ML Bot`: the original machine-learning ensemble bot
 - `LLM Bot`: a second bot that uses a network of LLM roles for stock selection, analysis, trading, and coaching
@@ -35,7 +35,7 @@ python3 scripts/setup_env.py
 `ML Bot` is the original bounded ensemble:
 
 - Base model: a small supervised ensemble predicts short-horizon returns from momentum, volatility, and market context features. It includes Random Forest, Extra Trees, gradient boosting, and a linear challenger.
-- Market overlays: Alpaca snapshots, market movers, most-active symbols, and recent news headlines can nudge the base prediction up or down.
+- Market overlays: brokerage-service snapshots, market movers, most-active symbols, and recent news headlines can nudge the base prediction up or down.
 - Optional LLM overlay: an LLM can review the strongest candidates and add a small explainable adjustment, but only within tight limits.
 - Memory: the bot scores symbols partly by how well its past decisions on those symbols have worked.
 - Learning loop: mature decisions are evaluated after the prediction horizon passes, component weights are adjusted within bounds, and the learned policy is saved in `data/learned_policy.json`.
@@ -48,7 +48,7 @@ python3 scripts/setup_env.py
 - `Skeptic`: challenges the Trader before execution, reducing or vetoing weakly supported ideas
 - `Coach`: reviews mature outcomes and writes the next feedback report for the trader, avoiding behavior changes based on one-off results
 
-Both bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate Alpaca paper accounts.
+Both bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate brokerage paper accounts.
 
 Reporting: markdown reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots. The report loop includes learning, post-trade attribution, and champion/challenger shadow comparisons.
 
@@ -174,7 +174,7 @@ You can deploy the UI via Streamlit Community Cloud using `streamlit_app.py`. Th
 The Streamlit app calls your bot API endpoints and shows:
 Equity vs SPY, positions, trades, analyst/trader/coach reports, strategy-report snapshots, and recent decision rationale for both bots in separate sections.
 
-The optional dashboard run button triggers the same GitHub Actions workflow as the manual `Run workflow` button in GitHub. It requires a confirmation checkbox because the workflow can rebalance Alpaca paper portfolios.
+The optional dashboard run button triggers the same GitHub Actions workflow as the manual `Run workflow` button in GitHub. It requires a confirmation checkbox because the workflow can rebalance brokerage-service paper portfolios.
 
 The dashboard also includes a Champion/Challenger lab. It explains the current live policy, the stricter shadow policy being tested, recent outcomes, implemented safety changes, and historical report entries so you can inspect how the strategy comparison changes over time.
 
@@ -268,7 +268,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 
 - The bot uses long/short signals with inverse-volatility sizing and an SPY regime filter (reduces leverage in bear regimes).
 - The base model is a Random Forest regressor on momentum/volatility features with market context.
-- The live signal stack can blend in Alpaca snapshots, market movers, most-active names, recent Alpaca news headlines, symbol memory, and optional LLM watchlist judgments.
+- The live signal stack can blend in brokerage-service snapshots, market movers, most-active names, recent brokerage-service news headlines, symbol memory, and optional LLM watchlist judgments.
 - The LLM bot keeps its own watchlist, analyst daily reports, Skeptic reviews, trader daily reports, and coach reports.
 - The backtest uses walk-forward retraining, weekly rebalancing, and transaction cost estimates for realism.
 - The backtest now better matches the live ensemble by simulating bounded overlay components offline from historical price/volume structure.
@@ -291,14 +291,14 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - `MAX_CORRELATED_EXPOSURE_PCT`, `CORRELATION_THRESHOLD`, and `CORRELATION_WINDOW` cap clusters of highly correlated positions.
 - `TECHNICAL_WEIGHT`, `SNAPSHOT_WEIGHT`, `SCREENER_WEIGHT`, `NEWS_WEIGHT`, `MEMORY_WEIGHT`, and `LLM_WEIGHT` set the ensemble blend before learned-policy updates.
 - `EXECUTION_ORDER_MODE=simple` keeps the old behavior: market orders are submitted only when the bot runs.
-- `EXECUTION_ORDER_MODE=bracket` tells Alpaca to hold server-side take-profit and stop-loss exits for fresh entries using `BRACKET_TAKE_PROFIT_PCT` and `BRACKET_STOP_LOSS_PCT`.
+- `EXECUTION_ORDER_MODE=bracket` tells the brokerage service to hold server-side take-profit and stop-loss exits for fresh entries using `BRACKET_TAKE_PROFIT_PCT` and `BRACKET_STOP_LOSS_PCT`.
 - `ADAPTIVE_EXITS_ENABLED=1` makes bracket exits volatility-aware using `STOP_LOSS_VOL_MULTIPLE`, `TAKE_PROFIT_REWARD_MULTIPLE`, `MIN_STOP_LOSS_PCT`, and `MAX_STOP_LOSS_PCT`.
-- `TRAILING_STOP_ENABLED=1` adds Alpaca-side trailing-stop protection for positions that remain after rebalance. Use either `TRAILING_STOP_PERCENT` or `TRAILING_STOP_PRICE`.
-- `CARETAKER_TRAILING_STOP_ENABLED=1` lets the market-hours caretaker attach Alpaca-side trailing stops to unprotected whole-share positions without rerunning the full trading strategy.
+- `TRAILING_STOP_ENABLED=1` adds broker-side trailing-stop protection for positions that remain after rebalance. Use either `TRAILING_STOP_PERCENT` or `TRAILING_STOP_PRICE`.
+- `CARETAKER_TRAILING_STOP_ENABLED=1` lets the market-hours caretaker attach broker-side trailing stops to unprotected whole-share positions without rerunning the full trading strategy.
 - `CARETAKER_DAILY_DRAWDOWN_LIMIT` can close positions if same-day account drawdown breaches a configured threshold; leave it at `0` to disable this kill switch.
-- Advanced Alpaca order types are handled conservatively in this project: if a bracket order is rejected, the bot falls back to a simple market order, and trailing stops are only attached when the position size is compatible with whole-share handling.
+- Advanced broker order types are handled conservatively in this project: if a bracket order is rejected, the bot falls back to a simple market order, and trailing stops are only attached when the position size is compatible with whole-share handling.
 - `ALPACA_LLM_API_KEY`, `ALPACA_LLM_SECRET_KEY`, `ALPACA_LLM_PAPER_URL`, and `ALPACA_LLM_DATA_FEED` configure the second paper account used by the LLM bot.
-- The local dashboard and Streamlit snapshot now show broker-side protection summaries per position so you can see whether exits are resting at Alpaca.
+- The local dashboard and Streamlit snapshot now show broker-side protection summaries per position so you can see whether exits are resting with the brokerage service.
 - The dashboard is multi-bot aware: ML and LLM equity, positions, trades, decisions, and reports are stored separately and displayed separately.
 - `OPTIONS_MIN_DTE`, `OPTIONS_MAX_DTE`, `OPTIONS_IDEA_LIMIT`, and `OPTIONS_SPREAD_WIDTH_PCT` control the paper-only options scaffold report.
 - The current options scaffold intentionally stays conservative: it suggests bull call debit spreads for bullish ideas and bear put debit spreads for bearish ideas, using recent option contract close prices as rough planning inputs rather than live spread-aware execution logic.

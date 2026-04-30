@@ -130,7 +130,7 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
                     "unreal_pl": row[4],
                     "unrealized_pl": row[4],
                     "protection_mode": "Unknown",
-                    "protection_summary": "Snapshot-only mode; no live Alpaca protection check.",
+                    "protection_summary": "Snapshot-only mode; no live brokerage-service protection check.",
                     "take_profit_price": None,
                     "stop_price": None,
                     "trailing_stop": None,
@@ -307,30 +307,35 @@ def _dashboard_html() -> str:
     :root {
       --bg: #0b1020;
       --panel: #111827;
+      --panel-soft: #0f172a;
+      --border: #1f2937;
       --muted: #9ca3af;
       --text: #e5e7eb;
       --accent: #22d3ee;
       --accent-2: #a78bfa;
       --green: #34d399;
       --red: #f87171;
+      --radius: 16px;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: "Avenir", "Gill Sans", "Helvetica Neue", sans-serif;
+      font-family: "Avenir Next", "Avenir", "Gill Sans", "Helvetica Neue", sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
       background: radial-gradient(circle at top, #172554, var(--bg));
       color: var(--text);
       min-height: 100vh;
       display: flex;
       align-items: stretch;
       justify-content: center;
-      padding: 24px;
+      padding: 18px;
     }
     .container {
-      width: min(1100px, 100%);
+      width: min(1180px, 100%);
       display: grid;
       grid-template-rows: auto auto 1fr;
-      gap: 20px;
+      gap: 14px;
     }
     header {
       display: flex;
@@ -339,44 +344,51 @@ def _dashboard_html() -> str:
     }
     header h1 {
       margin: 0;
-      font-size: 28px;
-      letter-spacing: 0.5px;
+      font-size: clamp(24px, 3vw, 32px);
+      letter-spacing: -0.03em;
     }
-    header p { margin: 0; color: var(--muted); }
+    header p { margin: 0; color: var(--muted); max-width: 760px; }
 
     .summary {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
+      gap: 10px;
     }
     .card {
       background: linear-gradient(145deg, #111827, #0f172a);
-      border: 1px solid #1f2937;
-      padding: 14px 16px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
       border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.22);
     }
-    .card h3 { margin: 0; font-size: 12px; color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; }
-    .card .value { margin-top: 6px; font-size: 20px; font-weight: 600; }
+    .card h3 { margin: 0; font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    .card .value { margin-top: 4px; font-size: 18px; font-weight: 650; letter-spacing: -0.02em; }
 
     .grid {
       display: grid;
       grid-template-columns: 2fr 1fr;
-      gap: 16px;
+      gap: 12px;
       align-items: stretch;
     }
+    .cards { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 
     .panel {
       background: var(--panel);
-      border: 1px solid #1f2937;
-      border-radius: 18px;
-      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
-    .panel h2 { margin: 0; font-size: 16px; color: var(--text); }
+    .panel h2 { margin: 0; font-size: 16px; color: var(--text); letter-spacing: -0.01em; }
+    .panel h3 { margin: 10px 0 4px; font-size: 13px; color: var(--text); }
+    .panel p { margin: 0; max-width: 900px; }
+    .panel ul { margin: 6px 0 0 18px; padding: 0; }
+    .panel li { margin: 3px 0; }
+    details { border-top: 1px solid var(--border); padding-top: 8px; }
+    summary { cursor: pointer; color: var(--text); font-weight: 650; }
 
     canvas { width: 100%; height: 240px; }
 
@@ -388,7 +400,7 @@ def _dashboard_html() -> str:
     th, td {
       text-align: left;
       padding: 6px 8px;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid var(--border);
     }
     th { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 
@@ -1288,11 +1300,11 @@ async function loadStrategyBlueprint() {
   const safety = Array.isArray(blueprint.current_safety_posture) ? blueprint.current_safety_posture : [];
   const changelog = Array.isArray(blueprint.changelog) ? blueprint.changelog : [];
   const modelCards = models.map(model => `
-    <div class="card" style="margin-top: 10px;">
-      <strong>${esc(model.name)} - ${esc(model.role)}</strong><br />
-      ${esc(model.description)}
+    <details style="margin-top: 8px;">
+      <summary>${esc(model.name)} - ${esc(model.role)}</summary>
+      <p style="margin-top: 6px;">${esc(model.description)}</p>
       <ul>${(model.strategies || []).map(item => `<li>${esc(item)}</li>`).join('')}</ul>
-    </div>
+    </details>
   `).join('');
   const changes = changelog.map((entry, index) => `
     <details ${index === 0 ? 'open' : ''} style="margin-top: 10px;">
@@ -1308,14 +1320,22 @@ async function loadStrategyBlueprint() {
       <div class="card"><h3>Change Log</h3><div class="value">${changelog.length}</div></div>
     </div>
     <p>${esc(blueprint.summary || '')}</p>
-    <h3>Models And Strategies</h3>
-    ${modelCards || '<p class="muted">No model description available.</p>'}
-    <h3>Shared Strategy Layers</h3>
-    <ul>${shared.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
-    <h3>Current Safety Posture</h3>
-    <ul>${safety.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
-    <h3>Revision History</h3>
-    ${changes || '<p class="muted">No changelog entries available.</p>'}
+    <details>
+      <summary>Models and strategies</summary>
+      ${modelCards || '<p class="muted">No model description available.</p>'}
+    </details>
+    <details>
+      <summary>Shared strategy layers</summary>
+      <ul>${shared.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
+    </details>
+    <details>
+      <summary>Current safety posture</summary>
+      <ul>${safety.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
+    </details>
+    <details>
+      <summary>Revision history</summary>
+      ${changes || '<p class="muted">No changelog entries available.</p>'}
+    </details>
   `;
 }
 

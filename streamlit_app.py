@@ -67,6 +67,47 @@ DEFAULT_WINDOW_KEY = "14d"
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
 st.title("Broker Bot Dashboard")
 st.caption("A single trend graph sits at the top, while the sections below keep each bot's trades, reports, and positions separate.")
+st.markdown(
+    """
+    <style>
+      .block-container {
+        max-width: 1180px;
+        padding-top: 1.35rem;
+        padding-bottom: 2.5rem;
+      }
+      h1 {
+        letter-spacing: -0.035em;
+        margin-bottom: 0.15rem;
+      }
+      h2, h3 {
+        letter-spacing: -0.015em;
+      }
+      p, li, div[data-testid="stMarkdownContainer"] {
+        line-height: 1.42;
+      }
+      div[data-testid="stMetric"] {
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 0.85rem;
+        padding: 0.65rem 0.8rem;
+        background: rgba(15, 23, 42, 0.035);
+      }
+      div[data-testid="stExpander"] {
+        border-color: rgba(148, 163, 184, 0.25);
+        border-radius: 0.85rem;
+      }
+      div[data-testid="stHorizontalBlock"] {
+        gap: 0.8rem;
+      }
+      .stTabs [data-baseweb="tab-list"] {
+        gap: 0.35rem;
+      }
+      .stTabs [data-baseweb="tab"] {
+        padding: 0.45rem 0.75rem;
+      }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 @st.cache_data(ttl=60)
@@ -522,28 +563,29 @@ def _render_strategy_blueprint(blueprint: dict) -> None:
     col4.metric("Changelog Entries", str(len(changelog)))
     st.write(blueprint.get("summary") or "")
 
-    model_tabs = st.tabs([str(model.get("name") or f"Model {idx + 1}") for idx, model in enumerate(models)]) if models else []
-    for tab, model in zip(model_tabs, models):
-        with tab:
-            st.markdown(f"**Role:** {model.get('role', 'Not specified')}")
-            st.write(model.get("description", ""))
-            strategies = model.get("strategies") if isinstance(model.get("strategies"), list) else []
-            for item in strategies:
+    with st.expander("Show model details, safety posture, and revision history", expanded=False):
+        model_tabs = st.tabs([str(model.get("name") or f"Model {idx + 1}") for idx, model in enumerate(models)]) if models else []
+        for tab, model in zip(model_tabs, models):
+            with tab:
+                st.markdown(f"**Role:** {model.get('role', 'Not specified')}")
+                st.write(model.get("description", ""))
+                strategies = model.get("strategies") if isinstance(model.get("strategies"), list) else []
+                for item in strategies:
+                    st.markdown(f"- {item}")
+
+        shared_layers = blueprint.get("shared_layers") if isinstance(blueprint.get("shared_layers"), list) else []
+        safety = blueprint.get("current_safety_posture") if isinstance(blueprint.get("current_safety_posture"), list) else []
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.markdown("**Shared Strategy Layers**")
+            for item in shared_layers:
+                st.markdown(f"- {item}")
+        with col_b:
+            st.markdown("**Current Safety Posture**")
+            for item in safety:
                 st.markdown(f"- {item}")
 
-    shared_layers = blueprint.get("shared_layers") if isinstance(blueprint.get("shared_layers"), list) else []
-    safety = blueprint.get("current_safety_posture") if isinstance(blueprint.get("current_safety_posture"), list) else []
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.markdown("**Shared Strategy Layers**")
-        for item in shared_layers:
-            st.markdown(f"- {item}")
-    with col_b:
-        st.markdown("**Current Safety Posture**")
-        for item in safety:
-            st.markdown(f"- {item}")
-
-    with st.expander("Revision History", expanded=False):
+        st.markdown("**Revision History**")
         for entry in changelog:
             st.markdown(
                 f"**Revision {entry.get('revision', 'unknown')} - {entry.get('title', 'Untitled')}**  \n"
@@ -567,7 +609,7 @@ def _render_cloud_run_controls() -> None:
     with st.expander("Run Bot Now", expanded=False):
         st.caption(
             "This starts the existing GitHub Actions cloud workflow. "
-            "The full run can rebalance Alpaca paper portfolios and update the dashboard snapshot."
+            "The full run can rebalance brokerage-service paper portfolios and update the dashboard snapshot."
         )
         cols = st.columns(4)
         cols[0].metric("Workflow", GITHUB_WORKFLOW_ID)
@@ -1064,7 +1106,7 @@ for tab, (bot_name, bot_label_text) in zip(tabs, bot_names):
         st.subheader("Positions")
         if positions:
             if any(row.get("protection_mode") for row in positions):
-                st.caption("Broker-side protection is shown when Alpaca has exits resting for this bot's account.")
+                st.caption("Broker-side protection is shown when the brokerage service has exits resting for this bot's account.")
             st.dataframe(positions, use_container_width=True)
         else:
             st.caption("No positions logged yet.")

@@ -10,7 +10,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
     "revision_date": "2026-04-30",
     "summary": (
         "Broker Bot is a paper-trading research system with two competing bots: an ML ensemble bot and an LLM decision-network bot. "
-        "Both bots use separate Alpaca paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports."
+        "Both bots use separate brokerage paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports."
     ),
     "models": [
         {
@@ -22,7 +22,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
             "strategies": [
                 "Predicts short-horizon returns from momentum, volatility, liquidity, and market-context features.",
                 "Uses an ensemble-style model stack with tree models, boosting, and a linear challenger.",
-                "Adds bounded overlays from Alpaca snapshots, mover/activity screens, recent news, symbol memory, and optional LLM review.",
+                "Adds bounded overlays from brokerage-service snapshots, mover/activity screens, recent news, symbol memory, and optional LLM review.",
                 "Applies a minimum absolute signal score gate so weak selected signals become HOLD before sizing.",
                 "Uses inverse-volatility target weighting, SPY regime leverage, sector caps, correlation caps, and drawdown controls.",
             ],
@@ -43,7 +43,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
         },
     ],
     "shared_layers": [
-        "Separate Alpaca paper credentials allow ML and LLM bot equity curves to be compared cleanly.",
+        "Separate brokerage paper credentials allow ML and LLM bot equity curves to be compared cleanly.",
         "Rebalance runs can submit paper orders, while snapshot and caretaker runs update dashboard data and protection status.",
         "Caretaker runs can attach broker-side trailing stops to compatible whole-share positions and can enforce an optional daily drawdown kill switch.",
         "Learning reports evaluate mature decisions, calculate signed returns, compare against SPY, and update bounded learned-policy weights.",
@@ -105,7 +105,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
             "date": "2026-04-24",
             "title": "Second paper account and LLM bot",
             "changes": [
-                "Separated ML and LLM bots into distinct Alpaca paper accounts.",
+                "Separated ML and LLM bots into distinct brokerage paper accounts.",
                 "Added LLM Stock Selector, Analyst, Trader, and Coach reports.",
                 "Added separate LLM equity, positions, trades, decisions, and reports in the dashboard.",
             ],
