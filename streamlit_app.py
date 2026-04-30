@@ -84,11 +84,30 @@ def _github_actions_url(repo: str) -> str:
     return f"https://github.com/{repo}/actions/workflows/{GITHUB_WORKFLOW_ID}"
 
 
-def _dispatch_github_workflow(repo: str) -> tuple[bool, str]:
+def _token_looks_placeholder(token: str) -> bool:
+    stripped = token.strip()
+    return stripped in {"github_pat_...", "ghp_...", "..."} or stripped.endswith("...")
+
+
+def _github_actions_config_issues(repo: str) -> list[str]:
+    issues = []
     if not repo:
-        return False, "Set GITHUB_REPOSITORY in Streamlit secrets, for example YOUR_USERNAME/YOUR_REPO."
+        issues.append("Set GITHUB_REPOSITORY in Streamlit secrets, for example YOUR_USERNAME/YOUR_REPO.")
     if not GITHUB_ACTIONS_TOKEN:
-        return False, "Set GITHUB_ACTIONS_TOKEN in Streamlit secrets before triggering runs from the dashboard."
+        issues.append("Set GITHUB_ACTIONS_TOKEN in Streamlit secrets.")
+    elif _token_looks_placeholder(GITHUB_ACTIONS_TOKEN):
+        issues.append("Replace the placeholder GITHUB_ACTIONS_TOKEN with the full GitHub token.")
+    if not GITHUB_WORKFLOW_ID:
+        issues.append("Set GITHUB_WORKFLOW_ID in Streamlit secrets.")
+    if not GITHUB_WORKFLOW_REF:
+        issues.append("Set GITHUB_WORKFLOW_REF in Streamlit secrets.")
+    return issues
+
+
+def _dispatch_github_workflow(repo: str) -> tuple[bool, str]:
+    issues = _github_actions_config_issues(repo)
+    if issues:
+        return False, " ".join(issues)
 
     url = f"https://api.github.com/repos/{repo}/actions/workflows/{GITHUB_WORKFLOW_ID}/dispatches"
     resp = requests.post(
@@ -441,35 +460,44 @@ def _render_system_health(snapshot_meta: dict, bots_payload: dict[str, dict]) ->
 def _render_cloud_run_controls() -> None:
     repo = _github_repo_from_data_url()
     actions_url = _github_actions_url(repo)
+    config_issues = _github_actions_config_issues(repo)
+    token_status = "Set"
+    if not GITHUB_ACTIONS_TOKEN:
+        token_status = "Missing"
+    elif _token_looks_placeholder(GITHUB_ACTIONS_TOKEN):
+        token_status = "Placeholder"
 
     with st.expander("Run Bot Now", expanded=False):
         st.caption(
             "This starts the existing GitHub Actions cloud workflow. "
             "The full run can rebalance Alpaca paper portfolios and update the dashboard snapshot."
         )
-        cols = st.columns(3)
+        cols = st.columns(4)
         cols[0].metric("Workflow", GITHUB_WORKFLOW_ID)
         cols[1].metric("Branch", GITHUB_WORKFLOW_REF)
         cols[2].metric("Repository", repo or "not set")
+        cols[3].metric("GitHub Token", token_status)
 
         confirmed = st.checkbox(
             "I understand this may submit paper-trading orders.",
             key="confirm_cloud_run",
         )
-        disabled = not confirmed or not repo or not GITHUB_ACTIONS_TOKEN
+        disabled = bool(config_issues)
         if st.button("Start Cloud Run", disabled=disabled, type="primary"):
-            ok, message = _dispatch_github_workflow(repo)
-            if ok:
-                st.success(message)
-                if actions_url:
-                    st.link_button("Open GitHub Actions", actions_url)
+            if not confirmed:
+                st.warning("Check the paper-trading acknowledgement before starting the cloud run.")
             else:
-                st.error(message)
+                ok, message = _dispatch_github_workflow(repo)
+                if ok:
+                    st.success(message)
+                    if actions_url:
+                        st.link_button("Open GitHub Actions", actions_url)
+                else:
+                    st.error(message)
 
-        if not repo:
-            st.warning("Set GITHUB_REPOSITORY in Streamlit secrets to enable dashboard-triggered runs.")
-        elif not GITHUB_ACTIONS_TOKEN:
-            st.info("Add GITHUB_ACTIONS_TOKEN in Streamlit secrets to enable the button.")
+        if config_issues:
+            for issue in config_issues:
+                st.warning(issue)
             if actions_url:
                 st.link_button("Run Manually In GitHub", actions_url)
         elif actions_url:
