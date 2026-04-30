@@ -318,6 +318,7 @@ def _dashboard_html() -> str:
       --radius: 16px;
     }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
       font-family: "Avenir Next", "Avenir", "Gill Sans", "Helvetica Neue", sans-serif;
@@ -326,10 +327,102 @@ def _dashboard_html() -> str:
       background: radial-gradient(circle at top, #172554, var(--bg));
       color: var(--text);
       min-height: 100vh;
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
+      padding: 0;
+    }
+    .app-shell {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 18px;
       padding: 18px;
+      align-items: start;
+    }
+    .sidebar {
+      position: sticky;
+      top: 18px;
+      min-height: calc(100vh - 36px);
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      border-radius: 20px;
+      box-shadow: 0 18px 46px rgba(0,0,0,0.28);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .sidebar h1 {
+      margin: 2px 0 4px;
+      font-size: 24px;
+      letter-spacing: -0.04em;
+    }
+    .sidebar p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .sidebar-block {
+      display: grid;
+      gap: 6px;
+    }
+    .control {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #0b1223;
+      color: var(--text);
+      border: 1px solid var(--border);
+      font: inherit;
+    }
+    .sidebar-status {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .sidebar-status div {
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 12px;
+      padding: 8px;
+      background: rgba(255,255,255,0.03);
+    }
+    .sidebar-status span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .sidebar-status strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 13px;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .sidebar-nav {
+      display: grid;
+      gap: 6px;
+    }
+    .sidebar-nav a {
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.025);
+      transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+    }
+    .sidebar-nav a:hover {
+      border-color: rgba(34, 211, 238, 0.45);
+      background: rgba(34, 211, 238, 0.09);
+      transform: translateX(2px);
     }
     .container {
       width: min(1180px, 100%);
@@ -348,6 +441,7 @@ def _dashboard_html() -> str:
       letter-spacing: -0.03em;
     }
     header p { margin: 0; color: var(--muted); max-width: 760px; }
+    section, header { scroll-margin-top: 18px; }
 
     .summary {
       display: grid;
@@ -451,34 +545,71 @@ def _dashboard_html() -> str:
       color: var(--muted);
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 980px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar {
+        position: relative;
+        top: auto;
+        min-height: 0;
+      }
+      .sidebar-nav { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); }
+      .sidebar-nav a:hover { transform: none; }
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Dashboard navigation">
+      <div>
+        <div class="eyebrow">Paper Trading Lab</div>
+        <h1>Broker Bot</h1>
+        <p>Two competing paper-trading systems, one cleaner cockpit.</p>
+      </div>
+      <div class="sidebar-block">
+        <label class="muted" for="botSelector">Active bot</label>
+        <select id="botSelector" class="control"></select>
+      </div>
+      <div class="sidebar-status">
+        <div><span>Revision</span><strong id="sidebarRevision">--</strong></div>
+        <div><span>Data</span><strong id="sidebarFreshness">--</strong></div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#overview">Overview</a>
+        <a href="#blueprint">Blueprint</a>
+        <a href="#performance">Performance</a>
+        <a href="#holdings">Holdings</a>
+        <a href="#comparison">Comparison</a>
+        <a href="#champion">Champion Lab</a>
+        <a href="#risk">Risk</a>
+        <a href="#positions">Positions</a>
+        <a href="#trades">Trades</a>
+        <a href="#reports">Reports</a>
+        <a href="#decisions">Decisions</a>
+      </nav>
+    </aside>
+
+    <main class="container">
+    <header id="overview">
+      <div class="eyebrow">Dashboard Cockpit</div>
       <h1>Broker Bot Dashboard</h1>
       <p>Local paper-trading cockpit • Auto-refreshes every 10s • The chart compares bot performance while the panels explain health, risk, decisions, and reports.</p>
-      <label class="muted" for="botSelector">Bot</label>
-      <select id="botSelector" style="width: 180px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;"></select>
     </header>
 
-    <section class="summary">
+    <section class="summary" aria-label="System overview">
       <div class="card"><h3>Data Freshness</h3><div class="value" id="freshness">--</div></div>
       <div class="card"><h3>Source</h3><div class="value">Local API</div></div>
       <div class="card"><h3>Bots Seen</h3><div class="value" id="botsSeen">--</div></div>
       <div class="card"><h3>Agreement</h3><div class="value" id="agreementRate">--</div></div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="blueprint">
       <h2>Strategy Blueprint</h2>
       <div id="strategyBlueprintBox" class="muted">Loading strategy revision...</div>
     </section>
 
-    <section class="summary">
+    <section class="summary" id="account">
       <div class="card"><h3>Equity</h3><div class="value" id="equity">--</div></div>
       <div class="card"><h3>Cash</h3><div class="value" id="cash">--</div></div>
       <div class="card"><h3>Portfolio</h3><div class="value" id="portfolio">--</div></div>
@@ -491,20 +622,20 @@ def _dashboard_html() -> str:
       <div class="card"><h3>Gross Exposure</h3><div class="value" id="grossExposure">--</div></div>
     </section>
 
-    <section class="grid">
-      <div class="panel">
+    <section class="grid" aria-label="Performance and holdings">
+      <div class="panel" id="performance">
         <div class="panel-header">
           <h2>Bot Performance Comparison</h2>
           <div class="inline-controls">
             <div class="choice-row" id="displaySelector"></div>
             <label class="muted" for="graphModeSelector">Scale
-              <select id="graphModeSelector" style="margin-left: 8px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;">
+              <select id="graphModeSelector" class="control" style="margin-left: 8px; width: auto;">
                 <option value="indexed" selected>Indexed performance</option>
                 <option value="actual">Actual holding value</option>
               </select>
             </label>
             <label class="muted" for="rangeSelector">Window
-              <select id="rangeSelector" style="margin-left: 8px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;">
+              <select id="rangeSelector" class="control" style="margin-left: 8px; width: auto;">
                 <option value="24h">24h</option>
                 <option value="7d">7d</option>
                 <option value="14d" selected>14d</option>
@@ -519,14 +650,14 @@ def _dashboard_html() -> str:
         <canvas id="equityChart" width="900" height="240"></canvas>
         <div class="muted" id="equityHint"></div>
       </div>
-      <div class="panel">
+      <div class="panel" id="holdings">
         <h2>Current Holdings</h2>
         <canvas id="holdingsChart" width="360" height="240"></canvas>
         <div class="muted" id="holdingsHint"></div>
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="comparison">
       <h2>Bot Comparison</h2>
       <table>
         <thead>
@@ -545,13 +676,13 @@ def _dashboard_html() -> str:
       <div class="muted" id="comparisonHint"></div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="champion">
       <h2>Champion / Challenger Lab</h2>
       <p class="muted">Champion is the current live policy. Challenger is a stricter shadow policy tested against historical outcomes before we trust it with more influence.</p>
       <div id="championChallengerBox" class="muted">No Champion/Challenger reports yet.</div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="risk">
       <h2>Risk Cockpit</h2>
       <table>
         <thead>
@@ -564,7 +695,7 @@ def _dashboard_html() -> str:
       </table>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="positions">
       <h2>Positions</h2>
       <table>
         <thead>
@@ -581,7 +712,7 @@ def _dashboard_html() -> str:
       </table>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="trades">
       <h2>Recent Trades</h2>
       <table>
         <thead>
@@ -598,7 +729,7 @@ def _dashboard_html() -> str:
       </table>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="reports">
       <h2>Advisor Reports</h2>
       <div id="advisorReports" class="muted">No reports yet.</div>
     </section>
@@ -608,7 +739,7 @@ def _dashboard_html() -> str:
       <div id="strategyReports" class="muted">No reports yet.</div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="decisions">
       <h2>Recent Decisions</h2>
       <div class="inline-controls">
         <label class="muted" for="decisionSymbol">Symbol
@@ -639,6 +770,7 @@ def _dashboard_html() -> str:
         <tbody id="decisionsBody"></tbody>
       </table>
     </section>
+    </main>
   </div>
 
 <script>
@@ -846,6 +978,7 @@ async function loadHealth() {
     const data = await res.json();
     const fresh = data.freshness || {};
     setMetric('freshness', fresh.status ? `${fresh.status}` : '--');
+    setMetric('sidebarFreshness', fresh.status ? `${fresh.status}` : '--');
     setMetric('botsSeen', String(availableBots.length || 0));
     const agreement = data.agreement || {};
     setMetric('agreementRate', agreement.agreement_rate === null || agreement.agreement_rate === undefined ? '--' : pct(agreement.agreement_rate));
@@ -871,6 +1004,7 @@ async function loadHealth() {
     document.getElementById('comparisonHint').textContent = `Overlap: ${agreement.overlap || 0} • Agreements: ${agreements} • Disagreements: ${disagreements}`;
   } catch (_) {
     setMetric('freshness', '--');
+    setMetric('sidebarFreshness', '--');
     setMetric('botsSeen', String(availableBots.length || 0));
   }
 }
@@ -1299,6 +1433,7 @@ async function loadStrategyBlueprint() {
   const shared = Array.isArray(blueprint.shared_layers) ? blueprint.shared_layers : [];
   const safety = Array.isArray(blueprint.current_safety_posture) ? blueprint.current_safety_posture : [];
   const changelog = Array.isArray(blueprint.changelog) ? blueprint.changelog : [];
+  setMetric('sidebarRevision', blueprint.revision || '--');
   const modelCards = models.map(model => `
     <details style="margin-top: 8px;">
       <summary>${esc(model.name)} - ${esc(model.role)}</summary>

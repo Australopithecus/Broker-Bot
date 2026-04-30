@@ -75,6 +75,33 @@ st.markdown(
         padding-top: 1.35rem;
         padding-bottom: 2.5rem;
       }
+      section[data-testid="stSidebar"] {
+        border-right: 1px solid rgba(148, 163, 184, 0.2);
+      }
+      section[data-testid="stSidebar"] h1,
+      section[data-testid="stSidebar"] h2,
+      section[data-testid="stSidebar"] h3 {
+        letter-spacing: -0.025em;
+      }
+      .sidebar-link {
+        display: block;
+        padding: 0.45rem 0.55rem;
+        margin: 0.12rem 0;
+        border-radius: 0.65rem;
+        color: inherit !important;
+        text-decoration: none;
+        border: 1px solid transparent;
+      }
+      .sidebar-link:hover {
+        border-color: rgba(34, 211, 238, 0.35);
+        background: rgba(34, 211, 238, 0.08);
+      }
+      .section-anchor {
+        display: block;
+        position: relative;
+        top: -0.8rem;
+        visibility: hidden;
+      }
       h1 {
         letter-spacing: -0.035em;
         margin-bottom: 0.15rem;
@@ -108,6 +135,47 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
+def _anchor(anchor_id: str) -> None:
+    st.markdown(f'<span class="section-anchor" id="{anchor_id}"></span>', unsafe_allow_html=True)
+
+
+def _sidebar_link(label: str, anchor_id: str) -> None:
+    st.sidebar.markdown(f'<a class="sidebar-link" href="#{anchor_id}">{label}</a>', unsafe_allow_html=True)
+
+
+def _render_sidebar_nav(
+    strategy_blueprint: dict,
+    snapshot_updated,
+    bots_payload: dict[str, dict],
+) -> None:
+    st.sidebar.title("Broker Bot")
+    st.sidebar.caption("Paper-trading research cockpit")
+    st.sidebar.metric("Revision", str(strategy_blueprint.get("revision") or "unknown"))
+    if snapshot_updated:
+        st.sidebar.caption(f"Snapshot updated: {snapshot_updated}")
+    elif DATA_URL:
+        st.sidebar.caption("Snapshot source configured; timestamp pending.")
+    else:
+        st.sidebar.caption("Using live API data.")
+    st.sidebar.caption(f"Models visible: {len(bots_payload)}")
+    st.sidebar.divider()
+    st.sidebar.markdown("**Navigation**")
+    for label, anchor_id in [
+        ("System Health", "system-health"),
+        ("Strategy Blueprint", "strategy-blueprint"),
+        ("Trend Graph", "trend-graph"),
+        ("Current Holdings", "current-holdings"),
+        ("Risk Cockpit", "risk-cockpit"),
+        ("Champion Lab", "champion-lab"),
+        ("Reports", "reports"),
+        ("Decision Explorer", "decision-explorer"),
+        ("Detailed Tables", "detailed-tables"),
+    ]:
+        _sidebar_link(label, anchor_id)
+    st.sidebar.divider()
+    st.sidebar.caption("Tip: use the trend graph controls to switch window, graph scale, and which model is visible.")
 
 
 @st.cache_data(ttl=60)
@@ -895,9 +963,13 @@ snapshot_updated = _format_snapshot_timestamp(snapshot_meta.get("generated_at") 
 bots_payload = {name: _bot_payload(name, label, snapshot_meta) for name, label in bot_names}
 strategy_blueprint = _strategy_blueprint(snapshot_meta)
 
+_render_sidebar_nav(strategy_blueprint, snapshot_updated, bots_payload)
+_anchor("system-health")
 _render_system_health(snapshot_meta, bots_payload)
+_anchor("strategy-blueprint")
 _render_strategy_blueprint(strategy_blueprint)
 
+_anchor("trend-graph")
 st.subheader("Trend Graph")
 control_col1, control_col2, control_col3 = st.columns([1, 1.4, 1.6])
 with control_col1:
@@ -1041,6 +1113,7 @@ with trend_col:
         st.caption("No bot equity history is available for the selected date range.")
 
 with holdings_col:
+    _anchor("current-holdings")
     st.subheader("Current Holdings")
     holdings_df = _holdings_slices(selected_bots)
     if not holdings_df.empty:
@@ -1072,99 +1145,105 @@ with holdings_col:
 if excluded_labels:
     st.caption(f"No recent data in the selected date range for: {', '.join(excluded_labels)}")
 
+_anchor("risk-cockpit")
 _render_risk_panel(bots_payload, selected_window_key)
+_anchor("champion-lab")
 _render_champion_challenger_info(bots_payload)
+_anchor("reports")
 _render_report_cockpit(bots_payload)
+_anchor("decision-explorer")
 _render_decision_explorer(bots_payload)
 
-tabs = st.tabs([label for _, label in bot_names])
+_anchor("detailed-tables")
+with st.expander("Detailed bot tables", expanded=False):
+    tabs = st.tabs([label for _, label in bot_names])
 
-for tab, (bot_name, bot_label_text) in zip(tabs, bot_names):
-    with tab:
-        summary = fetch(f"/api/summary?bot={bot_name}")
-        if summary.get("status") != "ok":
-            st.warning(summary.get("message", f"No {bot_label_text} data yet."))
-            continue
+    for tab, (bot_name, bot_label_text) in zip(tabs, bot_names):
+        with tab:
+            summary = fetch(f"/api/summary?bot={bot_name}")
+            if summary.get("status") != "ok":
+                st.warning(summary.get("message", f"No {bot_label_text} data yet."))
+                continue
 
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
-        col1.metric("Equity", _fmt_money(summary.get("equity")))
-        col2.metric("Cash", _fmt_money(summary.get("cash")))
-        col3.metric("Portfolio", _fmt_money(summary.get("portfolio")))
-        col4.metric("SPY", _fmt_money(summary.get("spy")) if summary.get("spy") is not None else "--")
+            col1, col2, col3, col4, col5, col6 = st.columns(6)
+            col1.metric("Equity", _fmt_money(summary.get("equity")))
+            col2.metric("Cash", _fmt_money(summary.get("cash")))
+            col3.metric("Portfolio", _fmt_money(summary.get("portfolio")))
+            col4.metric("SPY", _fmt_money(summary.get("spy")) if summary.get("spy") is not None else "--")
 
-        df = comparison_frames.get(bot_name, pd.DataFrame())
-        alpha, tracking_error = _alpha_tracking(df)
-        col5.metric("Alpha 20D", _fmt_pct(alpha))
-        col6.metric("Tracking Error", _fmt_pct(tracking_error))
+            df = comparison_frames.get(bot_name, pd.DataFrame())
+            alpha, tracking_error = _alpha_tracking(df)
+            col5.metric("Alpha 20D", _fmt_pct(alpha))
+            col6.metric("Tracking Error", _fmt_pct(tracking_error))
 
-        positions = fetch(f"/api/positions?bot={bot_name}").get("data", [])
-        trades = fetch(f"/api/trades?bot={bot_name}").get("data", [])
-        advisor = fetch(f"/api/advisor?bot={bot_name}").get("data", [])
-        strategy_reports = fetch(f"/api/strategy?bot={bot_name}").get("data", [])
-        decisions = fetch(f"/api/decisions?bot={bot_name}&limit=50").get("data", [])
+            positions = fetch(f"/api/positions?bot={bot_name}").get("data", [])
+            trades = fetch(f"/api/trades?bot={bot_name}").get("data", [])
+            advisor = fetch(f"/api/advisor?bot={bot_name}").get("data", [])
+            strategy_reports = fetch(f"/api/strategy?bot={bot_name}").get("data", [])
+            decisions = fetch(f"/api/decisions?bot={bot_name}&limit=50").get("data", [])
 
-        st.subheader("Positions")
-        if positions:
-            if any(row.get("protection_mode") for row in positions):
-                st.caption("Broker-side protection is shown when the brokerage service has exits resting for this bot's account.")
-            st.dataframe(positions, use_container_width=True)
-        else:
-            st.caption("No positions logged yet.")
+            st.subheader("Positions")
+            if positions:
+                if any(row.get("protection_mode") for row in positions):
+                    st.caption("Broker-side protection is shown when the brokerage service has exits resting for this bot's account.")
+                st.dataframe(positions, use_container_width=True)
+            else:
+                st.caption("No positions logged yet.")
 
-        st.subheader("Recent Trades")
-        if trades:
-            st.dataframe(trades, use_container_width=True)
-        else:
-            st.caption("No trades logged yet.")
+            st.subheader("Recent Trades")
+            if trades:
+                st.dataframe(trades, use_container_width=True)
+            else:
+                st.caption("No trades logged yet.")
 
-        st.subheader("Reports")
-        if advisor:
-            st.markdown("**Advisor Reports**")
-            for report in advisor[:3]:
-                st.markdown(f"**{report.get('headline','Advisor Report')}** — {report.get('ts','')}")
-                st.write(report.get("summary", ""))
-                st.divider()
+            st.subheader("Reports")
+            if advisor:
+                st.markdown("**Advisor Reports**")
+                for report in advisor[:3]:
+                    st.markdown(f"**{report.get('headline','Advisor Report')}** — {report.get('ts','')}")
+                    st.write(report.get("summary", ""))
+                    st.divider()
 
-        if strategy_reports:
-            for report in strategy_reports[:8]:
-                st.markdown(f"**[{report.get('report_type','report')}] {report.get('headline','Report')}** — {report.get('ts','')}")
-                st.write(report.get("summary", ""))
-                with st.expander("Show report body"):
-                    st.markdown(report.get("body", ""))
-                st.divider()
-        else:
-            st.caption("No strategy reports yet.")
+            if strategy_reports:
+                for report in strategy_reports[:8]:
+                    st.markdown(f"**[{report.get('report_type','report')}] {report.get('headline','Report')}** — {report.get('ts','')}")
+                    st.write(report.get("summary", ""))
+                    with st.expander("Show report body"):
+                        st.markdown(report.get("body", ""))
+                    st.divider()
+            else:
+                st.caption("No strategy reports yet.")
 
-        st.subheader("Recent Decisions")
-        if decisions:
-            decision_df = pd.DataFrame(decisions)
-            for column in ["base_score", "final_score", "signed_return", "beat_spy"]:
-                if column in decision_df.columns:
-                    decision_df[column] = pd.to_numeric(decision_df[column], errors="coerce")
-            if "components" in decision_df.columns:
-                decision_df["component_summary"] = decision_df["components"].apply(
-                    lambda comp: ", ".join(
-                        f"{k.replace('_adjustment', '')}={float(v):+.4f}"
-                        for k, v in sorted((comp or {}).items(), key=lambda item: abs(float(item[1])), reverse=True)
-                        if abs(float(v)) >= 0.0001
-                    )[:220]
-                    if isinstance(comp, dict)
-                    else ""
-                )
-            display_cols = [
-                col for col in [
-                    "ts",
-                    "symbol",
-                    "side",
-                    "base_score",
-                    "final_score",
-                    "signed_return",
-                    "beat_spy",
-                    "outcome_label",
-                    "rationale",
-                    "component_summary",
-                ] if col in decision_df.columns
-            ]
-            st.dataframe(decision_df[display_cols], use_container_width=True)
-        else:
-            st.caption("No decision logs yet.")
+            st.subheader("Recent Decisions")
+            if decisions:
+                decision_df = pd.DataFrame(decisions)
+                for column in ["base_score", "final_score", "signed_return", "beat_spy"]:
+                    if column in decision_df.columns:
+                        decision_df[column] = pd.to_numeric(decision_df[column], errors="coerce")
+                if "components" in decision_df.columns:
+                    decision_df["component_summary"] = decision_df["components"].apply(
+                        lambda comp: ", ".join(
+                            f"{k.replace('_adjustment', '')}={float(v):+.4f}"
+                            for k, v in sorted((comp or {}).items(), key=lambda item: abs(float(item[1])), reverse=True)
+                            if abs(float(v)) >= 0.0001
+                        )[:220]
+                        if isinstance(comp, dict)
+                        else ""
+                    )
+                display_cols = [
+                    col for col in [
+                        "ts",
+                        "symbol",
+                        "side",
+                        "base_score",
+                        "final_score",
+                        "signed_return",
+                        "beat_spy",
+                        "outcome_label",
+                        "rationale",
+                        "component_summary",
+                    ] if col in decision_df.columns
+                ]
+                st.dataframe(decision_df[display_cols], use_container_width=True)
+            else:
+                st.caption("No decision logs yet.")
