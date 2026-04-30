@@ -805,7 +805,7 @@ let currentGraphMode = 'indexed';
 let availableBots = [];
 let latestPositions = [];
 let latestDecisions = [];
-const LLM_TREND_CUTOFF_MS = Date.UTC(2026, 3, 23);
+const TREND_CUTOFF_MS = Date.UTC(2026, 3, 23);
 const RANGE_WINDOWS_MS = {
   '24h': 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,
@@ -845,10 +845,7 @@ const cleanSeries = (points, valueKey) => {
     .sort((a, b) => a.ts - b.ts);
 };
 
-const applyTrendCutoff = (botName, clean) => {
-  if (String(botName || '').toLowerCase() !== 'llm') return clean;
-  return clean.filter(point => point.ts >= LLM_TREND_CUTOFF_MS);
-};
+const applyTrendCutoff = (clean) => clean.filter(point => point.ts >= TREND_CUTOFF_MS);
 
 const normalizeSeries = (clean) => {
   if (!clean.length) return [];
@@ -1063,7 +1060,7 @@ async function loadEquity() {
     || botCurves.find(bot => bot.name === currentBot)
     || botCurves[0];
   const valueKey = currentGraphMode === 'actual' ? 'portfolio_value' : 'equity';
-  const allTimestamps = botCurves.flatMap(bot => applyTrendCutoff(bot.name, cleanSeries(bot.points, valueKey)).map(point => point.ts));
+  const allTimestamps = botCurves.flatMap(bot => applyTrendCutoff(cleanSeries(bot.points, valueKey)).map(point => point.ts));
   const latestTs = allTimestamps.length ? Math.max(...allTimestamps) : null;
   const windowMs = RANGE_WINDOWS_MS[currentRange] || RANGE_WINDOWS_MS['90d'];
   const cutoffTs = latestTs === null ? null : latestTs - windowMs;
@@ -1076,7 +1073,7 @@ async function loadEquity() {
   let paletteIndex = 0;
   const omittedBots = [];
   const equitySeries = visibleCurves.map(bot => {
-    const cleaned = applyTrendCutoff(bot.name, cleanSeries(bot.points, valueKey));
+    const cleaned = applyTrendCutoff(cleanSeries(bot.points, valueKey));
     const filtered = filterSeriesToWindow(cleaned, cutoffTs);
     const chartPoints = currentGraphMode === 'actual' ? actualSeries(filtered) : normalizeSeries(filtered);
     if (cleaned.length >= 2 && filtered.length < 2) {
@@ -1102,7 +1099,7 @@ async function loadEquity() {
     };
   }).filter(bot => bot.normalized.length >= 2);
 
-  const selectedSpyClean = selectedCurve ? applyTrendCutoff(selectedCurve.name, cleanSeries(selectedCurve.points, 'spy')) : [];
+  const selectedSpyClean = selectedCurve ? applyTrendCutoff(cleanSeries(selectedCurve.points, 'spy')) : [];
   const selectedSpyFiltered = filterSeriesToWindow(selectedSpyClean, cutoffTs);
   const spySeries = currentGraphMode === 'indexed' ? normalizeSeries(selectedSpyFiltered) : [];
   const canvas = document.getElementById('equityChart');
@@ -1150,7 +1147,7 @@ async function loadEquity() {
   const yPad = Math.max((max - min) * 0.08, 0.4);
   const scaleX = (value) => pad + (canvas.width - pad * 2) * ((value - xMin) / (xMax - xMin || 1));
   const scaleY = (value) => canvas.height - pad - (canvas.height - pad * 2) * ((value - (min - yPad)) / ((max - min) + yPad * 2 || 1));
-  const selectedClean = selectedCurve ? applyTrendCutoff(selectedCurve.name, cleanSeries(selectedCurve.points, valueKey)) : [];
+  const selectedClean = selectedCurve ? applyTrendCutoff(cleanSeries(selectedCurve.points, valueKey)) : [];
   const selectedFiltered = filterSeriesToWindow(selectedClean, cutoffTs);
   if (selectedFiltered.length >= 2) {
     const ret = pctChange(selectedFiltered[selectedFiltered.length - 1].value, selectedFiltered[0].value);
@@ -1236,7 +1233,7 @@ async function loadEquity() {
   const rangeText = currentGraphMode === 'actual'
     ? `${fmt(min)} to ${fmt(max)}`
     : `${min.toFixed(1)} to ${max.toFixed(1)}`;
-  document.getElementById('equityHint').textContent = `${currentRange} window (${xStartLabel} to ${xEndLabel}) • ${modeText} • LLM starts Apr 23, 2026 • Range: ${rangeText} • ${legend}${omittedText}${markerText}`;
+  document.getElementById('equityHint').textContent = `${currentRange} window (${xStartLabel} to ${xEndLabel}) • ${modeText} • Trend data starts Apr 23, 2026 • Range: ${rangeText} • ${legend}${omittedText}${markerText}`;
 
   // Alpha + tracking error (20D) if we have SPY values
   const aligned = (selectedCurve?.points || [])

@@ -61,7 +61,7 @@ GITHUB_ACTIONS_TOKEN = _secret_any("GITHUB_ACTIONS_TOKEN", "BROKER_BOT_GITHUB_TO
 GITHUB_REPOSITORY = _secret("GITHUB_REPOSITORY")
 GITHUB_WORKFLOW_ID = _secret("GITHUB_WORKFLOW_ID") or "advisor_snapshot.yml"
 GITHUB_WORKFLOW_REF = _secret("GITHUB_WORKFLOW_REF") or "main"
-LLM_TREND_CUTOFF = pd.Timestamp("2026-04-23T00:00:00Z")
+TREND_CUTOFF = pd.Timestamp("2026-04-23T00:00:00Z")
 DEFAULT_WINDOW_KEY = "14d"
 
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
@@ -393,12 +393,10 @@ def _normalized_series(series: pd.Series) -> pd.Series:
     return (clean / base) * 100.0
 
 
-def _trend_source_df(bot_name: str, df: pd.DataFrame) -> pd.DataFrame:
+def _trend_source_df(_bot_name: str, df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
-    if bot_name.lower() == "llm":
-        return df[df.index >= LLM_TREND_CUTOFF].copy()
-    return df
+    return df[df.index >= TREND_CUTOFF].copy()
 
 
 def _actual_value_series(df: pd.DataFrame) -> pd.Series:
@@ -1040,9 +1038,9 @@ trend_col, holdings_col = st.columns([2.2, 1])
 
 with trend_col:
     if graph_mode == "Indexed performance":
-        st.caption("Indexed to 100 at the first visible point in the selected window. LLM trend data before April 23, 2026 is hidden.")
+        st.caption("Indexed to 100 at the first visible point in the selected window. ML, LLM, and SPY trend data before April 23, 2026 is hidden.")
     else:
-        st.caption("Actual account holding value in dollars. LLM trend data before April 23, 2026 is hidden; SPY is omitted because it is a price, not an account value.")
+        st.caption("Actual account holding value in dollars. ML and LLM trend data before April 23, 2026 is hidden; SPY is omitted because it is a price, not an account value.")
     if not trend_df.empty:
         try:
             import plotly.graph_objects as go
