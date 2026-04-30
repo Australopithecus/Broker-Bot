@@ -27,6 +27,24 @@ def _secret(name: str) -> str:
     return str(secret_value).strip() if secret_value else ""
 
 
+def _secret_source(name: str) -> str:
+    if os.getenv(name, "").strip():
+        return "Environment"
+    try:
+        if name in st.secrets and str(st.secrets.get(name, "")).strip():
+            return "Streamlit top-level secret"
+    except Exception:
+        pass
+    return "Not found"
+
+
+def _streamlit_secret_names() -> list[str]:
+    try:
+        return sorted(str(key) for key in st.secrets.keys())
+    except Exception:
+        return []
+
+
 API_BASE = _secret("API_BASE_URL")
 API_TOKEN = _secret("API_TOKEN")
 DATA_URL = _secret("DATA_URL")
@@ -503,6 +521,21 @@ def _render_cloud_run_controls() -> None:
         elif actions_url:
             st.caption("After starting a run, GitHub usually takes a few minutes to rebuild and commit the new snapshot.")
             st.link_button("View Workflow Runs", actions_url)
+
+        with st.expander("Secret diagnostics", expanded=bool(config_issues)):
+            diagnostic_rows = [
+                {"Secret": "DATA_URL", "Source": _secret_source("DATA_URL")},
+                {"Secret": "GITHUB_REPOSITORY", "Source": _secret_source("GITHUB_REPOSITORY")},
+                {"Secret": "GITHUB_WORKFLOW_ID", "Source": _secret_source("GITHUB_WORKFLOW_ID")},
+                {"Secret": "GITHUB_WORKFLOW_REF", "Source": _secret_source("GITHUB_WORKFLOW_REF")},
+                {"Secret": "GITHUB_ACTIONS_TOKEN", "Source": _secret_source("GITHUB_ACTIONS_TOKEN")},
+            ]
+            st.dataframe(pd.DataFrame(diagnostic_rows), use_container_width=True, hide_index=True)
+            names = _streamlit_secret_names()
+            st.caption(
+                "Top-level Streamlit secret names seen by this app: "
+                + (", ".join(names) if names else "none")
+            )
 
 
 def _render_comparison_summary(bots_payload: dict[str, dict], selected_window_key: str) -> None:
