@@ -522,7 +522,12 @@ def _render_cloud_run_controls() -> None:
             st.caption("After starting a run, GitHub usually takes a few minutes to rebuild and commit the new snapshot.")
             st.link_button("View Workflow Runs", actions_url)
 
-        with st.expander("Secret diagnostics", expanded=bool(config_issues)):
+        show_diagnostics = bool(config_issues) or st.checkbox(
+            "Show secret diagnostics",
+            key="show_secret_diagnostics",
+        )
+        if show_diagnostics:
+            st.markdown("**Secret Diagnostics**")
             diagnostic_rows = [
                 {"Secret": "DATA_URL", "Source": _secret_source("DATA_URL")},
                 {"Secret": "GITHUB_REPOSITORY", "Source": _secret_source("GITHUB_REPOSITORY")},
