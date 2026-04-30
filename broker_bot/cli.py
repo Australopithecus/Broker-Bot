@@ -25,7 +25,7 @@ from .logging_db import (
 from .learning import generate_strategy_report, review_and_learn
 from .pipeline import train_on_history, run_backtest_on_history
 from .data import fetch_latest_close
-from .trader import rebalance_portfolio, snapshot_equity, snapshot_positions
+from .trader import caretaker_portfolio, rebalance_portfolio, snapshot_equity, snapshot_positions
 from .universe import load_universe
 from .dashboard_tk import launch_dashboard
 from .dashboard_web import create_app
@@ -214,6 +214,50 @@ def _cmd_snapshot_for_bot(bot_name: str) -> None:
     print(f"{bot_name.upper()} snapshot saved at {ts_eq}.")
 
 
+def cmd_caretaker(args: argparse.Namespace) -> None:
+    _cmd_caretaker_for_bot(ML_BOT_NAME)
+
+
+def cmd_caretaker_llm(args: argparse.Namespace) -> None:
+    _cmd_caretaker_for_bot(LLM_BOT_NAME)
+
+
+def cmd_caretaker_all(args: argparse.Namespace) -> None:
+    config = load_config()
+    for bot_name in configured_bot_names(config):
+        _run_caretaker_for_bot(config, bot_name)
+
+
+def _cmd_caretaker_for_bot(bot_name: str) -> None:
+    config = load_config()
+    _run_caretaker_for_bot(config, bot_name)
+
+
+def _run_caretaker_for_bot(config, bot_name: str) -> None:
+    init_db(config.db_path)
+    ts, orders, summary = caretaker_portfolio(config, bot_name=bot_name)
+    if orders:
+        log_trades(config.db_path, orders, bot_name=bot_name)
+
+    ts_pos, positions = snapshot_positions(config, bot_name=bot_name)
+    log_positions(config.db_path, ts_pos, positions, bot_name=bot_name)
+
+    spy_value = fetch_latest_close(config, "SPY", bot_name=bot_name)
+    ts_eq, equity, cash, port = snapshot_equity(config, bot_name=bot_name)
+    log_equity(config.db_path, ts_eq, equity, cash, port, spy_value=spy_value, bot_name=bot_name)
+
+    print(
+        f"{bot_name.upper()} caretaker checked {summary.get('positions_seen', 0)} positions at {ts}. "
+        f"Submitted {summary.get('protection_submitted', 0)} protection orders; "
+        f"already protected {summary.get('already_protected', 0)}."
+    )
+    if summary.get("kill_switch_triggered"):
+        print(
+            f"{bot_name.upper()} daily drawdown kill switch triggered at "
+            f"{float(summary.get('daily_drawdown') or 0.0):.2%}."
+        )
+
+
 def cmd_rebalance_llm(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
@@ -357,6 +401,9 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("rebalance-llm")
     subparsers.add_parser("snapshot")
     subparsers.add_parser("snapshot-llm")
+    subparsers.add_parser("caretaker")
+    subparsers.add_parser("caretaker-llm")
+    subparsers.add_parser("caretaker-all")
     subparsers.add_parser("dashboard")
     subparsers.add_parser("dashboard-web")
     subparsers.add_parser("advisor-report")
@@ -390,6 +437,12 @@ def main() -> None:
             cmd_snapshot(args)
         elif args.command == "snapshot-llm":
             cmd_snapshot_llm(args)
+        elif args.command == "caretaker":
+            cmd_caretaker(args)
+        elif args.command == "caretaker-llm":
+            cmd_caretaker_llm(args)
+        elif args.command == "caretaker-all":
+            cmd_caretaker_all(args)
         elif args.command == "dashboard":
             cmd_dashboard(args)
         elif args.command == "dashboard-web":

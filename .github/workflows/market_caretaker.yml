@@ -1,0 +1,171 @@
+name: Broker Bot Market Caretaker
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+on:
+  schedule:
+    # Broad UTC window for US market hours across daylight saving and standard time.
+    # The workflow gates itself using America/New_York time before touching Alpaca.
+    - cron: "*/30 13-21 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: broker-bot-market-caretaker-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  caretaker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.bot.txt
+
+      - name: Export bot environment
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          ALPACA_PAPER_URL: ${{ secrets.ALPACA_PAPER_URL }}
+          ALPACA_DATA_FEED: ${{ secrets.ALPACA_DATA_FEED }}
+          ALPACA_LLM_API_KEY: ${{ secrets.ALPACA_LLM_API_KEY }}
+          ALPACA_LLM_SECRET_KEY: ${{ secrets.ALPACA_LLM_SECRET_KEY }}
+          ALPACA_LLM_PAPER_URL: ${{ secrets.ALPACA_LLM_PAPER_URL }}
+          ALPACA_LLM_DATA_FEED: ${{ secrets.ALPACA_LLM_DATA_FEED }}
+          CARETAKER_TRAILING_STOP_ENABLED: ${{ secrets.CARETAKER_TRAILING_STOP_ENABLED }}
+          CARETAKER_TRAILING_STOP_PERCENT: ${{ secrets.CARETAKER_TRAILING_STOP_PERCENT }}
+          CARETAKER_DAILY_DRAWDOWN_LIMIT: ${{ secrets.CARETAKER_DAILY_DRAWDOWN_LIMIT }}
+        run: |
+          set -e
+          {
+            echo "ALPACA_API_KEY=${ALPACA_API_KEY}"
+            echo "ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}"
+            echo "ALPACA_PAPER_URL=${ALPACA_PAPER_URL}"
+            echo "ALPACA_DATA_FEED=${ALPACA_DATA_FEED}"
+            echo "ALPACA_LLM_API_KEY=${ALPACA_LLM_API_KEY}"
+            echo "ALPACA_LLM_SECRET_KEY=${ALPACA_LLM_SECRET_KEY}"
+            echo "ALPACA_LLM_PAPER_URL=${ALPACA_LLM_PAPER_URL}"
+            echo "ALPACA_LLM_DATA_FEED=${ALPACA_LLM_DATA_FEED}"
+            echo "UNIVERSE_PATH=data/sp500.csv"
+            echo "BROKER_BOT_DB=data/broker_bot.sqlite"
+            echo "MODEL_DIR=data/models"
+            echo "REPORTS_DIR=data/reports"
+            echo "LEARNED_POLICY_PATH=data/learned_policy.json"
+          } >> "$GITHUB_ENV"
+
+          if [ -n "${CARETAKER_TRAILING_STOP_ENABLED}" ]; then
+            echo "CARETAKER_TRAILING_STOP_ENABLED=${CARETAKER_TRAILING_STOP_ENABLED}" >> "$GITHUB_ENV"
+          fi
+          if [ -n "${CARETAKER_TRAILING_STOP_PERCENT}" ]; then
+            echo "CARETAKER_TRAILING_STOP_PERCENT=${CARETAKER_TRAILING_STOP_PERCENT}" >> "$GITHUB_ENV"
+          fi
+          if [ -n "${CARETAKER_DAILY_DRAWDOWN_LIMIT}" ]; then
+            echo "CARETAKER_DAILY_DRAWDOWN_LIMIT=${CARETAKER_DAILY_DRAWDOWN_LIMIT}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Validate required configuration
+        run: |
+          python - <<'PY'
+          import os
+          missing = [name for name in ["ALPACA_API_KEY", "ALPACA_SECRET_KEY"] if not os.getenv(name, "").strip()]
+          if missing:
+              raise SystemExit(f"Missing required GitHub Actions secrets: {', '.join(missing)}")
+          print("Required caretaker secrets present.")
+          PY
+
+      - name: Check market-hours window
+        id: market_clock
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime, time
+          from zoneinfo import ZoneInfo
+
+          now = datetime.now(ZoneInfo("America/New_York"))
+          force = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+          is_weekday = now.weekday() < 5
+          is_market_window = time(9, 30) <= now.time() <= time(16, 0)
+          should_run = force or (is_weekday and is_market_window)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"run={'true' if should_run else 'false'}\n")
+              handle.write(f"ny_time={now.isoformat()}\n")
+          print(f"New York time: {now.isoformat()}")
+          print(f"Run caretaker: {should_run}")
+          PY
+
+      - name: Restore DB from snapshot
+        if: ${{ steps.market_clock.outputs.run == 'true' }}
+        run: |
+          python scripts/restore_db_from_snapshot.py
+
+      - name: Detect whether LLM bot credentials are configured
+        if: ${{ steps.market_clock.outputs.run == 'true' }}
+        id: llm_bot_config
+        run: |
+          if [ -n "${ALPACA_LLM_API_KEY}" ] && [ -n "${ALPACA_LLM_SECRET_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run ML caretaker
+        if: ${{ steps.market_clock.outputs.run == 'true' }}
+        run: |
+          python -m broker_bot.cli caretaker
+
+      - name: Run LLM caretaker
+        if: ${{ steps.market_clock.outputs.run == 'true' && steps.llm_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli caretaker-llm
+
+      - name: Build dashboard snapshot
+        if: ${{ steps.market_clock.outputs.run == 'true' }}
+        run: |
+          python scripts/build_snapshot.py
+
+      - name: Commit caretaker snapshot
+        if: ${{ steps.market_clock.outputs.run == 'true' }}
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -e
+          git config user.name "broker-bot"
+          git config user.email "broker-bot@users.noreply.github.com"
+          git add data/dashboard_snapshot.json
+          if git diff --cached --quiet; then
+            echo "No caretaker snapshot changes to commit."
+            exit 0
+          fi
+          git commit -m "Update broker bot caretaker snapshot"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin "${TARGET_BRANCH}"
+            git rebase "origin/${TARGET_BRANCH}"
+            if git push origin "HEAD:${TARGET_BRANCH}"; then
+              exit 0
+            fi
+            echo "Push rejected on attempt ${attempt}; retrying after a short pause."
+            sleep 5
+          done
+          echo "Unable to push broker bot caretaker snapshot after 5 attempts."
+          exit 1
+
+      - name: Skip outside market hours
+        if: ${{ steps.market_clock.outputs.run != 'true' }}
+        run: |
+          echo "Skipping caretaker outside market-hours window. New York time was ${{ steps.market_clock.outputs.ny_time }}."

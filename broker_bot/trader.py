@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 from alpaca.trading.client import TradingClient
@@ -272,7 +273,7 @@ def _build_trailing_stop_order(
     trail_percent = trail_percent_override if trail_percent_override and trail_percent_override > 0 else None
     if trail_percent is None:
         trail_percent = config.trailing_stop_percent if config.trailing_stop_percent > 0 else None
-    trail_price = _round_order_price(config.trailing_stop_price) if config.trailing_stop_price > 0 else None
+    trail_price = None if trail_percent is not None else (_round_order_price(config.trailing_stop_price) if config.trailing_stop_price > 0 else None)
     if trail_percent is None and trail_price is None:
         return None
 
@@ -315,6 +316,61 @@ def _adaptive_trail_percent(signal: Signal | None, config: Config) -> float | No
         return None
     _, stop_pct = _adaptive_exit_pcts(signal, config)
     return round(stop_pct * 100.0, 2)
+
+
+def _caretaker_trail_percent(config: Config) -> float | None:
+    if config.caretaker_trailing_stop_percent > 0:
+        return config.caretaker_trailing_stop_percent
+    if config.trailing_stop_percent > 0:
+        return config.trailing_stop_percent
+
+    stop_pct = max(config.bracket_stop_loss_pct, config.min_stop_loss_pct, 0.0)
+    return round(stop_pct * 100.0, 2) if stop_pct > 0 else None
+
+
+def _current_day_drawdown(config: Config, bot_name: str, current_equity: float) -> float | None:
+    if config.caretaker_daily_drawdown_limit <= 0 or current_equity <= 0:
+        return None
+
+    today = datetime.now(ZoneInfo("America/New_York")).date()
+    intraday_values = [current_equity]
+    for ts, equity, *_ in read_latest_equity(config.db_path, limit=500, bot_name=bot_name):
+        parsed = pd.to_datetime(ts, errors="coerce", utc=True)
+        if pd.isna(parsed):
+            continue
+        if parsed.tz_convert("America/New_York").date() == today:
+            intraday_values.append(float(equity))
+
+    peak = max(intraday_values)
+    if peak <= 0:
+        return None
+    return max(0.0, (peak - current_equity) / peak)
+
+
+def _flatten_position_order(
+    position: Any,
+    trading: TradingClient,
+) -> tuple[str, str, str, float, float | None, str | None, str | None]:
+    qty = float(position.qty)
+    side = OrderSide.SELL if qty > 0 else OrderSide.BUY
+    price = _optional_float(getattr(position, "current_price", None))
+    submitted = trading.submit_order(
+        MarketOrderRequest(
+            symbol=position.symbol,
+            qty=abs(qty),
+            side=side,
+            time_in_force=TimeInForce.DAY,
+        )
+    )
+    return (
+        datetime.now(timezone.utc).isoformat(),
+        position.symbol,
+        side.value,
+        float(abs(qty)),
+        price,
+        submitted.id,
+        f"{submitted.status} (caretaker_kill_switch)",
+    )
 
 
 def generate_signals(
@@ -760,6 +816,131 @@ def rebalance_portfolio(
         decision_context,
         bot_name=bot_name,
     )
+
+
+def caretaker_portfolio(
+    config: Config,
+    bot_name: str = "ml",
+) -> tuple[str, list[tuple[str, str, str, float, float | None, str | None, str | None]], dict[str, Any]]:
+    account_config = get_bot_account_config(config, bot_name)
+    trading = TradingClient(account_config.api_key, account_config.secret_key, paper=True)
+    account = trading.get_account()
+    positions = list(trading.get_all_positions())
+    ts = datetime.now(timezone.utc).isoformat()
+    orders_to_log: list[tuple[str, str, str, float, float | None, str | None, str | None]] = []
+    summary: dict[str, Any] = {
+        "bot_name": bot_name,
+        "positions_seen": len(positions),
+        "already_protected": 0,
+        "protection_submitted": 0,
+        "protection_rejected": 0,
+        "skipped_fractional": 0,
+        "skipped_open_order": 0,
+        "kill_switch_triggered": False,
+        "daily_drawdown": None,
+    }
+
+    daily_drawdown = _current_day_drawdown(config, bot_name, float(account.equity))
+    summary["daily_drawdown"] = daily_drawdown
+    if (
+        daily_drawdown is not None
+        and config.caretaker_daily_drawdown_limit > 0
+        and daily_drawdown >= config.caretaker_daily_drawdown_limit
+        and positions
+    ):
+        summary["kill_switch_triggered"] = True
+        try:
+            trading.cancel_orders()
+        except Exception:
+            pass
+        for position in positions:
+            try:
+                orders_to_log.append(_flatten_position_order(position, trading))
+            except APIError as exc:
+                qty = abs(float(position.qty))
+                side = OrderSide.SELL if float(position.qty) > 0 else OrderSide.BUY
+                orders_to_log.append(
+                    (
+                        datetime.now(timezone.utc).isoformat(),
+                        position.symbol,
+                        side.value,
+                        qty,
+                        _optional_float(getattr(position, "current_price", None)),
+                        None,
+                        f"caretaker_kill_switch_rejected: {exc}",
+                    )
+                )
+        return ts, orders_to_log, summary
+
+    if not config.caretaker_trailing_stop_enabled:
+        summary["protection_disabled"] = True
+        return ts, orders_to_log, summary
+
+    trail_percent = _caretaker_trail_percent(config)
+    if trail_percent is None:
+        summary["protection_disabled"] = True
+        summary["protection_reason"] = "No trailing-stop percent or stop-loss percentage configured."
+        return ts, orders_to_log, summary
+
+    open_orders = _flatten_orders(_load_open_orders(trading, nested=True))
+    for position in positions:
+        qty = float(position.qty)
+        if abs(qty) < 1e-6:
+            continue
+        symbol = position.symbol
+        position_orders = [order for order in open_orders if getattr(order, "symbol", None) == symbol]
+        protection = _protection_summary_for_position(qty, position_orders)
+        if int(protection.get("open_exit_order_count") or 0) > 0:
+            summary["already_protected"] += 1
+            continue
+        if position_orders:
+            summary["skipped_open_order"] += 1
+            continue
+        if not _is_whole_share_qty(abs(qty)):
+            summary["skipped_fractional"] += 1
+            continue
+
+        side = OrderSide.SELL if qty > 0 else OrderSide.BUY
+        trailing_order = _build_trailing_stop_order(
+            symbol,
+            abs(qty),
+            side,
+            config,
+            trail_percent_override=trail_percent,
+        )
+        if trailing_order is None:
+            summary["skipped_fractional"] += 1
+            continue
+        try:
+            submitted = trading.submit_order(trailing_order)
+            summary["protection_submitted"] += 1
+            orders_to_log.append(
+                (
+                    datetime.now(timezone.utc).isoformat(),
+                    symbol,
+                    side.value,
+                    float(abs(qty)),
+                    _optional_float(getattr(position, "current_price", None)),
+                    submitted.id,
+                    f"{submitted.status} (caretaker_trailing_stop)",
+                )
+            )
+        except APIError as exc:
+            summary["protection_rejected"] += 1
+            orders_to_log.append(
+                (
+                    datetime.now(timezone.utc).isoformat(),
+                    symbol,
+                    side.value,
+                    float(abs(qty)),
+                    _optional_float(getattr(position, "current_price", None)),
+                    None,
+                    f"caretaker_trailing_stop_rejected: {exc}",
+                )
+            )
+
+    summary["trail_percent"] = trail_percent
+    return ts, orders_to_log, summary
 
 
 def snapshot_positions(

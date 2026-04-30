@@ -90,6 +90,9 @@ class Config:
     options_spread_width_pct: float
     options_min_reward_risk: float
     options_max_debit_pct_of_width: float
+    caretaker_trailing_stop_enabled: bool
+    caretaker_trailing_stop_percent: float
+    caretaker_daily_drawdown_limit: float
 
 
 def _load_json_overrides(path: str) -> dict[str, float]:
@@ -215,6 +218,9 @@ def load_config() -> Config:
         options_spread_width_pct=float(os.getenv("OPTIONS_SPREAD_WIDTH_PCT", "0.05")),
         options_min_reward_risk=float(os.getenv("OPTIONS_MIN_REWARD_RISK", "0.9")),
         options_max_debit_pct_of_width=float(os.getenv("OPTIONS_MAX_DEBIT_PCT_OF_WIDTH", "0.55")),
+        caretaker_trailing_stop_enabled=os.getenv("CARETAKER_TRAILING_STOP_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
+        caretaker_trailing_stop_percent=float(os.getenv("CARETAKER_TRAILING_STOP_PERCENT", "0.0")),
+        caretaker_daily_drawdown_limit=float(os.getenv("CARETAKER_DAILY_DRAWDOWN_LIMIT", "0.0")),
     )
 
 
