@@ -62,7 +62,7 @@ GITHUB_REPOSITORY = _secret("GITHUB_REPOSITORY")
 GITHUB_WORKFLOW_ID = _secret("GITHUB_WORKFLOW_ID") or "advisor_snapshot.yml"
 GITHUB_WORKFLOW_REF = _secret("GITHUB_WORKFLOW_REF") or "main"
 TREND_CUTOFF = pd.Timestamp("2026-04-23T00:00:00Z")
-DEFAULT_WINDOW_KEY = "14d"
+DEFAULT_WINDOW_KEY = "7d"
 
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
 st.title("Broker Bot Dashboard")

@@ -6,7 +6,7 @@ from typing import Any
 
 STRATEGY_BLUEPRINT: dict[str, Any] = {
     "title": "Strategy Blueprint",
-    "revision": "2.7.1",
+    "revision": "2.7.2",
     "revision_date": "2026-04-30",
     "summary": (
         "Broker Bot is a paper-trading research system with two competing bots: an ML ensemble bot and an LLM decision-network bot. "
@@ -58,6 +58,15 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
         "Champion/challenger evaluation is shadow-only until enough evidence supports promotion.",
     ],
     "changelog": [
+        {
+            "revision": "2.7.2",
+            "date": "2026-04-30",
+            "title": "Seven-day default trend window",
+            "changes": [
+                "Changed the dashboard trend graph default window from 14 days to 7 days.",
+                "Kept longer graph windows available for historical review.",
+            ],
+        },
         {
             "revision": "2.7.1",
             "date": "2026-04-30",

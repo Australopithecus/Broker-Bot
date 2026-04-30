@@ -637,8 +637,8 @@ def _dashboard_html() -> str:
             <label class="muted" for="rangeSelector">Window
               <select id="rangeSelector" class="control" style="margin-left: 8px; width: auto;">
                 <option value="24h">24h</option>
-                <option value="7d">7d</option>
-                <option value="14d" selected>14d</option>
+                <option value="7d" selected>7d</option>
+                <option value="14d">14d</option>
                 <option value="28d">28d</option>
                 <option value="90d">90d</option>
                 <option value="180d">180d</option>
@@ -799,7 +799,7 @@ const stdev = (arr) => {
 const tokenParam = new URLSearchParams(window.location.search).get('token');
 const apiHeaders = tokenParam ? { 'X-API-Token': tokenParam } : {};
 let currentBot = 'ml';
-let currentRange = '14d';
+let currentRange = '7d';
 let currentDisplay = 'both';
 let currentGraphMode = 'indexed';
 let availableBots = [];
@@ -940,7 +940,7 @@ async function loadBots() {
   const rangeSelector = document.getElementById('rangeSelector');
   rangeSelector.value = currentRange;
   rangeSelector.addEventListener('change', async (event) => {
-    currentRange = event.target.value || '14d';
+    currentRange = event.target.value || '7d';
     await Promise.all([loadEquity(), loadHealth()]);
   });
   const graphModeSelector = document.getElementById('graphModeSelector');
