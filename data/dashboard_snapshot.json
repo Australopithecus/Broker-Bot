@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-04-30T19:02:28.458572+00:00",
+  "generated_at": "2026-04-30T22:09:42.388052+00:00",
   "strategy_blueprint": {
     "title": "Strategy Blueprint",
-    "revision": "2.6.0",
+    "revision": "2.7.3",
     "revision_date": "2026-04-30",
     "summary": "Broker Bot is a paper-trading research system with two competing bots: an ML ensemble bot and an LLM decision-network bot. Both bots use separate brokerage paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports.",
     "models": [
@@ -47,6 +47,44 @@
       "Champion/challenger evaluation is shadow-only until enough evidence supports promotion."
     ],
     "changelog": [
+      {
+        "revision": "2.7.3",
+        "date": "2026-04-30",
+        "title": "Detailed table disclosure fix",
+        "changes": [
+          "Replaced nested Streamlit report-body expanders with toggles inside Detailed bot tables.",
+          "Prevented the Detailed Tables section from throwing a Streamlit nested-expander error."
+        ]
+      },
+      {
+        "revision": "2.7.2",
+        "date": "2026-04-30",
+        "title": "Seven-day default trend window",
+        "changes": [
+          "Changed the dashboard trend graph default window from 14 days to 7 days.",
+          "Kept longer graph windows available for historical review."
+        ]
+      },
+      {
+        "revision": "2.7.1",
+        "date": "2026-04-30",
+        "title": "Unified trend cutoff",
+        "changes": [
+          "Changed the dashboard trend graph so ML Bot, LLM Bot, and SPY all hide data before April 23, 2026.",
+          "Updated graph helper text to make the shared cutoff explicit."
+        ]
+      },
+      {
+        "revision": "2.7.0",
+        "date": "2026-04-30",
+        "title": "Navigation and readability pass",
+        "changes": [
+          "Added left-side dashboard navigation for major cockpit, report, and history sections.",
+          "Grouped dashboard controls and status details so the active bot, data freshness, and revision are visible while scrolling.",
+          "Tightened the dashboard layout to reduce visual noise and make long reports easier to browse.",
+          "Continued replacing vendor-facing dashboard language with generic brokerage-service wording."
+        ]
+      },
       {
         "revision": "2.6.0",
         "date": "2026-04-30",
@@ -122,10 +160,10 @@
     ]
   },
   "health": {
-    "generated_at": "2026-04-30T19:02:28.458572+00:00",
+    "generated_at": "2026-04-30T22:09:42.388052+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.398333333333333e-05,
+      "age_minutes": 3.43e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -153,356 +191,356 @@
         {
           "bot": "ml",
           "label": "ML Bot",
-          "latest_equity": 103367.85,
-          "window_return": 0.0028517400766110423,
-          "spy_window_return": 0.01328126101484628,
-          "window_alpha": -0.010429520938235237,
+          "latest_equity": 103470.58,
+          "window_return": 0.003848403538781131,
+          "spy_window_return": 0.01288648892523292,
+          "window_alpha": -0.009038085386451788,
           "max_drawdown": 0.0012516257656351875,
-          "trade_count": 109,
+          "trade_count": 115,
           "position_count": 4,
-          "gross_exposure": 24645.483035,
-          "gross_exposure_pct": 0.238425032880146,
-          "long_exposure": 18592.683035000002,
-          "short_exposure": 6052.8,
-          "largest_position": 6219.597987,
-          "largest_position_pct": 0.06016955936492826,
-          "protected_position_count": 1,
-          "unprotected_position_count": 3,
-          "protection_rate": 0.25,
+          "gross_exposure": 24664.898094,
+          "gross_exposure_pct": 0.23837595279740387,
+          "long_exposure": 18654.398094,
+          "short_exposure": 6010.5,
+          "largest_position": 6236.610679,
+          "largest_position_pct": 0.060274241035471146,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 78,
           "win_rate": 0.5256410256410257,
           "avg_trade_alpha": 0.003999695713845941,
-          "latest_snapshot_ts": "2026-04-30T19:02:23.547565+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:20.872499+00:00"
         },
         {
           "bot": "llm",
           "label": "LLM Bot",
-          "latest_equity": 100141.21,
-          "window_return": 0.001002890018560354,
-          "spy_window_return": 0.01328126101484628,
-          "window_alpha": -0.012278370996285926,
+          "latest_equity": 100126.55,
+          "window_return": 0.0008563499241509565,
+          "spy_window_return": 0.01288648892523292,
+          "window_alpha": -0.012030139001081963,
           "max_drawdown": 0.0023185172188651677,
-          "trade_count": 79,
+          "trade_count": 80,
           "position_count": 4,
-          "gross_exposure": 13924.684624000001,
-          "gross_exposure_pct": 0.13905049303877995,
-          "long_exposure": 5380.674624,
-          "short_exposure": 8544.01,
-          "largest_position": 5380.674624,
-          "largest_position_pct": 0.05373087287441404,
-          "protected_position_count": 3,
-          "unprotected_position_count": 1,
-          "protection_rate": 0.75,
+          "gross_exposure": 14044.439319000001,
+          "gross_exposure_pct": 0.1402668854464675,
+          "long_exposure": 5432.189319,
+          "short_exposure": 8612.25,
+          "largest_position": 5432.189319,
+          "largest_position_pct": 0.054253235720196094,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 71,
           "win_rate": 0.4788732394366197,
           "avg_trade_alpha": 0.002545995257131429,
-          "latest_snapshot_ts": "2026-04-30T19:02:26.377019+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:33.564982+00:00"
         }
       ],
       "7d": [
         {
           "bot": "ml",
           "label": "ML Bot",
-          "latest_equity": 103367.85,
-          "window_return": 0.010071117833984289,
-          "spy_window_return": 0.01091527998537134,
-          "window_alpha": -0.0008441621513870512,
+          "latest_equity": 103470.58,
+          "window_return": 0.013003615737878116,
+          "spy_window_return": 0.014116119196510457,
+          "window_alpha": -0.0011125034586323412,
           "max_drawdown": 0.002119397713423267,
-          "trade_count": 109,
+          "trade_count": 115,
           "position_count": 4,
-          "gross_exposure": 24645.483035,
-          "gross_exposure_pct": 0.238425032880146,
-          "long_exposure": 18592.683035000002,
-          "short_exposure": 6052.8,
-          "largest_position": 6219.597987,
-          "largest_position_pct": 0.06016955936492826,
-          "protected_position_count": 1,
-          "unprotected_position_count": 3,
-          "protection_rate": 0.25,
+          "gross_exposure": 24664.898094,
+          "gross_exposure_pct": 0.23837595279740387,
+          "long_exposure": 18654.398094,
+          "short_exposure": 6010.5,
+          "largest_position": 6236.610679,
+          "largest_position_pct": 0.060274241035471146,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 78,
           "win_rate": 0.5256410256410257,
           "avg_trade_alpha": 0.003999695713845941,
-          "latest_snapshot_ts": "2026-04-30T19:02:23.547565+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:20.872499+00:00"
         },
         {
           "bot": "llm",
           "label": "LLM Bot",
-          "latest_equity": 100141.21,
-          "window_return": 0.001599098551699596,
-          "spy_window_return": 0.01091527998537134,
-          "window_alpha": -0.009316181433671744,
-          "max_drawdown": 0.0025705799272723695,
-          "trade_count": 79,
+          "latest_equity": 100126.55,
+          "window_return": 0.004033419330410126,
+          "spy_window_return": 0.014116119196510457,
+          "window_alpha": -0.01008269986610033,
+          "max_drawdown": 0.0023185172188651677,
+          "trade_count": 80,
           "position_count": 4,
-          "gross_exposure": 13924.684624000001,
-          "gross_exposure_pct": 0.13905049303877995,
-          "long_exposure": 5380.674624,
-          "short_exposure": 8544.01,
-          "largest_position": 5380.674624,
-          "largest_position_pct": 0.05373087287441404,
-          "protected_position_count": 3,
-          "unprotected_position_count": 1,
-          "protection_rate": 0.75,
+          "gross_exposure": 14044.439319000001,
+          "gross_exposure_pct": 0.1402668854464675,
+          "long_exposure": 5432.189319,
+          "short_exposure": 8612.25,
+          "largest_position": 5432.189319,
+          "largest_position_pct": 0.054253235720196094,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 71,
           "win_rate": 0.4788732394366197,
           "avg_trade_alpha": 0.002545995257131429,
-          "latest_snapshot_ts": "2026-04-30T19:02:26.377019+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:33.564982+00:00"
         }
       ],
       "14d": [
         {
           "bot": "ml",
           "label": "ML Bot",
-          "latest_equity": 103367.85,
-          "window_return": 0.032950270059608044,
-          "spy_window_return": 0.033506377716101765,
-          "window_alpha": -0.0005561076564937206,
+          "latest_equity": 103470.58,
+          "window_return": 0.03397684632334208,
+          "spy_window_return": 0.03310372596672373,
+          "window_alpha": 0.000873120356618351,
           "max_drawdown": 0.002119397713423267,
-          "trade_count": 109,
+          "trade_count": 115,
           "position_count": 4,
-          "gross_exposure": 24645.483035,
-          "gross_exposure_pct": 0.238425032880146,
-          "long_exposure": 18592.683035000002,
-          "short_exposure": 6052.8,
-          "largest_position": 6219.597987,
-          "largest_position_pct": 0.06016955936492826,
-          "protected_position_count": 1,
-          "unprotected_position_count": 3,
-          "protection_rate": 0.25,
+          "gross_exposure": 24664.898094,
+          "gross_exposure_pct": 0.23837595279740387,
+          "long_exposure": 18654.398094,
+          "short_exposure": 6010.5,
+          "largest_position": 6236.610679,
+          "largest_position_pct": 0.060274241035471146,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 78,
           "win_rate": 0.5256410256410257,
           "avg_trade_alpha": 0.003999695713845941,
-          "latest_snapshot_ts": "2026-04-30T19:02:23.547565+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:20.872499+00:00"
         },
         {
           "bot": "llm",
           "label": "LLM Bot",
-          "latest_equity": 100141.21,
-          "window_return": 0.0014121000000000272,
-          "spy_window_return": 0.020997002457700642,
-          "window_alpha": -0.019584902457700615,
+          "latest_equity": 100126.55,
+          "window_return": 0.0012654999999999195,
+          "spy_window_return": 0.020599224332656263,
+          "window_alpha": -0.019333724332656343,
           "max_drawdown": 1.000121,
-          "trade_count": 79,
+          "trade_count": 80,
           "position_count": 4,
-          "gross_exposure": 13924.684624000001,
-          "gross_exposure_pct": 0.13905049303877995,
-          "long_exposure": 5380.674624,
-          "short_exposure": 8544.01,
-          "largest_position": 5380.674624,
-          "largest_position_pct": 0.05373087287441404,
-          "protected_position_count": 3,
-          "unprotected_position_count": 1,
-          "protection_rate": 0.75,
+          "gross_exposure": 14044.439319000001,
+          "gross_exposure_pct": 0.1402668854464675,
+          "long_exposure": 5432.189319,
+          "short_exposure": 8612.25,
+          "largest_position": 5432.189319,
+          "largest_position_pct": 0.054253235720196094,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 71,
           "win_rate": 0.4788732394366197,
           "avg_trade_alpha": 0.002545995257131429,
-          "latest_snapshot_ts": "2026-04-30T19:02:26.377019+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:33.564982+00:00"
         }
       ],
       "28d": [
         {
           "bot": "ml",
           "label": "ML Bot",
-          "latest_equity": 103367.85,
-          "window_return": 0.032950270059608044,
-          "spy_window_return": 0.033506377716101765,
-          "window_alpha": -0.0005561076564937206,
+          "latest_equity": 103470.58,
+          "window_return": 0.03397684632334208,
+          "spy_window_return": 0.03310372596672373,
+          "window_alpha": 0.000873120356618351,
           "max_drawdown": 0.002119397713423267,
-          "trade_count": 109,
+          "trade_count": 115,
           "position_count": 4,
-          "gross_exposure": 24645.483035,
-          "gross_exposure_pct": 0.238425032880146,
-          "long_exposure": 18592.683035000002,
-          "short_exposure": 6052.8,
-          "largest_position": 6219.597987,
-          "largest_position_pct": 0.06016955936492826,
-          "protected_position_count": 1,
-          "unprotected_position_count": 3,
-          "protection_rate": 0.25,
+          "gross_exposure": 24664.898094,
+          "gross_exposure_pct": 0.23837595279740387,
+          "long_exposure": 18654.398094,
+          "short_exposure": 6010.5,
+          "largest_position": 6236.610679,
+          "largest_position_pct": 0.060274241035471146,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 78,
           "win_rate": 0.5256410256410257,
           "avg_trade_alpha": 0.003999695713845941,
-          "latest_snapshot_ts": "2026-04-30T19:02:23.547565+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:20.872499+00:00"
         },
         {
           "bot": "llm",
           "label": "LLM Bot",
-          "latest_equity": 100141.21,
-          "window_return": 0.0014121000000000272,
-          "spy_window_return": 0.020997002457700642,
-          "window_alpha": -0.019584902457700615,
+          "latest_equity": 100126.55,
+          "window_return": 0.0012654999999999195,
+          "spy_window_return": 0.020599224332656263,
+          "window_alpha": -0.019333724332656343,
           "max_drawdown": 1.000121,
-          "trade_count": 79,
+          "trade_count": 80,
           "position_count": 4,
-          "gross_exposure": 13924.684624000001,
-          "gross_exposure_pct": 0.13905049303877995,
-          "long_exposure": 5380.674624,
-          "short_exposure": 8544.01,
-          "largest_position": 5380.674624,
-          "largest_position_pct": 0.05373087287441404,
-          "protected_position_count": 3,
-          "unprotected_position_count": 1,
-          "protection_rate": 0.75,
+          "gross_exposure": 14044.439319000001,
+          "gross_exposure_pct": 0.1402668854464675,
+          "long_exposure": 5432.189319,
+          "short_exposure": 8612.25,
+          "largest_position": 5432.189319,
+          "largest_position_pct": 0.054253235720196094,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 71,
           "win_rate": 0.4788732394366197,
           "avg_trade_alpha": 0.002545995257131429,
-          "latest_snapshot_ts": "2026-04-30T19:02:26.377019+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:33.564982+00:00"
         }
       ],
       "90d": [
         {
           "bot": "ml",
           "label": "ML Bot",
-          "latest_equity": 103367.85,
-          "window_return": 0.03358454716466275,
-          "spy_window_return": 0.03288253977378908,
-          "window_alpha": 0.0007020073908736713,
+          "latest_equity": 103470.58,
+          "window_return": 0.034611753791580435,
+          "spy_window_return": 0.032480131070263374,
+          "window_alpha": 0.0021316227213170613,
           "max_drawdown": 0.002119397713423267,
-          "trade_count": 109,
+          "trade_count": 115,
           "position_count": 4,
-          "gross_exposure": 24645.483035,
-          "gross_exposure_pct": 0.238425032880146,
-          "long_exposure": 18592.683035000002,
-          "short_exposure": 6052.8,
-          "largest_position": 6219.597987,
-          "largest_position_pct": 0.06016955936492826,
-          "protected_position_count": 1,
-          "unprotected_position_count": 3,
-          "protection_rate": 0.25,
+          "gross_exposure": 24664.898094,
+          "gross_exposure_pct": 0.23837595279740387,
+          "long_exposure": 18654.398094,
+          "short_exposure": 6010.5,
+          "largest_position": 6236.610679,
+          "largest_position_pct": 0.060274241035471146,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 78,
           "win_rate": 0.5256410256410257,
           "avg_trade_alpha": 0.003999695713845941,
-          "latest_snapshot_ts": "2026-04-30T19:02:23.547565+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:20.872499+00:00"
         },
         {
           "bot": "llm",
           "label": "LLM Bot",
-          "latest_equity": 100141.21,
-          "window_return": 0.0014121000000000272,
-          "spy_window_return": 0.020997002457700642,
-          "window_alpha": -0.019584902457700615,
+          "latest_equity": 100126.55,
+          "window_return": 0.0012654999999999195,
+          "spy_window_return": 0.020599224332656263,
+          "window_alpha": -0.019333724332656343,
           "max_drawdown": 1.000121,
-          "trade_count": 79,
+          "trade_count": 80,
           "position_count": 4,
-          "gross_exposure": 13924.684624000001,
-          "gross_exposure_pct": 0.13905049303877995,
-          "long_exposure": 5380.674624,
-          "short_exposure": 8544.01,
-          "largest_position": 5380.674624,
-          "largest_position_pct": 0.05373087287441404,
-          "protected_position_count": 3,
-          "unprotected_position_count": 1,
-          "protection_rate": 0.75,
+          "gross_exposure": 14044.439319000001,
+          "gross_exposure_pct": 0.1402668854464675,
+          "long_exposure": 5432.189319,
+          "short_exposure": 8612.25,
+          "largest_position": 5432.189319,
+          "largest_position_pct": 0.054253235720196094,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 71,
           "win_rate": 0.4788732394366197,
           "avg_trade_alpha": 0.002545995257131429,
-          "latest_snapshot_ts": "2026-04-30T19:02:26.377019+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:33.564982+00:00"
         }
       ],
       "180d": [
         {
           "bot": "ml",
           "label": "ML Bot",
-          "latest_equity": 103367.85,
-          "window_return": 0.03358454716466275,
-          "spy_window_return": 0.03288253977378908,
-          "window_alpha": 0.0007020073908736713,
+          "latest_equity": 103470.58,
+          "window_return": 0.034611753791580435,
+          "spy_window_return": 0.032480131070263374,
+          "window_alpha": 0.0021316227213170613,
           "max_drawdown": 0.002119397713423267,
-          "trade_count": 109,
+          "trade_count": 115,
           "position_count": 4,
-          "gross_exposure": 24645.483035,
-          "gross_exposure_pct": 0.238425032880146,
-          "long_exposure": 18592.683035000002,
-          "short_exposure": 6052.8,
-          "largest_position": 6219.597987,
-          "largest_position_pct": 0.06016955936492826,
-          "protected_position_count": 1,
-          "unprotected_position_count": 3,
-          "protection_rate": 0.25,
+          "gross_exposure": 24664.898094,
+          "gross_exposure_pct": 0.23837595279740387,
+          "long_exposure": 18654.398094,
+          "short_exposure": 6010.5,
+          "largest_position": 6236.610679,
+          "largest_position_pct": 0.060274241035471146,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 78,
           "win_rate": 0.5256410256410257,
           "avg_trade_alpha": 0.003999695713845941,
-          "latest_snapshot_ts": "2026-04-30T19:02:23.547565+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:20.872499+00:00"
         },
         {
           "bot": "llm",
           "label": "LLM Bot",
-          "latest_equity": 100141.21,
-          "window_return": 0.0014121000000000272,
-          "spy_window_return": 0.020997002457700642,
-          "window_alpha": -0.019584902457700615,
+          "latest_equity": 100126.55,
+          "window_return": 0.0012654999999999195,
+          "spy_window_return": 0.020599224332656263,
+          "window_alpha": -0.019333724332656343,
           "max_drawdown": 1.000121,
-          "trade_count": 79,
+          "trade_count": 80,
           "position_count": 4,
-          "gross_exposure": 13924.684624000001,
-          "gross_exposure_pct": 0.13905049303877995,
-          "long_exposure": 5380.674624,
-          "short_exposure": 8544.01,
-          "largest_position": 5380.674624,
-          "largest_position_pct": 0.05373087287441404,
-          "protected_position_count": 3,
-          "unprotected_position_count": 1,
-          "protection_rate": 0.75,
+          "gross_exposure": 14044.439319000001,
+          "gross_exposure_pct": 0.1402668854464675,
+          "long_exposure": 5432.189319,
+          "short_exposure": 8612.25,
+          "largest_position": 5432.189319,
+          "largest_position_pct": 0.054253235720196094,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 71,
           "win_rate": 0.4788732394366197,
           "avg_trade_alpha": 0.002545995257131429,
-          "latest_snapshot_ts": "2026-04-30T19:02:26.377019+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:33.564982+00:00"
         }
       ],
       "360d": [
         {
           "bot": "ml",
           "label": "ML Bot",
-          "latest_equity": 103367.85,
-          "window_return": 0.03358454716466275,
-          "spy_window_return": 0.03288253977378908,
-          "window_alpha": 0.0007020073908736713,
+          "latest_equity": 103470.58,
+          "window_return": 0.034611753791580435,
+          "spy_window_return": 0.032480131070263374,
+          "window_alpha": 0.0021316227213170613,
           "max_drawdown": 0.002119397713423267,
-          "trade_count": 109,
+          "trade_count": 115,
           "position_count": 4,
-          "gross_exposure": 24645.483035,
-          "gross_exposure_pct": 0.238425032880146,
-          "long_exposure": 18592.683035000002,
-          "short_exposure": 6052.8,
-          "largest_position": 6219.597987,
-          "largest_position_pct": 0.06016955936492826,
-          "protected_position_count": 1,
-          "unprotected_position_count": 3,
-          "protection_rate": 0.25,
+          "gross_exposure": 24664.898094,
+          "gross_exposure_pct": 0.23837595279740387,
+          "long_exposure": 18654.398094,
+          "short_exposure": 6010.5,
+          "largest_position": 6236.610679,
+          "largest_position_pct": 0.060274241035471146,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 78,
           "win_rate": 0.5256410256410257,
           "avg_trade_alpha": 0.003999695713845941,
-          "latest_snapshot_ts": "2026-04-30T19:02:23.547565+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:20.872499+00:00"
         },
         {
           "bot": "llm",
           "label": "LLM Bot",
-          "latest_equity": 100141.21,
-          "window_return": 0.0014121000000000272,
-          "spy_window_return": 0.020997002457700642,
-          "window_alpha": -0.019584902457700615,
+          "latest_equity": 100126.55,
+          "window_return": 0.0012654999999999195,
+          "spy_window_return": 0.020599224332656263,
+          "window_alpha": -0.019333724332656343,
           "max_drawdown": 1.000121,
-          "trade_count": 79,
+          "trade_count": 80,
           "position_count": 4,
-          "gross_exposure": 13924.684624000001,
-          "gross_exposure_pct": 0.13905049303877995,
-          "long_exposure": 5380.674624,
-          "short_exposure": 8544.01,
-          "largest_position": 5380.674624,
-          "largest_position_pct": 0.05373087287441404,
-          "protected_position_count": 3,
-          "unprotected_position_count": 1,
-          "protection_rate": 0.75,
+          "gross_exposure": 14044.439319000001,
+          "gross_exposure_pct": 0.1402668854464675,
+          "long_exposure": 5432.189319,
+          "short_exposure": 8612.25,
+          "largest_position": 5432.189319,
+          "largest_position_pct": 0.054253235720196094,
+          "protected_position_count": 4,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
           "evaluated_decision_count": 71,
           "win_rate": 0.4788732394366197,
           "avg_trade_alpha": 0.002545995257131429,
-          "latest_snapshot_ts": "2026-04-30T19:02:26.377019+00:00"
+          "latest_snapshot_ts": "2026-04-30T22:09:33.564982+00:00"
         }
       ]
     },
     "agreement": {
       "overlap": 10,
-      "agreement_rate": 0.9,
+      "agreement_rate": 0.8,
       "agreements": [
         "AAPL",
         "AMZN",
@@ -510,12 +548,12 @@
         "META",
         "MSFT",
         "NVDA",
-        "PG",
         "UNH",
         "XOM"
       ],
       "disagreements": [
-        "JPM"
+        "JPM",
+        "PG"
       ]
     }
   },
@@ -788,6 +826,20 @@
           "cash": 103304.71,
           "portfolio_value": 100141.21,
           "spy_value": 718.69
+        },
+        {
+          "ts": "2026-04-30T22:09:31.762727+00:00",
+          "equity": 100126.67,
+          "cash": 103304.71,
+          "portfolio_value": 100126.67,
+          "spy_value": 718.41
+        },
+        {
+          "ts": "2026-04-30T22:09:33.564982+00:00",
+          "equity": 100126.55,
+          "cash": 103304.71,
+          "portfolio_value": 100126.55,
+          "spy_value": 718.41
         }
       ],
       "trades": [
@@ -1422,6 +1474,14 @@
           "qty": 11.152265592,
           "price": 369.39,
           "status": "OrderStatus.PENDING_NEW"
+        },
+        {
+          "ts": "2026-04-30T22:09:31.617299+00:00",
+          "symbol": "GOOGL",
+          "side": "sell",
+          "qty": 0.06952643037200978,
+          "price": 384.99,
+          "status": "OrderStatus.ACCEPTED"
         }
       ],
       "positions": [
@@ -1430,25 +1490,25 @@
           "qty": 14.113615108,
           "avg_entry": 359.723571,
           "avg_entry_price": 359.723571,
-          "market_value": 5380.674624,
-          "unreal_pl": 303.674598,
-          "unrealized_pl": 303.674598,
+          "market_value": 5432.189319,
+          "unreal_pl": 355.189293,
+          "unrealized_pl": 355.189293,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
         },
         {
           "symbol": "PG",
           "qty": -23.0,
           "avg_entry": 145.772222,
           "avg_entry_price": 145.772222,
-          "market_value": -3387.21,
-          "unreal_pl": -34.448894,
-          "unrealized_pl": -34.448894,
+          "market_value": -3382.15,
+          "unreal_pl": -29.388894,
+          "unrealized_pl": -29.388894,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1462,9 +1522,9 @@
           "qty": -10.0,
           "avg_entry": 269.938,
           "avg_entry_price": 269.938,
-          "market_value": -2735.8,
-          "unreal_pl": -36.42,
-          "unrealized_pl": -36.42,
+          "market_value": -2825.9,
+          "unreal_pl": -126.52,
+          "unrealized_pl": -126.52,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1478,9 +1538,9 @@
           "qty": -12.0,
           "avg_entry": 209.4395,
           "avg_entry_price": 209.4395,
-          "market_value": -2421.0,
-          "unreal_pl": 92.274,
-          "unrealized_pl": 92.274,
+          "market_value": -2404.2,
+          "unreal_pl": 109.074,
+          "unrealized_pl": 109.074,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1492,6 +1552,147 @@
       ],
       "advisor_reports": [],
       "strategy_reports": [
+        {
+          "ts": "2026-04-30T22:09:38.593347+00:00",
+          "report_type": "champion_challenger",
+          "headline": "LLM Bot Champion / Challenger",
+          "summary": "Compared current policy with a stricter confidence-gated challenger. Champion avg 0.12%; challenger avg 0.12%.",
+          "body": "# LLM Bot Champion / Challenger\n\nGenerated at 2026-04-30T22:09:38.593105+00:00\n\nChampion is the bot's current selected-decision policy. Challenger is a stricter shadow policy that only counts trades passing the current confidence threshold.\n\nThreshold used: LLM minimum conviction = 0.5500\n\n## Models being tested\n- Champion: the current LLM network, including Stock Selector, Analyst, Trader, Skeptic review, conviction gate, and normal execution/risk controls.\n- Challenger: a stricter shadow version of the LLM policy that counts only selected decisions with absolute conviction/final score at or above 0.5500.\n\n## Verdict\nThe challenger has not yet shown enough improvement over the current champion.\n\n\n## Champion metrics\n{\n  \"avg_beat_spy\": 0.002545995257131429,\n  \"avg_signed_return\": 0.0011754387098839056,\n  \"hit_rate\": 0.4788732394366197,\n  \"samples\": 71.0\n}\n\n## Challenger metrics\n{\n  \"avg_beat_spy\": 0.002545995257131429,\n  \"avg_signed_return\": 0.0011754387098839056,\n  \"hit_rate\": 0.4788732394366197,\n  \"samples\": 71.0\n}\n\n## Trades excluded by the challenger\n{\n  \"avg_beat_spy\": 0.0,\n  \"avg_signed_return\": 0.0,\n  \"hit_rate\": 0.0,\n  \"samples\": 0.0\n}\n\n## Changes implemented\n- LLM conviction gate is active at 0.5500.\n- LLM Skeptic review can caution, reduce conviction, or veto weakly supported trades before execution.\n- Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.\n\n## Interpretation\n- If challenger returns and hit rate beat the champion with enough samples, tightening the gate may improve future results.\n- If excluded trades perform well, the gate may be too strict and should be relaxed.\n- This is shadow evaluation only; it reports what would have happened without automatically changing the strategy.",
+          "metrics": {
+            "challenger_avg_signed_return": 0.0011754387098839056,
+            "challenger_hit_rate": 0.4788732394366197,
+            "challenger_samples": 71.0,
+            "champion_avg_signed_return": 0.0011754387098839056,
+            "champion_hit_rate": 0.4788732394366197,
+            "champion_samples": 71.0,
+            "excluded_avg_signed_return": 0.0,
+            "excluded_samples": 0.0,
+            "threshold": 0.55
+          },
+          "changes": {
+            "challenger_description": "Challenger: a stricter shadow version of the LLM policy that counts only selected decisions with absolute conviction/final score at or above 0.5500.",
+            "champion_description": "Champion: the current LLM network, including Stock Selector, Analyst, Trader, Skeptic review, conviction gate, and normal execution/risk controls.",
+            "implemented_changes": [
+              "LLM conviction gate is active at 0.5500.",
+              "LLM Skeptic review can caution, reduce conviction, or veto weakly supported trades before execution.",
+              "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy."
+            ],
+            "threshold_label": "LLM minimum conviction",
+            "verdict": "The challenger has not yet shown enough improvement over the current champion."
+          }
+        },
+        {
+          "ts": "2026-04-30T22:09:36.911466+00:00",
+          "report_type": "attribution",
+          "headline": "LLM Bot Post-Trade Attribution",
+          "summary": "Reviewed 71 evaluated decisions; hit rate 47.9%, average signed return 0.12%.",
+          "body": "# LLM Bot Post-Trade Attribution\n\nGenerated at 2026-04-30T22:09:36.911249+00:00\n\nThis report asks a simple question: which ingredients in the bot's decisions have actually been associated with profitable outcomes so far?\n\n## Overall outcome attribution\n- Evaluated decisions: 71\n- Hit rate: 47.9%\n- Average signed return: 0.12%\n- Average alpha versus SPY: 0.25%\n\n## Side breakdown\n{\n  \"LONG\": {\n    \"avg_beat_spy\": 0.0015986515489661859,\n    \"avg_signed_return\": 0.0005522080917962693,\n    \"hit_rate\": 0.4444444444444444,\n    \"samples\": 63.0\n  },\n  \"SHORT\": {\n    \"avg_beat_spy\": 0.01000632695893272,\n    \"avg_signed_return\": 0.0060833798273240425,\n    \"hit_rate\": 0.75,\n    \"samples\": 8.0\n  }\n}\n\n## Components most associated with better outcomes\n- memory: edge=+0.53%, hit rate=54.8%, samples=31\n- technical: edge=+0.22%, hit rate=45.1%, samples=71\n- snapshot: edge=+0.08%, hit rate=40.8%, samples=71\n- screener: edge=-1.29%, hit rate=16.7%, samples=6\n\n## Components most associated with worse outcomes\n- screener: edge=-1.29%, hit rate=16.7%, samples=6\n- snapshot: edge=+0.08%, hit rate=40.8%, samples=71\n- technical: edge=+0.22%, hit rate=45.1%, samples=71\n- memory: edge=+0.53%, hit rate=54.8%, samples=31\n\n## Best recent decisions\n- MSFT SHORT evaluated 2026-04-24T22:03:00.020155+00:00: signed=3.95%, raw=-3.95%\n- MSFT SHORT evaluated 2026-04-24T22:03:00.020155+00:00: signed=3.95%, raw=-3.95%\n- AMZN LONG evaluated 2026-04-24T23:46:19.977579+00:00: signed=3.49%, raw=3.49%\n- AMZN LONG evaluated 2026-04-24T22:03:00.020155+00:00: signed=3.49%, raw=3.49%\n- UNH LONG evaluated 2026-04-28T22:11:39.293721+00:00: signed=3.40%, raw=3.40%\n\n## Worst recent decisions\n- META LONG evaluated 2026-04-24T22:03:00.020155+00:00: signed=-2.33%, raw=-2.33%\n- META LONG evaluated 2026-04-24T22:03:00.020155+00:00: signed=-2.33%, raw=-2.33%\n- NVDA LONG evaluated 2026-04-29T18:44:47.714034+00:00: signed=-2.27%, raw=-2.27%\n- PG SHORT evaluated 2026-04-24T22:03:00.020155+00:00: signed=-2.06%, raw=2.06%\n- PG SHORT evaluated 2026-04-24T22:03:00.020155+00:00: signed=-2.06%, raw=2.06%",
+          "metrics": {
+            "avg_beat_spy": 0.002545995257131429,
+            "avg_signed_return": 0.0011754387098839056,
+            "component_count": 4.0,
+            "hit_rate": 0.4788732394366197,
+            "samples": 71.0
+          },
+          "changes": {}
+        },
+        {
+          "ts": "2026-04-30T22:09:35.233703+00:00",
+          "report_type": "coach",
+          "headline": "LLM Coach Report",
+          "summary": "Reviewed 14 mature LLM decisions and evaluated 0 new outcomes this run. Best recent decision: UNH LONG returned +3.40%. Worst recent decision: NVDA LONG returned -2.27%.",
+          "body": "# LLM Bot Coach Report\n\nReviewed 14 mature LLM decisions and evaluated 0 new outcomes this run. Best recent decision: UNH LONG returned +3.40%. Worst recent decision: NVDA LONG returned -2.27%.\n\n## Strengths\n- UNH LONG worked with signed return +3.40% and alpha +3.88%. Original rationale: tech +0.0035; memory +0.0004 Why now: tech +0.0035; memory +0.0004 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used...\n- AMZN LONG worked with signed return +1.35% and alpha +1.36%. Original rationale: tech +0.0032; memory +0.0003 Why now: tech +0.0032; memory +0.0003 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used...\n- AMZN LONG worked with signed return +1.34% and alpha +1.68%. Original rationale: tech +0.0034; memory +0.0003 Why now: tech +0.0034; memory +0.0003 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used...\n\n## Mistakes\n- NVDA LONG missed with signed return -2.27% and alpha -1.93%. Original rationale to challenge next time: tech +0.0009 Why now: tech +0.0009 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used existing model direction with m...\n- NVDA LONG missed with signed return -1.78% and alpha -1.77%. Original rationale to challenge next time: tech +0.0025; snapshot +0.0012 Why now: tech +0.0025; snapshot +0.0012 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader...\n- MSFT LONG missed with signed return -1.32% and alpha -0.98%. Original rationale to challenge next time: tech -0.0007; memory +0.0009 Why now: tech -0.0007; memory +0.0009 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used...\n\n## Adjustments for Trader\n- Before repeating a setup like NVDA LONG, require the Trader to name what would make the thesis wrong and let the Skeptic veto if that evidence is already present.\n- Preserve the useful pattern from UNH LONG only when the new memo has a similarly concrete catalyst/risk balance, not merely a similar direction.\n- If expected upside is not clearly larger than expected downside, prefer HOLD and record why the pass was made.\n\n## Trader Prompt Guidance\nUse the latest concrete lessons from UNH, NVDA: demand symbol-specific catalyst, contrary evidence, invalidation point, and quantified upside/downside. Avoid generic confidence language; if those four items are weak, choose HOLD.\n",
+          "metrics": {
+            "evaluated_now": 0,
+            "recent_outcome_count": 25
+          },
+          "changes": {}
+        },
+        {
+          "ts": "2026-04-30T22:09:31.618387+00:00",
+          "report_type": "llm_daily",
+          "headline": "LLM Bot Daily Overview",
+          "summary": "Watchlist size 5, trader decisions 1, submitted orders 1.",
+          "body": "# LLM Bot Daily Overview\n\nGenerated at 2026-04-30T22:09:31.618089+00:00\n\nSelector summary: Fallback selector used the strongest existing candidate scores.\n\nTrader summary: Fallback trader used the strongest watchlist directions with moderate conviction.\n\nSkeptic summary: Fallback Skeptic checked edge, conviction, analyst confidence, and contradiction coverage.\n\nCoach summary: Reviewed 15 mature LLM decisions and evaluated 0 new outcomes this run. Best recent decision: UNH LONG returned +3.40%. Worst recent decision: NVDA LONG returned -2.27%.\n\n## Watchlist\n- GOOGL\n- UNH\n- META\n- AMZN\n- JPM\n\n## Submitted decisions\n- GOOGL LONG conviction=0.51: tech +0.0032; snapshot +0.0026\n",
+          "metrics": {
+            "decision_count": 1,
+            "order_count": 1,
+            "watchlist_count": 5
+          },
+          "changes": {}
+        },
+        {
+          "ts": "2026-04-30T22:09:31.533011+00:00",
+          "report_type": "trader_daily",
+          "headline": "LLM Bot Trader Daily Report",
+          "summary": "Fallback trader used the strongest watchlist directions with moderate conviction.",
+          "body": "# LLM Bot Trader Report\n\nFallback trader used the strongest watchlist directions with moderate conviction.\n\nCoach guidance used:\nUse the latest concrete lessons from UNH, NVDA: demand symbol-specific catalyst, contrary evidence, invalidation point, and quantified upside/downside. Avoid generic confidence language; if those four items are weak, choose HOLD.\n\nSkeptic / gate impact:\n1 cautioned, 4 vetoed, 0 below conviction threshold.\n\n## Decisions\n- GOOGL LONG conviction=0.51\n  Expected upside/downside: 2.49% / 2.48%\n  Time horizon: short swing\n  Why now: tech +0.0032; snapshot +0.0026\n  Contrary evidence: Fallback trader did not receive a full LLM contradiction review.\n  Thesis: tech +0.0032; snapshot +0.0026\n  Risk: Fallback trader used existing model direction with moderate conviction.\n  Skeptic: caution / risk=medium\n",
+          "metrics": {
+            "decision_count": 1
+          },
+          "changes": {}
+        },
+        {
+          "ts": "2026-04-30T22:09:31.531940+00:00",
+          "report_type": "skeptic",
+          "headline": "LLM Bot Skeptic Report",
+          "summary": "Reviewed 5 trader decisions; cautioned 1, vetoed 4, conviction-gated 0.",
+          "body": "# LLM Bot Skeptic Report\n\nFallback Skeptic checked edge, conviction, analyst confidence, and contradiction coverage.\n\n## Execution impact\n- Reviewed decisions: 5\n- Cautioned/reduced conviction: 1\n- Vetoed: 4\n- Conviction-gated before Skeptic: 0\n\n## Reviews\n- GOOGL: caution / risk=medium\n  Concerns: Expected edge is positive but thin.; Trader conviction is only modest after the minimum gate.\n  Adjustment: Reduce conviction or skip if sizing is crowded.\n- UNH: veto / risk=high\n  Concerns: Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.\n  Adjustment: Reduce conviction or skip if sizing is crowded.\n- META: veto / risk=high\n  Concerns: Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.\n  Adjustment: Reduce conviction or skip if sizing is crowded.\n- AMZN: veto / risk=high\n  Concerns: Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.\n  Adjustment: Reduce conviction or skip if sizing is crowded.\n- JPM: veto / risk=high\n  Concerns: Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.\n  Adjustment: Reduce conviction or skip if sizing is crowded.\n\n## Vetoed before execution\n- UNH LONG: Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.\n- META SHORT: Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.\n- AMZN LONG: Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.\n- JPM LONG: Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.\n",
+          "metrics": {
+            "cautioned_count": 1,
+            "conviction_gated_count": 0,
+            "llm_min_conviction": 0.55,
+            "reviewed_count": 5,
+            "vetoed_count": 4
+          },
+          "changes": {
+            "vetoed": [
+              {
+                "reason": "Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.",
+                "side": "LONG",
+                "symbol": "UNH"
+              },
+              {
+                "reason": "Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.",
+                "side": "SHORT",
+                "symbol": "META"
+              },
+              {
+                "reason": "Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.",
+                "side": "LONG",
+                "symbol": "AMZN"
+              },
+              {
+                "reason": "Expected upside did not clearly exceed expected downside.; Trader conviction is only modest after the minimum gate.",
+                "side": "LONG",
+                "symbol": "JPM"
+              }
+            ]
+          }
+        },
+        {
+          "ts": "2026-04-30T22:09:31.530462+00:00",
+          "report_type": "analyst_daily",
+          "headline": "LLM Bot Analyst Daily Report",
+          "summary": "Prepared analyst memos for 5 watchlist names.",
+          "body": "# LLM Bot Analyst Report\n\nFallback selector used the strongest existing candidate scores.\n\n## GOOGL\nMarket analysis: GOOGL is being monitored as a LONG candidate based on the current signal stack.\n\nHistorical trends: Model-implied direction is LONG with final score 1.25%.\n\nCurrent events:\n- No recent Alpaca headlines were available in the configured lookback window.\n\nCatalysts:\n- Recent signal strength and market-data overlays put this name on the watchlist.\n\nContrary evidence:\n- The setup may be mostly model-driven if current news is thin.\n\nTime horizon: 1 trading day(s)\nConfidence: 55%\n\nOutlook: tech +0.0032; snapshot +0.0026\n\nRisks:\n- The signal could be overfit to recent momentum or event noise.\n- New information could quickly invalidate the current setup.\n\n## UNH\nMarket analysis: UNH is being monitored as a LONG candidate based on the current signal stack.\n\nHistorical trends: Model-implied direction is LONG with final score 0.74%.\n\nCurrent events:\n- No recent Alpaca headlines were available in the configured lookback window.\n\nCatalysts:\n- Recent signal strength and market-data overlays put this name on the watchlist.\n\nContrary evidence:\n- The setup may be mostly model-driven if current news is thin.\n\nTime horizon: 1 trading day(s)\nConfidence: 55%\n\nOutlook: tech +0.0035; memory +0.0009\n\nRisks:\n- The signal could be overfit to recent momentum or event noise.\n- New information could quickly invalidate the current setup.\n\n## META\nMarket analysis: META is being monitored as a SHORT candidate based on the current signal stack.\n\nHistorical trends: Model-implied direction is SHORT with final score -0.42%.\n\nCurrent events:\n- No recent Alpaca headlines were available in the configured lookback window.\n\nCatalysts:\n- Recent signal strength and market-data overlays put this name on the watchlist.\n\nContrary evidence:\n- The setup may be mostly model-driven if current news is thin.\n\nTime horizon: 1 trading day(s)\nConfidence: 55%\n\nOutlook: tech -0.0029; snapshot -0.0022; memory -0.0009\n\nRisks:\n- The signal could be overfit to recent momentum or event noise.\n- New information could quickly invalidate the current setup.\n\n## AMZN\nMarket analysis: AMZN is being monitored as a LONG candidate based on the current signal stack.\n\nHistorical trends: Model-implied direction is LONG with final score 0.35%.\n\nCurrent events:\n- No recent Alpaca headlines were available in the configured lookback window.\n\nCatalysts:\n- Recent signal strength and market-data overlays put this name on the watchlist.\n\nContrary evidence:\n- The setup may be mostly model-driven if current news is thin.\n\nTime horizon: 1 trading day(s)\nConfidence: 55%\n\nOutlook: tech +0.0027\n\nRisks:\n- The signal could be overfit to recent momentum or event noise.\n- New information could quickly invalidate the current setup.\n\n## JPM\nMarket analysis: JPM is being monitored as a LONG candidate based on the current signal stack.\n\nHistorical trends: Model-implied direction is LONG with final score 0.31%.\n\nCurrent events:\n- No recent Alpaca headlines were available in the configured lookback window.\n\nCatalysts:\n- Recent signal strength and market-data overlays put this name on the watchlist.\n\nContrary evidence:\n- The setup may be mostly model-driven if current news is thin.\n\nTime horizon: 1 trading day(s)\nConfidence: 55%\n\nOutlook: snapshot +0.0008\n\nRisks:\n- The signal could be overfit to recent momentum or event noise.\n- New information could quickly invalidate the current setup.\n",
+          "metrics": {
+            "watchlist_count": 5
+          },
+          "changes": {}
+        },
+        {
+          "ts": "2026-04-30T22:09:31.110445+00:00",
+          "report_type": "coach",
+          "headline": "LLM Coach Report",
+          "summary": "Reviewed 15 mature LLM decisions and evaluated 0 new outcomes this run. Best recent decision: UNH LONG returned +3.40%. Worst recent decision: NVDA LONG returned -2.27%.",
+          "body": "# LLM Bot Coach Report\n\nReviewed 15 mature LLM decisions and evaluated 0 new outcomes this run. Best recent decision: UNH LONG returned +3.40%. Worst recent decision: NVDA LONG returned -2.27%.\n\n## Strengths\n- UNH LONG worked with signed return +3.40% and alpha +3.88%. Original rationale: tech +0.0035; memory +0.0004 Why now: tech +0.0035; memory +0.0004 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used...\n- AMZN LONG worked with signed return +1.35% and alpha +1.36%. Original rationale: tech +0.0032; memory +0.0003 Why now: tech +0.0032; memory +0.0003 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used...\n- AMZN LONG worked with signed return +1.34% and alpha +1.68%. Original rationale: tech +0.0034; memory +0.0003 Why now: tech +0.0034; memory +0.0003 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used...\n\n## Mistakes\n- NVDA LONG missed with signed return -2.27% and alpha -1.93%. Original rationale to challenge next time: tech +0.0009 Why now: tech +0.0009 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used existing model direction with m...\n- NVDA LONG missed with signed return -1.78% and alpha -1.77%. Original rationale to challenge next time: tech +0.0025; snapshot +0.0012 Why now: tech +0.0025; snapshot +0.0012 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader...\n- NVDA LONG missed with signed return -1.57% and alpha -1.08%. Original rationale to challenge next time: tech +0.0013; snapshot +0.0011 Why now: tech +0.0013; snapshot +0.0011 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader...\n\n## Adjustments for Trader\n- Before repeating a setup like NVDA LONG, require the Trader to name what would make the thesis wrong and let the Skeptic veto if that evidence is already present.\n- Preserve the useful pattern from UNH LONG only when the new memo has a similarly concrete catalyst/risk balance, not merely a similar direction.\n- If expected upside is not clearly larger than expected downside, prefer HOLD and record why the pass was made.\n\n## Trader Prompt Guidance\nUse the latest concrete lessons from UNH, NVDA: demand symbol-specific catalyst, contrary evidence, invalidation point, and quantified upside/downside. Avoid generic confidence language; if those four items are weak, choose HOLD.\n",
+          "metrics": {
+            "evaluated_now": 0,
+            "recent_outcome_count": 25
+          },
+          "changes": {}
+        },
         {
           "ts": "2026-04-30T17:51:27.373345+00:00",
           "report_type": "champion_challenger",
@@ -1883,6 +2084,31 @@
         }
       ],
       "decisions": [
+        {
+          "ts": "2026-04-30T22:09:31.617318+00:00",
+          "symbol": "GOOGL",
+          "side": "LONG",
+          "base_score": 0.0065029840998252425,
+          "final_score": 0.51,
+          "components": {
+            "llm_adjustment": 0.0,
+            "llm_conviction_adjustment": 0.00051,
+            "llm_expected_edge": 1.0908837537638993e-07,
+            "llm_skeptic_penalty": -0.00015,
+            "memory_adjustment": 0.0002525205794081233,
+            "news_adjustment": 0.0,
+            "screener_adjustment": 0.0,
+            "snapshot_adjustment": 0.002569157737638031,
+            "technical_adjustment": 0.00315
+          },
+          "rationale": "tech +0.0032; snapshot +0.0026 Why now: tech +0.0032; snapshot +0.0026 Contrary evidence: Fallback trader did not receive a full LLM contradiction review. Risk: Fallback trader used existing model direction with moderate conviction. Skeptic: Expected edge is positive but thin.; Trader conviction is only modest after the minimum gate.",
+          "evaluated_ts": null,
+          "horizon_days": null,
+          "realized_return": null,
+          "signed_return": null,
+          "beat_spy": null,
+          "outcome_label": null
+        },
         {
           "ts": "2026-04-30T17:51:20.043497+00:00",
           "symbol": "GOOGL",
@@ -4348,6 +4574,20 @@
           "cash": 90828.18,
           "portfolio_value": 103367.85,
           "spy_value": 718.69
+        },
+        {
+          "ts": "2026-04-30T22:09:19.087468+00:00",
+          "equity": 103470.58,
+          "cash": 90828.18,
+          "portfolio_value": 103470.58,
+          "spy_value": 718.41
+        },
+        {
+          "ts": "2026-04-30T22:09:20.872499+00:00",
+          "equity": 103470.58,
+          "cash": 90828.18,
+          "portfolio_value": 103470.58,
+          "spy_value": 718.41
         }
       ],
       "trades": [
@@ -5222,65 +5462,113 @@
           "qty": 19.824051720009574,
           "price": 313.225,
           "status": "OrderStatus.PENDING_NEW"
+        },
+        {
+          "ts": "2026-04-30T22:09:18.718566+00:00",
+          "symbol": "GOOGL",
+          "side": "sell",
+          "qty": 0.07791433773910938,
+          "price": 384.99,
+          "status": "OrderStatus.ACCEPTED"
+        },
+        {
+          "ts": "2026-04-30T22:09:18.728190+00:00",
+          "symbol": "UNH",
+          "side": "sell",
+          "qty": 0.04118059157676868,
+          "price": 370.58,
+          "status": "OrderStatus.ACCEPTED"
+        },
+        {
+          "ts": "2026-04-30T22:09:18.740181+00:00",
+          "symbol": "AMZN",
+          "side": "buy",
+          "qty": 23.423765469363115,
+          "price": 265.04,
+          "status": "OrderStatus.ACCEPTED"
+        },
+        {
+          "ts": "2026-04-30T22:09:18.750638+00:00",
+          "symbol": "JPM",
+          "side": "sell",
+          "qty": 0.008112110366905512,
+          "price": 313.295,
+          "status": "OrderStatus.ACCEPTED"
+        },
+        {
+          "ts": "2026-04-30T22:09:18.761307+00:00",
+          "symbol": "PG",
+          "side": "buy",
+          "qty": 42.1826723288602,
+          "price": 147.175,
+          "status": "OrderStatus.ACCEPTED"
+        },
+        {
+          "ts": "2026-04-30T22:09:18.773336+00:00",
+          "symbol": "META",
+          "side": "sell",
+          "qty": 10.0,
+          "price": 612.16,
+          "status": "OrderStatus.ACCEPTED"
         }
       ],
       "positions": [
         {
-          "symbol": "JPM",
-          "qty": 19.82405172,
-          "avg_entry": 313.22,
-          "avg_entry_price": 313.22,
-          "market_value": 6219.597987,
-          "unreal_pl": 10.308507,
-          "unrealized_pl": 10.308507,
+          "symbol": "GOOGL",
+          "qty": 16.203618382,
+          "avg_entry": 337.333676,
+          "avg_entry_price": 337.333676,
+          "market_value": 6236.610679,
+          "unreal_pl": 770.584526,
+          "unrealized_pl": 770.584526,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
         },
         {
           "symbol": "UNH",
           "qty": 16.793932494,
           "avg_entry": 354.39309,
           "avg_entry_price": 354.39309,
-          "market_value": 6195.617576,
-          "unreal_pl": 243.963946,
-          "unrealized_pl": 243.963946,
+          "market_value": 6209.55654,
+          "unreal_pl": 257.90291,
+          "unrealized_pl": 257.90291,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
         },
         {
-          "symbol": "GOOGL",
-          "qty": 16.203618382,
-          "avg_entry": 337.333676,
-          "avg_entry_price": 337.333676,
-          "market_value": 6177.467472,
-          "unreal_pl": 711.441319,
-          "unrealized_pl": 711.441319,
+          "symbol": "JPM",
+          "qty": 19.82405172,
+          "avg_entry": 313.22,
+          "avg_entry_price": 313.22,
+          "market_value": 6208.230875,
+          "unreal_pl": -1.058605,
+          "unrealized_pl": -1.058605,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
         },
         {
           "symbol": "NVDA",
           "qty": -30.0,
           "avg_entry": 209.387667,
           "avg_entry_price": 209.387667,
-          "market_value": -6052.8,
-          "unreal_pl": 228.83001,
-          "unrealized_pl": 228.83001,
+          "market_value": -6010.5,
+          "unreal_pl": 271.13001,
+          "unrealized_pl": 271.13001,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -5291,6 +5579,40 @@
         }
       ],
       "advisor_reports": [
+        {
+          "ts": "2026-04-30T22:09:24.301377+00:00",
+          "headline": "Advisor Update",
+          "summary": "5D return -0.03%, 20D return 0.62%, SPY 20D 3.25%, drawdown 0.21%, alpha 20D -0.00%, tracking error 0.18%, Top sector: Communication Services (25%)..",
+          "suggestions": [
+            "Portfolio volatility is elevated vs SPY. Reduce leverage or position size.",
+            "Underperforming SPY: tighten entry thresholds and reduce leverage."
+          ],
+          "metrics": {
+            "ret_5d": -0.0002590403487469084,
+            "ret_20d": 0.006201128238141784,
+            "spy_ret_20d": 0.032480131070263374,
+            "drawdown": 0.002119397713423267,
+            "avg_abs_daily_return": 0.0012532570792951757,
+            "trade_count_24h": 28.0,
+            "alpha_20d": -1.762044877784419e-05,
+            "tracking_error_20d": 0.0017718206590193212,
+            "reject_rate": 0.0,
+            "notional_24h": 101393.28426607636,
+            "factor_mom_20d": 0.14579814502346108,
+            "factor_rank_mom": 0.38242601258813536,
+            "factor_vol_20d": 0.02122274209772676,
+            "spy_mom_20d": 0.09650782990933782,
+            "spy_vol_20d": 0.007557106082799037,
+            "beta": 0.30197919548498425,
+            "max_sector_weight": 0.252838320991707
+          },
+          "overrides": {
+            "gross_leverage": 1.35,
+            "max_position_pct": 0.054,
+            "min_long_return": 0.0015,
+            "max_short_return": -0.0015
+          }
+        },
         {
           "ts": "2026-04-30T17:51:10.330513+00:00",
           "headline": "Advisor Update",
@@ -5825,6 +6147,162 @@
         }
       ],
       "strategy_reports": [
+        {
+          "ts": "2026-04-30T22:09:40.817145+00:00",
+          "report_type": "options_scaffold",
+          "headline": "Options Scaffold Report",
+          "summary": "Generated 6 defined-risk vertical spread ideas (5 bullish, 1 bearish) from the strongest current stock signals.",
+          "body": "# Options Scaffold Report\n\nGenerated at: 2026-04-30T22:09:40.817145+00:00\n\nThis is a paper-only idea report. It converts the bot's strongest directional stock ideas into defined-risk vertical spreads.\nThese are candidate structures for review, not unattended auto-execution.\n\n## GOOGL \u2014 Bull Call Debit Spread\n\n- Signal: LONG idea with base score 0.65% and final score 1.24%\n- Underlying spot: $384.99\n- Expiry: 2026-05-15\n- Long leg: `GOOGL260515C00385000` at strike $385.00 using recent close $2.67\n- Short leg: `GOOGL260515C00405000` at strike $405.00 using recent close $0.98\n- Estimated net debit: $1.69\n- Max loss: $1.69\n- Max profit: $18.31\n- Breakeven at expiry: $386.69\n- Reward/risk estimate: 10.83x\n- Thesis: Uses a bullish stock signal with capped downside and capped upside.\n- Bot rationale: tech +0.0032; snapshot +0.0026\n\nRisk notes:\n- This estimate uses Alpaca contract close prices, not live bid/ask spreads.\n- Actual fill quality can be materially worse around wide spreads or low liquidity.\n- The scaffold filters out spreads with weak estimated reward/risk or excessive debit relative to width.\n- Defined risk does not mean low risk; time decay and volatility compression still matter.\n\n## UNH \u2014 Bull Call Debit Spread\n\n- Signal: LONG idea with base score 0.26% and final score 0.74%\n- Underlying spot: $370.58\n- Expiry: 2026-05-15\n- Long leg: `UNH260515C00370000` at strike $370.00 using recent close $9.25\n- Short leg: `UNH260515C00390000` at strike $390.00 using recent close $2.33\n- Estimated net debit: $6.92\n- Max loss: $6.92\n- Max profit: $13.08\n- Breakeven at expiry: $376.92\n- Reward/risk estimate: 1.89x\n- Thesis: Uses a bullish stock signal with capped downside and capped upside.\n- Bot rationale: tech +0.0035; memory +0.0010\n\nRisk notes:\n- This estimate uses Alpaca contract close prices, not live bid/ask spreads.\n- Actual fill quality can be materially worse around wide spreads or low liquidity.\n- The scaffold filters out spreads with weak estimated reward/risk or excessive debit relative to width.\n- Defined risk does not mean low risk; time decay and volatility compression still matter.\n\n## AMZN \u2014 Bull Call Debit Spread\n\n- Signal: LONG idea with base score 0.02% and final score 0.35%\n- Underlying spot: $265.04\n- Expiry: 2026-05-15\n- Long leg: `AMZN260515C00265000` at strike $265.00 using recent close $11.00\n- Short leg: `AMZN260515C00277500` at strike $277.50 using recent close $5.86\n- Estimated net debit: $5.14\n- Max loss: $5.14\n- Max profit: $7.36\n- Breakeven at expiry: $270.14\n- Reward/risk estimate: 1.43x\n- Thesis: Uses a bullish stock signal with capped downside and capped upside.\n- Bot rationale: tech +0.0027\n\nRisk notes:\n- This estimate uses Alpaca contract close prices, not live bid/ask spreads.\n- Actual fill quality can be materially worse around wide spreads or low liquidity.\n- The scaffold filters out spreads with weak estimated reward/risk or excessive debit relative to width.\n- Defined risk does not mean low risk; time decay and volatility compression still matter.\n\n## META \u2014 Bear Put Debit Spread\n\n- Signal: SHORT idea with base score 0.17% and final score -0.34%\n- Underlying spot: $612.16\n- Expiry: 2026-05-15\n- Long leg: `META260515P00610000` at strike $610.00 using recent close $8.20\n- Short leg: `META260515P00580000` at strike $580.00 using recent close $3.60\n- Estimated net debit: $4.60\n- Max loss: $4.60\n- Max profit: $25.40\n- Breakeven at expiry: $605.40\n- Reward/risk estimate: 5.52x\n- Thesis: Uses a bearish stock signal with defined risk instead of naked short gamma exposure.\n- Bot rationale: tech -0.0029; snapshot -0.0022\n\nRisk notes:\n- This estimate uses Alpaca contract close prices, not live bid/ask spreads.\n- Actual fill quality can be materially worse around wide spreads or low liquidity.\n- The scaffold filters out spreads with weak estimated reward/risk or excessive debit relative to width.\n- Defined risk does not mean low risk; time decay and volatility compression still matter.\n\n## JPM \u2014 Bull Call Debit Spread\n\n- Signal: LONG idea with base score 0.21% and final score 0.27%\n- Underlying spot: $313.30\n- Expiry: 2026-05-15\n- Long leg: `JPM260515C00312500` at strike $312.50 using recent close $4.75\n- Short leg: `JPM260515C00327500` at strike $327.50 using recent close $0.80\n- Estimated net debit: $3.95\n- Max loss: $3.95\n- Max profit: $11.05\n- Breakeven at expiry: $316.45\n- Reward/risk estimate: 2.80x\n- Thesis: Uses a bullish stock signal with capped downside and capped upside.\n- Bot rationale: snapshot +0.0008\n\nRisk notes:\n- This estimate uses Alpaca contract close prices, not live bid/ask spreads.\n- Actual fill quality can be materially worse around wide spreads or low liquidity.\n- The scaffold filters out spreads with weak estimated reward/risk or excessive debit relative to width.\n- Defined risk does not mean low risk; time decay and volatility compression still matter.\n\n## PG \u2014 Bull Call Debit Spread\n\n- Signal: LONG idea with base score 0.17% and final score 0.16%\n- Underlying spot: $147.18\n- Expiry: 2026-05-15\n- Long leg: `PG260515C00147000` at strike $147.00 using recent close $2.42\n- Short leg: `PG260515C00155000` at strike $155.00 using recent close $0.33\n- Estimated net debit: $2.09\n- Max loss: $2.09\n- Max profit: $5.91\n- Breakeven at expiry: $149.09\n- Reward/risk estimate: 2.83x\n- Thesis: Uses a bullish stock signal with capped downside and capped upside.\n- Bot rationale: tech -0.0013; snapshot +0.0005; memory +0.0007\n\nRisk notes:\n- This estimate uses Alpaca contract close prices, not live bid/ask spreads.\n- Actual fill quality can be materially worse around wide spreads or low liquidity.\n- The scaffold filters out spreads with weak estimated reward/risk or excessive debit relative to width.\n- Defined risk does not mean low risk; time decay and volatility compression still matter.\n",
+          "metrics": {
+            "bearish_count": 1,
+            "bullish_count": 5,
+            "idea_count": 6,
+            "max_debit_pct_of_width": 0.55,
+            "max_dte": 45,
+            "min_dte": 14,
+            "min_reward_risk": 0.9,
+            "target_width_pct": 0.05
+          },
+          "changes": {
+            "allowed_structures": [
+              "bull_call_debit_spread",
+              "bear_put_debit_spread"
+            ],
+            "options_scaffold": "paper_only"
+          }
+        },
+        {
+          "ts": "2026-04-30T22:09:29.448801+00:00",
+          "report_type": "champion_challenger",
+          "headline": "ML Bot Champion / Challenger",
+          "summary": "Compared current policy with a stricter confidence-gated challenger. Champion avg 0.36%; challenger avg 0.29%.",
+          "body": "# ML Bot Champion / Challenger\n\nGenerated at 2026-04-30T22:09:29.448568+00:00\n\nChampion is the bot's current selected-decision policy. Challenger is a stricter shadow policy that only counts trades passing the current confidence threshold.\n\nThreshold used: minimum absolute signal score = 0.0015\n\n## Models being tested\n- Champion: the current ML ensemble policy using the trained return model, research overlays, symbol memory, confidence gate, and normal execution/risk controls.\n- Challenger: a stricter shadow version of the ML policy that counts only selected decisions with absolute final score at or above 0.0015.\n\n## Verdict\nThe challenger has not yet shown enough improvement over the current champion.\n\n\n## Champion metrics\n{\n  \"avg_beat_spy\": 0.003999695713845941,\n  \"avg_signed_return\": 0.003577760453625759,\n  \"hit_rate\": 0.5256410256410257,\n  \"samples\": 78.0\n}\n\n## Challenger metrics\n{\n  \"avg_beat_spy\": 0.003060686904925666,\n  \"avg_signed_return\": 0.0029363361150173645,\n  \"hit_rate\": 0.4782608695652174,\n  \"samples\": 69.0\n}\n\n## Trades excluded by the challenger\n{\n  \"avg_beat_spy\": 0.011198763248901381,\n  \"avg_signed_return\": 0.008495347049623451,\n  \"hit_rate\": 0.8888888888888888,\n  \"samples\": 9.0\n}\n\n## Changes implemented\n- ML confidence gate is active at 0.0015; weaker selected signals are converted to HOLD before sizing.\n- Post-trade attribution now tracks which signal components are associated with wins or losses.\n- Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.\n\n## Interpretation\n- If challenger returns and hit rate beat the champion with enough samples, tightening the gate may improve future results.\n- If excluded trades perform well, the gate may be too strict and should be relaxed.\n- This is shadow evaluation only; it reports what would have happened without automatically changing the strategy.",
+          "metrics": {
+            "challenger_avg_signed_return": 0.0029363361150173645,
+            "challenger_hit_rate": 0.4782608695652174,
+            "challenger_samples": 69.0,
+            "champion_avg_signed_return": 0.003577760453625759,
+            "champion_hit_rate": 0.5256410256410257,
+            "champion_samples": 78.0,
+            "excluded_avg_signed_return": 0.008495347049623451,
+            "excluded_samples": 9.0,
+            "threshold": 0.0015
+          },
+          "changes": {
+            "challenger_description": "Challenger: a stricter shadow version of the ML policy that counts only selected decisions with absolute final score at or above 0.0015.",
+            "champion_description": "Champion: the current ML ensemble policy using the trained return model, research overlays, symbol memory, confidence gate, and normal execution/risk controls.",
+            "implemented_changes": [
+              "ML confidence gate is active at 0.0015; weaker selected signals are converted to HOLD before sizing.",
+              "Post-trade attribution now tracks which signal components are associated with wins or losses.",
+              "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy."
+            ],
+            "threshold_label": "minimum absolute signal score",
+            "verdict": "The challenger has not yet shown enough improvement over the current champion."
+          }
+        },
+        {
+          "ts": "2026-04-30T22:09:27.758022+00:00",
+          "report_type": "attribution",
+          "headline": "ML Bot Post-Trade Attribution",
+          "summary": "Reviewed 78 evaluated decisions; hit rate 52.6%, average signed return 0.36%.",
+          "body": "# ML Bot Post-Trade Attribution\n\nGenerated at 2026-04-30T22:09:27.757805+00:00\n\nThis report asks a simple question: which ingredients in the bot's decisions have actually been associated with profitable outcomes so far?\n\n## Overall outcome attribution\n- Evaluated decisions: 78\n- Hit rate: 52.6%\n- Average signed return: 0.36%\n- Average alpha versus SPY: 0.40%\n\n## Side breakdown\n{\n  \"LONG\": {\n    \"avg_beat_spy\": 0.00389313424720484,\n    \"avg_signed_return\": 0.0035614973268751834,\n    \"hit_rate\": 0.5135135135135135,\n    \"samples\": 74.0\n  },\n  \"SHORT\": {\n    \"avg_beat_spy\": 0.005971082846706305,\n    \"avg_signed_return\": 0.003878628298511405,\n    \"hit_rate\": 0.75,\n    \"samples\": 4.0\n  }\n}\n\n## Components most associated with better outcomes\n- snapshot: edge=+0.30%, hit rate=47.4%, samples=78\n- technical: edge=+0.03%, hit rate=39.7%, samples=78\n- memory: edge=-0.14%, hit rate=31.8%, samples=44\n- screener: edge=-0.52%, hit rate=28.6%, samples=7\n\n## Components most associated with worse outcomes\n- screener: edge=-0.52%, hit rate=28.6%, samples=7\n- memory: edge=-0.14%, hit rate=31.8%, samples=44\n- technical: edge=+0.03%, hit rate=39.7%, samples=78\n- snapshot: edge=+0.30%, hit rate=47.4%, samples=78\n\n## Best recent decisions\n- NVDA LONG evaluated 2026-04-24T23:46:08.113671+00:00: signed=4.26%, raw=4.26%\n- NVDA LONG evaluated 2026-04-24T22:02:48.542982+00:00: signed=4.26%, raw=4.26%\n- AMZN LONG evaluated 2026-04-24T23:46:08.113671+00:00: signed=3.49%, raw=3.49%\n- AMZN LONG evaluated 2026-04-24T22:02:48.542982+00:00: signed=3.49%, raw=3.49%\n- UNH LONG evaluated 2026-04-28T22:11:26.367117+00:00: signed=3.40%, raw=3.40%\n\n## Worst recent decisions\n- NVDA LONG evaluated 2026-04-29T18:44:34.665776+00:00: signed=-2.27%, raw=-2.27%\n- NVDA LONG evaluated 2026-04-29T22:11:41.859576+00:00: signed=-1.78%, raw=-1.78%\n- NVDA LONG evaluated 2026-04-28T22:11:26.367117+00:00: signed=-1.57%, raw=-1.57%\n- NVDA LONG evaluated 2026-04-28T22:11:26.367117+00:00: signed=-1.57%, raw=-1.57%\n- NVDA LONG evaluated 2026-04-28T22:11:26.367117+00:00: signed=-1.57%, raw=-1.57%",
+          "metrics": {
+            "avg_beat_spy": 0.003999695713845941,
+            "avg_signed_return": 0.003577760453625759,
+            "component_count": 4.0,
+            "hit_rate": 0.5256410256410257,
+            "samples": 78.0
+          },
+          "changes": {}
+        },
+        {
+          "ts": "2026-04-30T22:09:26.080656+00:00",
+          "report_type": "strategy",
+          "headline": "ML Bot Strategy Report",
+          "summary": "Evaluated 0 mature decisions this run; recent hit rate 52.6%, average signed return 0.36%. Advisor says: 5D return -0.03%, 20D return 0.62%, SPY 20D 3.25%, drawdown 0.21%, alpha 20D -0.00%, tracking error 0.18%, Top sector: Communication Services (25%)..",
+          "body": "# ML Bot Strategy Report\n\nGenerated at 2026-04-30T22:09:26.080575+00:00\n\n## Executive summary\nLatest decision run reviewed 10 candidates, selected 5 longs and 1 shorts.\n\n## Current learned weights\n{\n  \"llm_weight\": 0.8,\n  \"memory_weight\": 0.8,\n  \"news_weight\": 0.9,\n  \"screener_weight\": 0.7,\n  \"snapshot_weight\": 2.0,\n  \"technical_weight\": 2.0\n}\n\n## Market regime and risk controls\nRegime: neutral\n- Less than 200 SPY bars available; using neutral regime logic.\n\nPortfolio risk summary:\n{\n  \"correlation_caps_applied\": [],\n  \"gross_exposure_after\": 0.36,\n  \"gross_exposure_before\": 0.36,\n  \"sector_caps_applied\": []\n}\n\n## Cross-bot agreement\n- Compared recent selected decisions against LLM Bot: 9 overlapping symbols, 8 agreements, 1 disagreements.\n- Agreement names: AAPL SHORT, AMZN LONG, GOOGL LONG, META SHORT, MSFT LONG, NVDA SHORT, UNH LONG, XOM LONG.\n- Disagreement names: PG ML=LONG vs LLM=SHORT.\n\n## Current watchlist\n- GOOGL LONG base=0.67% final=1.24%. tech +0.0032; snapshot +0.0024\n- GOOGL LONG base=0.65% final=1.24%. tech +0.0032; snapshot +0.0026\n- GOOGL LONG base=0.67% final=1.20%. tech +0.0033; snapshot +0.0018\n- UNH LONG base=0.50% final=0.96%. tech +0.0035; memory +0.0009\n- UNH LONG base=0.36% final=0.85%. tech +0.0035; snapshot +0.0005; memory +0.0010\n- UNH LONG base=0.26% final=0.74%. tech +0.0035; memory +0.0010\n- UNH LONG base=0.31% final=0.73%. tech +0.0035; memory +0.0010\n- META SHORT base=-0.21% final=-0.73%. tech -0.0029; snapshot -0.0022\n- UNH LONG base=0.27% final=0.70%. tech +0.0035; memory +0.0010\n- AMZN LONG base=0.13% final=0.51%. tech +0.0034\n\n## Deep research notes\n### GOOGL (LONG)\nSignal moved from 0.67% to 1.24% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.67% to 1.24% after ensemble overlays.\n- Component mix: technical=+0.0032, snapshot=+0.0024, memory=+0.0001\n- tech +0.0032; snapshot +0.0024\n\nRisks:\n- Snapshot pressure score: +0.80\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### GOOGL (LONG)\nSignal moved from 0.65% to 1.24% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.65% to 1.24% after ensemble overlays.\n- Component mix: technical=+0.0032, snapshot=+0.0026, memory=+0.0001\n- tech +0.0032; snapshot +0.0026\n\nRisks:\n- Snapshot pressure score: +0.80\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### GOOGL (LONG)\nSignal moved from 0.67% to 1.20% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.67% to 1.20% after ensemble overlays.\n- Component mix: technical=+0.0033, snapshot=+0.0018, memory=+0.0001\n- tech +0.0033; snapshot +0.0018\n\nRisks:\n- Snapshot pressure score: +0.80\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### UNH (LONG)\nSignal moved from 0.50% to 0.96% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.50% to 0.96% after ensemble overlays.\n- Component mix: technical=+0.0035, memory=+0.0009, snapshot=+0.0002\n- tech +0.0035; memory +0.0009\n\nRisks:\n- Snapshot pressure score: +0.12\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### UNH (LONG)\nSignal moved from 0.36% to 0.85% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.36% to 0.85% after ensemble overlays.\n- Component mix: technical=+0.0035, memory=+0.0010, snapshot=+0.0005\n- tech +0.0035; snapshot +0.0005; memory +0.0010\n\nRisks:\n- Snapshot pressure score: +0.12\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### UNH (LONG)\nSignal moved from 0.26% to 0.74% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.26% to 0.74% after ensemble overlays.\n- Component mix: technical=+0.0035, memory=+0.0010, snapshot=+0.0004\n- tech +0.0035; memory +0.0010\n\nRisks:\n- Snapshot pressure score: +0.12\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n\n## What the bot recently decided\n- 2026-04-30T22:09:18.773351+00:00: GOOGL LONG base=0.0065 final=0.0124. tech +0.0032; snapshot +0.0026\n- 2026-04-30T22:09:18.773351+00:00: UNH LONG base=0.0026 final=0.0074. tech +0.0035; memory +0.0010\n- 2026-04-30T22:09:18.773351+00:00: AMZN LONG base=0.0002 final=0.0035. tech +0.0027\n- 2026-04-30T22:09:18.773351+00:00: META SHORT base=0.0017 final=-0.0034. tech -0.0029; snapshot -0.0022\n- 2026-04-30T22:09:18.773351+00:00: JPM LONG base=0.0021 final=0.0027. snapshot +0.0008\n- 2026-04-30T22:09:18.773351+00:00: PG LONG base=0.0017 final=0.0016. tech -0.0013; snapshot +0.0005; memory +0.0007\n- 2026-04-30T17:50:58.312209+00:00: GOOGL LONG base=0.0067 final=0.0124. tech +0.0032; snapshot +0.0024\n- 2026-04-30T17:50:58.312209+00:00: UNH LONG base=0.0027 final=0.0070. tech +0.0035; memory +0.0010\n\n## What the bot recently learned\n- 2026-04-29T22:11:41.859576+00:00: NVDA LONG raw=-1.78%, signed=-1.78%, SPY=-0.01%, alpha=-1.77%\n- 2026-04-29T22:11:41.859576+00:00: UNH LONG raw=1.08%, signed=1.08%, SPY=-0.01%, alpha=1.10%\n- 2026-04-29T22:11:41.859576+00:00: META LONG raw=-0.27%, signed=-0.27%, SPY=-0.01%, alpha=-0.26%\n- 2026-04-29T22:11:41.859576+00:00: MSFT LONG raw=-1.07%, signed=-1.07%, SPY=-0.01%, alpha=-1.06%\n- 2026-04-29T22:11:41.859576+00:00: AMZN LONG raw=1.35%, signed=1.35%, SPY=-0.01%, alpha=1.36%\n- 2026-04-29T22:11:41.859576+00:00: GOOGL LONG raw=0.14%, signed=0.14%, SPY=-0.01%, alpha=0.16%\n- 2026-04-29T22:11:41.859576+00:00: AAPL SHORT raw=-0.23%, signed=0.23%, SPY=-0.01%, alpha=0.25%\n- 2026-04-29T18:44:34.665776+00:00: UNH LONG raw=0.54%, signed=0.54%, SPY=-0.34%, alpha=0.88%\n- 2026-04-29T18:44:34.665776+00:00: META LONG raw=0.06%, signed=0.06%, SPY=-0.34%, alpha=0.39%\n- 2026-04-29T18:44:34.665776+00:00: AMZN LONG raw=1.34%, signed=1.34%, SPY=-0.34%, alpha=1.68%\n\n## Learning summary\nEvaluated 0 mature decisions this run; recent hit rate 52.6%, average signed return 0.36%.\n\n## Advisor summary\nAdvisor Update: 5D return -0.03%, 20D return 0.62%, SPY 20D 3.25%, drawdown 0.21%, alpha 20D -0.00%, tracking error 0.18%, Top sector: Communication Services (25%)..\n- Portfolio volatility is elevated vs SPY. Reduce leverage or position size.\n- Underperforming SPY: tighten entry thresholds and reduce leverage.\n\n## Advisor overrides under consideration\n{\n  \"gross_leverage\": 1.215,\n  \"max_position_pct\": 0.0486,\n  \"max_short_return\": -0.002,\n  \"min_long_return\": 0.002\n}",
+          "metrics": {
+            "cross_bot_agreement_count": 8.0,
+            "cross_bot_agreement_rate": 0.8888888888888888,
+            "cross_bot_disagreement_count": 1.0,
+            "cross_bot_overlap": 9.0,
+            "deep_research_count": 6.0,
+            "hold_sample_count": 0.0,
+            "newly_evaluated": 0.0,
+            "recent_avg_beat_spy": 0.003999695713845941,
+            "recent_avg_signed_return": 0.003577760453625759,
+            "recent_decision_count": 30.0,
+            "recent_hit_rate": 0.5256410256410257,
+            "recent_outcome_count": 20.0,
+            "watchlist_count": 26.0
+          },
+          "changes": {
+            "advisor_overrides": {
+              "gross_leverage": 1.215,
+              "max_position_pct": 0.0486,
+              "max_short_return": -0.002,
+              "min_long_return": 0.002
+            },
+            "learning_weight_updates": {}
+          }
+        },
+        {
+          "ts": "2026-04-30T22:09:26.080656+00:00",
+          "report_type": "watchlist",
+          "headline": "Watchlist Report",
+          "summary": "Prepared 10 watchlist ideas with 6 deeper research notes.",
+          "body": "# Broker Bot Watchlist\n\nGenerated at 2026-04-30T22:09:26.082208+00:00\n\n## Ranked ideas\n- GOOGL LONG base=0.67% final=1.24%. tech +0.0032; snapshot +0.0024\n- GOOGL LONG base=0.65% final=1.24%. tech +0.0032; snapshot +0.0026\n- GOOGL LONG base=0.67% final=1.20%. tech +0.0033; snapshot +0.0018\n- UNH LONG base=0.50% final=0.96%. tech +0.0035; memory +0.0009\n- UNH LONG base=0.36% final=0.85%. tech +0.0035; snapshot +0.0005; memory +0.0010\n- UNH LONG base=0.26% final=0.74%. tech +0.0035; memory +0.0010\n- UNH LONG base=0.31% final=0.73%. tech +0.0035; memory +0.0010\n- META SHORT base=-0.21% final=-0.73%. tech -0.0029; snapshot -0.0022\n- UNH LONG base=0.27% final=0.70%. tech +0.0035; memory +0.0010\n- AMZN LONG base=0.13% final=0.51%. tech +0.0034\n\n## Research notes\n### GOOGL (LONG)\nSignal moved from 0.67% to 1.24% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.67% to 1.24% after ensemble overlays.\n- Component mix: technical=+0.0032, snapshot=+0.0024, memory=+0.0001\n- tech +0.0032; snapshot +0.0024\n\nRisks:\n- Snapshot pressure score: +0.80\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### GOOGL (LONG)\nSignal moved from 0.65% to 1.24% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.65% to 1.24% after ensemble overlays.\n- Component mix: technical=+0.0032, snapshot=+0.0026, memory=+0.0001\n- tech +0.0032; snapshot +0.0026\n\nRisks:\n- Snapshot pressure score: +0.80\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### GOOGL (LONG)\nSignal moved from 0.67% to 1.20% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.67% to 1.20% after ensemble overlays.\n- Component mix: technical=+0.0033, snapshot=+0.0018, memory=+0.0001\n- tech +0.0033; snapshot +0.0018\n\nRisks:\n- Snapshot pressure score: +0.80\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### UNH (LONG)\nSignal moved from 0.50% to 0.96% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.50% to 0.96% after ensemble overlays.\n- Component mix: technical=+0.0035, memory=+0.0009, snapshot=+0.0002\n- tech +0.0035; memory +0.0009\n\nRisks:\n- Snapshot pressure score: +0.12\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### UNH (LONG)\nSignal moved from 0.36% to 0.85% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.36% to 0.85% after ensemble overlays.\n- Component mix: technical=+0.0035, memory=+0.0010, snapshot=+0.0005\n- tech +0.0035; snapshot +0.0005; memory +0.0010\n\nRisks:\n- Snapshot pressure score: +0.12\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n\n### UNH (LONG)\nSignal moved from 0.26% to 0.74% after ensemble overlays.\n\nThesis:\n- Signal moved from 0.26% to 0.74% after ensemble overlays.\n- Component mix: technical=+0.0035, memory=+0.0010, snapshot=+0.0004\n- tech +0.0035; memory +0.0010\n\nRisks:\n- Snapshot pressure score: +0.12\n- Bot is currently treating this as a long idea with explainable bounded sizing.\n\nWhat to monitor next:\n- Monitor next report for changes in component mix and relative performance.\n",
+          "metrics": {
+            "deep_research_count": 6,
+            "watchlist_count": 26
+          },
+          "changes": {}
+        },
+        {
+          "ts": "2026-04-30T22:09:25.968679+00:00",
+          "report_type": "learning",
+          "headline": "ML Bot Learning Update",
+          "summary": "Evaluated 0 mature decisions this run; recent hit rate 52.6%, average signed return 0.36%.",
+          "body": "# ML Bot Learning Update\n\nEvaluated 0 mature decisions this run; recent hit rate 52.6%, average signed return 0.36%.\n\n## Decision quality diagnostics\n{\n  \"LONG\": {\n    \"avg_beat_spy\": 0.00389313424720484,\n    \"avg_signed_return\": 0.0035614973268751834,\n    \"hit_rate\": 0.5135135135135135,\n    \"samples\": 74.0\n  },\n  \"SHORT\": {\n    \"avg_beat_spy\": 0.005971082846706305,\n    \"avg_signed_return\": 0.003878628298511405,\n    \"hit_rate\": 0.75,\n    \"samples\": 4.0\n  }\n}\n\n## Component attribution\n- snapshot: helping; edge=+0.30%, hit rate=47.4%, samples=78.\n- technical: mixed; edge=+0.03%, hit rate=39.7%, samples=78.\n- memory: hurting; edge=-0.14%, hit rate=31.8%, samples=44.\n- screener: hurting; edge=-0.52%, hit rate=28.6%, samples=7.\n\n## Counterfactual HOLD scan\n- No mature HOLD candidates were available for counterfactual review.\n\n## Weight changes\n{\n  \"status\": \"no bounded weight changes this run\"\n}\n\n## Component metrics\n{\n  \"memory_adjustment\": {\n    \"edge\": -0.0013740831236878108,\n    \"hit_rate\": 0.3181818181818182,\n    \"samples\": 44.0\n  },\n  \"screener_adjustment\": {\n    \"edge\": -0.005171385590627845,\n    \"hit_rate\": 0.2857142857142857,\n    \"samples\": 7.0\n  },\n  \"snapshot_adjustment\": {\n    \"edge\": 0.0029730870862091007,\n    \"hit_rate\": 0.47435897435897434,\n    \"samples\": 78.0\n  },\n  \"technical_adjustment\": {\n    \"edge\": 0.00033878559652845866,\n    \"hit_rate\": 0.3974358974358974,\n    \"samples\": 78.0\n  }\n}",
+          "metrics": {
+            "hold_sample_count": 0.0,
+            "newly_evaluated": 0.0,
+            "recent_avg_beat_spy": 0.003999695713845941,
+            "recent_avg_signed_return": 0.003577760453625759,
+            "recent_hit_rate": 0.5256410256410257
+          },
+          "changes": {}
+        },
+        {
+          "ts": "2026-04-30T22:09:22.522978+00:00",
+          "report_type": "learning",
+          "headline": "ML Bot Learning Update",
+          "summary": "Evaluated 0 mature decisions this run; recent hit rate 52.6%, average signed return 0.36%.",
+          "body": "# ML Bot Learning Update\n\nEvaluated 0 mature decisions this run; recent hit rate 52.6%, average signed return 0.36%.\n\n## Decision quality diagnostics\n{\n  \"LONG\": {\n    \"avg_beat_spy\": 0.00389313424720484,\n    \"avg_signed_return\": 0.0035614973268751834,\n    \"hit_rate\": 0.5135135135135135,\n    \"samples\": 74.0\n  },\n  \"SHORT\": {\n    \"avg_beat_spy\": 0.005971082846706305,\n    \"avg_signed_return\": 0.003878628298511405,\n    \"hit_rate\": 0.75,\n    \"samples\": 4.0\n  }\n}\n\n## Component attribution\n- snapshot: helping; edge=+0.30%, hit rate=47.4%, samples=78.\n- technical: mixed; edge=+0.03%, hit rate=39.7%, samples=78.\n- memory: hurting; edge=-0.14%, hit rate=31.8%, samples=44.\n- screener: hurting; edge=-0.52%, hit rate=28.6%, samples=7.\n\n## Counterfactual HOLD scan\n- No mature HOLD candidates were available for counterfactual review.\n\n## Weight changes\n{\n  \"status\": \"no bounded weight changes this run\"\n}\n\n## Component metrics\n{\n  \"memory_adjustment\": {\n    \"edge\": -0.0013740831236878108,\n    \"hit_rate\": 0.3181818181818182,\n    \"samples\": 44.0\n  },\n  \"screener_adjustment\": {\n    \"edge\": -0.005171385590627845,\n    \"hit_rate\": 0.2857142857142857,\n    \"samples\": 7.0\n  },\n  \"snapshot_adjustment\": {\n    \"edge\": 0.0029730870862091007,\n    \"hit_rate\": 0.47435897435897434,\n    \"samples\": 78.0\n  },\n  \"technical_adjustment\": {\n    \"edge\": 0.00033878559652845866,\n    \"hit_rate\": 0.3974358974358974,\n    \"samples\": 78.0\n  }\n}",
+          "metrics": {
+            "hold_sample_count": 0.0,
+            "newly_evaluated": 0.0,
+            "recent_avg_beat_spy": 0.003999695713845941,
+            "recent_avg_signed_return": 0.003577760453625759,
+            "recent_hit_rate": 0.5256410256410257
+          },
+          "changes": {}
+        },
+        {
+          "ts": "2026-04-30T22:09:17.939853+00:00",
+          "report_type": "learning",
+          "headline": "ML Bot Learning Update",
+          "summary": "Evaluated 0 mature decisions this run; recent hit rate 52.6%, average signed return 0.36%.",
+          "body": "# ML Bot Learning Update\n\nEvaluated 0 mature decisions this run; recent hit rate 52.6%, average signed return 0.36%.\n\n## Decision quality diagnostics\n{\n  \"LONG\": {\n    \"avg_beat_spy\": 0.00389313424720484,\n    \"avg_signed_return\": 0.0035614973268751834,\n    \"hit_rate\": 0.5135135135135135,\n    \"samples\": 74.0\n  },\n  \"SHORT\": {\n    \"avg_beat_spy\": 0.005971082846706305,\n    \"avg_signed_return\": 0.003878628298511405,\n    \"hit_rate\": 0.75,\n    \"samples\": 4.0\n  }\n}\n\n## Component attribution\n- snapshot: helping; edge=+0.30%, hit rate=47.4%, samples=78.\n- technical: mixed; edge=+0.03%, hit rate=39.7%, samples=78.\n- memory: hurting; edge=-0.14%, hit rate=31.8%, samples=44.\n- screener: hurting; edge=-0.52%, hit rate=28.6%, samples=7.\n\n## Counterfactual HOLD scan\n- No mature HOLD candidates were available for counterfactual review.\n\n## Weight changes\n{\n  \"status\": \"no bounded weight changes this run\"\n}\n\n## Component metrics\n{\n  \"memory_adjustment\": {\n    \"edge\": -0.0013740831236878108,\n    \"hit_rate\": 0.3181818181818182,\n    \"samples\": 44.0\n  },\n  \"screener_adjustment\": {\n    \"edge\": -0.005171385590627845,\n    \"hit_rate\": 0.2857142857142857,\n    \"samples\": 7.0\n  },\n  \"snapshot_adjustment\": {\n    \"edge\": 0.0029730870862091007,\n    \"hit_rate\": 0.47435897435897434,\n    \"samples\": 78.0\n  },\n  \"technical_adjustment\": {\n    \"edge\": 0.00033878559652845866,\n    \"hit_rate\": 0.3974358974358974,\n    \"samples\": 78.0\n  }\n}",
+          "metrics": {
+            "hold_sample_count": 0.0,
+            "newly_evaluated": 0.0,
+            "recent_avg_beat_spy": 0.003999695713845941,
+            "recent_avg_signed_return": 0.003577760453625759,
+            "recent_hit_rate": 0.5256410256410257
+          },
+          "changes": {}
+        },
         {
           "ts": "2026-04-30T17:51:30.060685+00:00",
           "report_type": "options_scaffold",
@@ -6396,6 +6874,138 @@
         }
       ],
       "decisions": [
+        {
+          "ts": "2026-04-30T22:09:18.773351+00:00",
+          "symbol": "GOOGL",
+          "side": "LONG",
+          "base_score": 0.0065029840998252425,
+          "final_score": 0.01237014041082513,
+          "components": {
+            "llm_adjustment": 0.0,
+            "memory_adjustment": 0.00014799857336185825,
+            "news_adjustment": 0.0,
+            "screener_adjustment": 0.0,
+            "snapshot_adjustment": 0.002569157737638031,
+            "technical_adjustment": 0.00315
+          },
+          "rationale": "tech +0.0032; snapshot +0.0026",
+          "evaluated_ts": null,
+          "horizon_days": null,
+          "realized_return": null,
+          "signed_return": null,
+          "beat_spy": null,
+          "outcome_label": null
+        },
+        {
+          "ts": "2026-04-30T22:09:18.773351+00:00",
+          "symbol": "UNH",
+          "side": "LONG",
+          "base_score": 0.00264721732315792,
+          "final_score": 0.007430665108660621,
+          "components": {
+            "llm_adjustment": 0.0,
+            "memory_adjustment": 0.0009552815376144523,
+            "news_adjustment": 0.0,
+            "screener_adjustment": 0.0,
+            "snapshot_adjustment": 0.00037816624788824735,
+            "technical_adjustment": 0.0034500000000000004
+          },
+          "rationale": "tech +0.0035; memory +0.0010",
+          "evaluated_ts": null,
+          "horizon_days": null,
+          "realized_return": null,
+          "signed_return": null,
+          "beat_spy": null,
+          "outcome_label": null
+        },
+        {
+          "ts": "2026-04-30T22:09:18.773351+00:00",
+          "symbol": "AMZN",
+          "side": "LONG",
+          "base_score": 0.00017037451311993786,
+          "final_score": 0.003533971711149966,
+          "components": {
+            "llm_adjustment": 0.0,
+            "memory_adjustment": 0.00011156938971723418,
+            "news_adjustment": 0.0,
+            "screener_adjustment": 0.00039199999999999993,
+            "snapshot_adjustment": 0.00016002780831279336,
+            "technical_adjustment": 0.0027000000000000006
+          },
+          "rationale": "tech +0.0027",
+          "evaluated_ts": null,
+          "horizon_days": null,
+          "realized_return": null,
+          "signed_return": null,
+          "beat_spy": null,
+          "outcome_label": null
+        },
+        {
+          "ts": "2026-04-30T22:09:18.773351+00:00",
+          "symbol": "META",
+          "side": "SHORT",
+          "base_score": 0.0017131897033944364,
+          "final_score": -0.0034159322662752002,
+          "components": {
+            "llm_adjustment": 0.0,
+            "memory_adjustment": -0.00010124975402891607,
+            "news_adjustment": 0.0,
+            "screener_adjustment": 0.0,
+            "snapshot_adjustment": -0.00217787221564072,
+            "technical_adjustment": -0.0028500000000000005
+          },
+          "rationale": "tech -0.0029; snapshot -0.0022",
+          "evaluated_ts": null,
+          "horizon_days": null,
+          "realized_return": null,
+          "signed_return": null,
+          "beat_spy": null,
+          "outcome_label": null
+        },
+        {
+          "ts": "2026-04-30T22:09:18.773351+00:00",
+          "symbol": "JPM",
+          "side": "LONG",
+          "base_score": 0.0020875249053410863,
+          "final_score": 0.002671540615382057,
+          "components": {
+            "llm_adjustment": 0.0,
+            "memory_adjustment": -0.00018083311776824858,
+            "news_adjustment": 0.0,
+            "screener_adjustment": 0.0,
+            "snapshot_adjustment": 0.0008148488278092191,
+            "technical_adjustment": -4.999999999999991e-05
+          },
+          "rationale": "snapshot +0.0008",
+          "evaluated_ts": null,
+          "horizon_days": null,
+          "realized_return": null,
+          "signed_return": null,
+          "beat_spy": null,
+          "outcome_label": null
+        },
+        {
+          "ts": "2026-04-30T22:09:18.773351+00:00",
+          "symbol": "PG",
+          "side": "LONG",
+          "base_score": 0.0017103896055929886,
+          "final_score": 0.0015817784097109724,
+          "components": {
+            "llm_adjustment": 0.0,
+            "memory_adjustment": 0.0007012848063185243,
+            "news_adjustment": 0.0,
+            "screener_adjustment": 0.0,
+            "snapshot_adjustment": 0.00047010399779945974,
+            "technical_adjustment": -0.0013000000000000002
+          },
+          "rationale": "tech -0.0013; snapshot +0.0005; memory +0.0007",
+          "evaluated_ts": null,
+          "horizon_days": null,
+          "realized_return": null,
+          "signed_return": null,
+          "beat_spy": null,
+          "outcome_label": null
+        },
         {
           "ts": "2026-04-30T17:50:58.312209+00:00",
           "symbol": "GOOGL",
