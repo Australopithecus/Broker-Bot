@@ -159,7 +159,7 @@ You can deploy the UI via Streamlit Community Cloud using `streamlit_app.py`. Th
    - If using GitHub snapshots (no API): `DATA_URL` pointing to the raw JSON, for example:
      `https://raw.githubusercontent.com/<user>/<repo>/main/data/dashboard_snapshot.json`
    - Optional, to start the cloud bot workflow from the dashboard:
-     `GITHUB_REPOSITORY`, `GITHUB_WORKFLOW_ID`, `GITHUB_WORKFLOW_REF`, and `GITHUB_ACTIONS_TOKEN`
+     `GITHUB_REPOSITORY`, `GITHUB_WORKFLOW_ID`, `GITHUB_WORKFLOW_REF`, and `BROKER_BOT_GITHUB_TOKEN`
 
 The Streamlit app calls your bot API endpoints and shows:
 Equity vs SPY, positions, trades, analyst/trader/coach reports, strategy-report snapshots, and recent decision rationale for both bots in separate sections.

@@ -125,10 +125,10 @@ Optional dashboard-triggered cloud runs need four more Streamlit secrets:
 GITHUB_REPOSITORY = "YOUR_USERNAME/YOUR_REPO"
 GITHUB_WORKFLOW_ID = "advisor_snapshot.yml"
 GITHUB_WORKFLOW_REF = "main"
-GITHUB_ACTIONS_TOKEN = "github_pat_..."
+BROKER_BOT_GITHUB_TOKEN = "github_pat_..."
 ```
 
-`GITHUB_ACTIONS_TOKEN` should be a GitHub fine-grained personal access token for this repository with Actions read/write access. If you use a classic token, include `repo` and `workflow` scope. The dashboard keeps the token server-side in Streamlit secrets and uses it only to ask GitHub Actions to start the existing workflow.
+`BROKER_BOT_GITHUB_TOKEN` should be a GitHub fine-grained personal access token for this repository with Actions read/write access. The dashboard also accepts the older `GITHUB_ACTIONS_TOKEN` name, but the broker-specific name is less likely to be confused with GitHub Actions' own built-in token. If you use a classic token, include `repo` and `workflow` scope. The dashboard keeps the token server-side in Streamlit secrets and uses it only to ask GitHub Actions to start the existing workflow.
 
 ## Step 6: Verify The First Cloud Run
 

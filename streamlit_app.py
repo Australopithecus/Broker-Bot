@@ -27,6 +27,14 @@ def _secret(name: str) -> str:
     return str(secret_value).strip() if secret_value else ""
 
 
+def _secret_any(*names: str) -> str:
+    for name in names:
+        value = _secret(name)
+        if value:
+            return value
+    return ""
+
+
 def _secret_source(name: str) -> str:
     if os.getenv(name, "").strip():
         return "Environment"
@@ -48,7 +56,7 @@ def _streamlit_secret_names() -> list[str]:
 API_BASE = _secret("API_BASE_URL")
 API_TOKEN = _secret("API_TOKEN")
 DATA_URL = _secret("DATA_URL")
-GITHUB_ACTIONS_TOKEN = _secret("GITHUB_ACTIONS_TOKEN")
+GITHUB_ACTIONS_TOKEN = _secret_any("GITHUB_ACTIONS_TOKEN", "BROKER_BOT_GITHUB_TOKEN")
 GITHUB_REPOSITORY = _secret("GITHUB_REPOSITORY")
 GITHUB_WORKFLOW_ID = _secret("GITHUB_WORKFLOW_ID") or "advisor_snapshot.yml"
 GITHUB_WORKFLOW_REF = _secret("GITHUB_WORKFLOW_REF") or "main"
@@ -112,7 +120,7 @@ def _github_actions_config_issues(repo: str) -> list[str]:
     if not repo:
         issues.append("Set GITHUB_REPOSITORY in Streamlit secrets, for example YOUR_USERNAME/YOUR_REPO.")
     if not GITHUB_ACTIONS_TOKEN:
-        issues.append("Set GITHUB_ACTIONS_TOKEN in Streamlit secrets.")
+        issues.append("Set GITHUB_ACTIONS_TOKEN or BROKER_BOT_GITHUB_TOKEN in Streamlit secrets.")
     elif _token_looks_placeholder(GITHUB_ACTIONS_TOKEN):
         issues.append("Replace the placeholder GITHUB_ACTIONS_TOKEN with the full GitHub token.")
     if not GITHUB_WORKFLOW_ID:
@@ -534,6 +542,7 @@ def _render_cloud_run_controls() -> None:
                 {"Secret": "GITHUB_WORKFLOW_ID", "Source": _secret_source("GITHUB_WORKFLOW_ID")},
                 {"Secret": "GITHUB_WORKFLOW_REF", "Source": _secret_source("GITHUB_WORKFLOW_REF")},
                 {"Secret": "GITHUB_ACTIONS_TOKEN", "Source": _secret_source("GITHUB_ACTIONS_TOKEN")},
+                {"Secret": "BROKER_BOT_GITHUB_TOKEN", "Source": _secret_source("BROKER_BOT_GITHUB_TOKEN")},
             ]
             st.dataframe(pd.DataFrame(diagnostic_rows), use_container_width=True, hide_index=True)
             names = _streamlit_secret_names()
