@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 import pandas as pd
 
-from .features import build_features
+from .features import build_features, build_labels
 from .model import train_model, predict_return
 from .risk import (
     apply_portfolio_risk_limits,
@@ -178,7 +178,7 @@ def run_backtest(
 ) -> pd.DataFrame:
     features = build_features(bars)
     features = features[features["Symbol"] != "SPY"].copy()
-    features["next_return"] = features.groupby("Symbol")["close"].pct_change(periods=horizon_days).shift(-horizon_days)
+    features["next_return"] = build_labels(features, horizon_days=horizon_days)
 
     dates = sorted(features["timestamp"].unique())
     if len(dates) < 60:
@@ -357,7 +357,7 @@ def run_backtest(
     ).sort_values("timestamp")
     result["strategy_equity"] = (1 + result["strategy_return"]).cumprod()
     market = bars[bars["Symbol"] == "SPY"].sort_values("timestamp")[["timestamp", "close"]].copy()
-    market["spy_return"] = market["close"].pct_change(horizon_days)
+    market["spy_return"] = market["close"].shift(-max(int(horizon_days), 1)) / market["close"] - 1.0
     result = result.merge(market[["timestamp", "spy_return"]], on="timestamp", how="left")
     result["alpha"] = result["strategy_return"] - result["spy_return"].fillna(0.0)
     return result

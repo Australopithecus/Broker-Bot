@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
-from typing import Any
+from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -42,6 +42,9 @@ class Signal:
     selected: bool = False
     components: dict[str, float] | None = None
     rationale: str = ""
+
+
+OrderLogRow = tuple[str, str, str, float, Optional[float], Optional[str], Optional[str]]
 
 
 def _latest_date(df: pd.DataFrame) -> datetime:
@@ -522,7 +525,7 @@ def execute_signals(
     spy_vol: float,
     decision_context: dict,
     bot_name: str = "ml",
-) -> tuple[str, list[tuple[str, str, float, float | None, str | None, str | None]], list[Signal], dict]:
+) -> tuple[str, list[OrderLogRow], list[Signal], dict]:
     account_config = get_bot_account_config(config, bot_name)
     trading = TradingClient(account_config.api_key, account_config.secret_key, paper=True)
 
@@ -588,7 +591,7 @@ def execute_signals(
     current_positions = {p.symbol: float(p.qty) for p in trading.get_all_positions()}
     signal_by_symbol = {signal.symbol: signal for signal in signals}
 
-    orders_to_log = []
+    orders_to_log: list[OrderLogRow] = []
 
     advanced_execution_enabled = config.execution_order_mode == "bracket" or config.trailing_stop_enabled
     open_orders = _load_open_orders(trading)
@@ -805,7 +808,7 @@ def rebalance_portfolio(
     config: Config,
     symbols: list[str],
     bot_name: str = "ml",
-) -> tuple[str, list[tuple[str, str, float, float | None, str | None, str | None]], list[Signal], dict]:
+) -> tuple[str, list[OrderLogRow], list[Signal], dict]:
     latest, signals, regime_lev, spy_vol, decision_context = generate_signals(config, symbols, bot_name=bot_name)
     return execute_signals(
         config,
@@ -821,13 +824,13 @@ def rebalance_portfolio(
 def caretaker_portfolio(
     config: Config,
     bot_name: str = "ml",
-) -> tuple[str, list[tuple[str, str, str, float, float | None, str | None, str | None]], dict[str, Any]]:
+) -> tuple[str, list[OrderLogRow], dict[str, Any]]:
     account_config = get_bot_account_config(config, bot_name)
     trading = TradingClient(account_config.api_key, account_config.secret_key, paper=True)
     account = trading.get_account()
     positions = list(trading.get_all_positions())
     ts = datetime.now(timezone.utc).isoformat()
-    orders_to_log: list[tuple[str, str, str, float, float | None, str | None, str | None]] = []
+    orders_to_log: list[OrderLogRow] = []
     summary: dict[str, Any] = {
         "bot_name": bot_name,
         "positions_seen": len(positions),

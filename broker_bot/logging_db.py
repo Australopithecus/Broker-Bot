@@ -172,7 +172,7 @@ def log_equity(
 
 def log_trades(
     db_path: str,
-    rows: Iterable[tuple[str, str, float, float | None, str | None, str | None]],
+    rows: Iterable[tuple[str, str, str, float, float | None, str | None, str | None]],
     bot_name: str = ML_BOT_NAME,
 ) -> None:
     bot = normalize_bot_name(bot_name)

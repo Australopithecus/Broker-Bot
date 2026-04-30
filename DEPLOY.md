@@ -80,9 +80,13 @@ Suggested values:
 
 ## Step 3: Enable The Scheduled Workflow
 
-The workflow file is:
+The daily deep workflow file is:
 
 - [.github/workflows/advisor_snapshot.yml](/Users/keithvandusen/Documents/New%20project/.github/workflows/advisor_snapshot.yml)
+
+The lightweight market-hours caretaker workflow file is:
+
+- [.github/workflows/market_caretaker.yml](/Users/keithvandusen/Documents/New%20project/.github/workflows/market_caretaker.yml)
 
 In GitHub:
 
@@ -91,7 +95,7 @@ In GitHub:
 3. open `Broker Bot Cloud Run`
 4. click `Run workflow` once manually to seed the first snapshot and reports
 
-After that, GitHub will keep running it on schedule.
+After that, GitHub will keep running the deep workflow after market close and the caretaker workflow around market hours.
 
 ## Step 4: Deploy The Dashboard To Streamlit Community Cloud
 
@@ -115,6 +119,17 @@ Replace `YOUR_USERNAME` and `YOUR_REPO` with your actual GitHub values.
 
 If your repo is private, the raw GitHub URL approach will not work for Streamlit Community Cloud unless you expose the data some other way. For the easiest free setup, a public repo is simplest.
 
+Optional dashboard-triggered cloud runs need four more Streamlit secrets:
+
+```toml
+GITHUB_REPOSITORY = "YOUR_USERNAME/YOUR_REPO"
+GITHUB_WORKFLOW_ID = "advisor_snapshot.yml"
+GITHUB_WORKFLOW_REF = "main"
+GITHUB_ACTIONS_TOKEN = "github_pat_..."
+```
+
+`GITHUB_ACTIONS_TOKEN` should be a GitHub fine-grained personal access token for this repository with Actions read/write access. If you use a classic token, include `repo` and `workflow` scope. The dashboard keeps the token server-side in Streamlit secrets and uses it only to ask GitHub Actions to start the existing workflow.
+
 ## Step 6: Verify The First Cloud Run
 
 After the first GitHub Actions run completes:
@@ -135,6 +150,8 @@ For a first cloud deployment, keep things conservative:
 - keep `LLM_ENABLED=0` initially if you want fewer moving parts
 - run the workflow only once per weekday until you’re comfortable
 - inspect the strategy report after each run
+- use the dashboard's manual run button only when you would also be comfortable clicking `Run workflow` in GitHub Actions
+- keep `CARETAKER_DAILY_DRAWDOWN_LIMIT=0` until you are comfortable with the caretaker closing paper positions automatically
 
 ## Important Caveats
 
@@ -146,9 +163,10 @@ For a first cloud deployment, keep things conservative:
 
 ## If You Want To Change The Schedule
 
-Edit the cron line in:
+Edit the cron lines in:
 
 - [.github/workflows/advisor_snapshot.yml](/Users/keithvandusen/Documents/New%20project/.github/workflows/advisor_snapshot.yml)
+- [.github/workflows/market_caretaker.yml](/Users/keithvandusen/Documents/New%20project/.github/workflows/market_caretaker.yml)
 
 Current format:
 

@@ -19,7 +19,7 @@ from .logging_db import (
     read_recent_evaluated_decisions,
     read_recent_selected_decisions,
 )
-from .trader import Signal, execute_signals, generate_signals
+from .trader import OrderLogRow, Signal, execute_signals, generate_signals
 
 
 MAX_WATCHLIST = 8
@@ -28,7 +28,7 @@ MAX_WATCHLIST = 8
 @dataclass
 class LlmBotRunResult:
     ts: str
-    orders: list[tuple[str, str, float, float | None, str | None, str | None]]
+    orders: list[OrderLogRow]
     signals: list[Signal]
     decision_context: dict
 

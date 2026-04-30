@@ -44,7 +44,13 @@ def build_features(bars: pd.DataFrame, market_symbol: str = "SPY") -> pd.DataFra
     df["return_5d"] = grouped["close"].pct_change(5)
     df["return_10d"] = grouped["close"].pct_change(10)
     df["mom_20d"] = grouped["close"].pct_change(20)
-    df["vol_20d"] = grouped["close"].pct_change().rolling(20).std().reset_index(level=0, drop=True)
+    df["_daily_return_for_vol"] = grouped["close"].pct_change()
+    df["vol_20d"] = (
+        df.groupby("Symbol")["_daily_return_for_vol"]
+        .rolling(20)
+        .std()
+        .reset_index(level=0, drop=True)
+    )
     intraday_range = (df["high"] - df["low"]) / df["close"]
     df["range_5d"] = intraday_range.groupby(df["Symbol"]).rolling(5).mean().reset_index(level=0, drop=True)
     df["dollar_vol"] = df["close"] * df["volume"]
@@ -61,11 +67,12 @@ def build_features(bars: pd.DataFrame, market_symbol: str = "SPY") -> pd.DataFra
         df.loc[mask].groupby("timestamp")["mom_20d"].rank(pct=True)
     )
 
-    df = df.dropna(subset=FEATURE_COLUMNS)
+    df = df.drop(columns=["_daily_return_for_vol"]).dropna(subset=FEATURE_COLUMNS)
     return df
 
 
 def build_labels(df: pd.DataFrame, horizon_days: int) -> pd.Series:
+    horizon = max(int(horizon_days), 1)
     grouped = df.groupby("Symbol", group_keys=False)
-    future_return = grouped["close"].pct_change(periods=horizon_days).shift(-horizon_days)
+    future_return = grouped["close"].shift(-horizon) / df["close"] - 1.0
     return future_return

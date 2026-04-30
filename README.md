@@ -158,9 +158,13 @@ You can deploy the UI via Streamlit Community Cloud using `streamlit_app.py`. Th
    - If using the API approach: `API_BASE_URL` and `API_TOKEN`
    - If using GitHub snapshots (no API): `DATA_URL` pointing to the raw JSON, for example:
      `https://raw.githubusercontent.com/<user>/<repo>/main/data/dashboard_snapshot.json`
+   - Optional, to start the cloud bot workflow from the dashboard:
+     `GITHUB_REPOSITORY`, `GITHUB_WORKFLOW_ID`, `GITHUB_WORKFLOW_REF`, and `GITHUB_ACTIONS_TOKEN`
 
 The Streamlit app calls your bot API endpoints and shows:
 Equity vs SPY, positions, trades, analyst/trader/coach reports, strategy-report snapshots, and recent decision rationale for both bots in separate sections.
+
+The optional dashboard run button triggers the same GitHub Actions workflow as the manual `Run workflow` button in GitHub. It requires a confirmation checkbox because the workflow can rebalance Alpaca paper portfolios.
 
 ### GitHub Actions (Full Scheduled Cloud Run)
 
@@ -175,6 +179,17 @@ This workflow runs on a schedule and performs the full paper-trading cloud loop:
 - commit updated snapshot/report/policy files back to GitHub
 
 Workflow file: `.github/workflows/advisor_snapshot.yml`
+
+### GitHub Actions (Market-Hours Caretaker)
+
+The lightweight caretaker workflow runs around regular US market hours and does not perform deep research or full rebalances. It restores the latest snapshot, checks both configured paper accounts, snapshots equity/positions, and attaches broker-side trailing-stop protection to unprotected whole-share positions when possible.
+
+Workflow file: `.github/workflows/market_caretaker.yml`
+
+Optional caretaker secrets:
+- `CARETAKER_TRAILING_STOP_ENABLED` (`1` by default)
+- `CARETAKER_TRAILING_STOP_PERCENT` (optional explicit trailing-stop percent)
+- `CARETAKER_DAILY_DRAWDOWN_LIMIT` (optional kill switch; `0` disables it)
 
 **Secrets to add in GitHub**:
 - `ALPACA_API_KEY`
@@ -204,6 +219,14 @@ python3 -m broker_bot.cli snapshot-llm
 python3 -m broker_bot.cli review-decisions-llm
 python3 -m broker_bot.cli options-report
 python3 scripts/build_snapshot.py
+```
+
+Manual caretaker commands:
+
+```bash
+python3 -m broker_bot.cli caretaker
+python3 -m broker_bot.cli caretaker-llm
+python3 -m broker_bot.cli caretaker-all
 ```
 
 ### LLM Advisor And LLM Research Overlay
@@ -249,6 +272,8 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - `EXECUTION_ORDER_MODE=bracket` tells Alpaca to hold server-side take-profit and stop-loss exits for fresh entries using `BRACKET_TAKE_PROFIT_PCT` and `BRACKET_STOP_LOSS_PCT`.
 - `ADAPTIVE_EXITS_ENABLED=1` makes bracket exits volatility-aware using `STOP_LOSS_VOL_MULTIPLE`, `TAKE_PROFIT_REWARD_MULTIPLE`, `MIN_STOP_LOSS_PCT`, and `MAX_STOP_LOSS_PCT`.
 - `TRAILING_STOP_ENABLED=1` adds Alpaca-side trailing-stop protection for positions that remain after rebalance. Use either `TRAILING_STOP_PERCENT` or `TRAILING_STOP_PRICE`.
+- `CARETAKER_TRAILING_STOP_ENABLED=1` lets the market-hours caretaker attach Alpaca-side trailing stops to unprotected whole-share positions without rerunning the full trading strategy.
+- `CARETAKER_DAILY_DRAWDOWN_LIMIT` can close positions if same-day account drawdown breaches a configured threshold; leave it at `0` to disable this kill switch.
 - Advanced Alpaca order types are handled conservatively in this project: if a bracket order is rejected, the bot falls back to a simple market order, and trailing stops are only attached when the position size is compatible with whole-share handling.
 - `ALPACA_LLM_API_KEY`, `ALPACA_LLM_SECRET_KEY`, `ALPACA_LLM_PAPER_URL`, and `ALPACA_LLM_DATA_FEED` configure the second paper account used by the LLM bot.
 - The local dashboard and Streamlit snapshot now show broker-side protection summaries per position so you can see whether exits are resting at Alpaca.

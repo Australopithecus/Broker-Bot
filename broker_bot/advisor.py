@@ -10,10 +10,13 @@ import csv
 
 import pandas as pd
 
+from .bots import ML_BOT_NAME, normalize_bot_name
 from .config import Config
 from .data import fetch_daily_bars
 from .features import build_features
 from .llm_utils import call_json_llm
+
+BOT_SQL = "COALESCE(NULLIF(bot_name, ''), 'ml')"
 
 
 @dataclass
@@ -45,33 +48,50 @@ ALLOWED_OVERRIDES = {
 }
 
 
-def _read_equity_rows(db_path: str, limit: int = 200) -> list[tuple[str, float, float, float, float | None]]:
+def _read_equity_rows(
+    db_path: str,
+    limit: int = 200,
+    bot_name: str = ML_BOT_NAME,
+) -> list[tuple[str, float, float, float, float | None]]:
+    bot = normalize_bot_name(bot_name)
     with sqlite3.connect(db_path) as conn:
         cursor = conn.execute(
-            "SELECT ts, equity, cash, portfolio_value, spy_value FROM equity ORDER BY ts DESC LIMIT ?",
-            (limit,),
+            f"SELECT ts, equity, cash, portfolio_value, spy_value FROM equity WHERE {BOT_SQL} = ? ORDER BY ts DESC LIMIT ?",
+            (bot, limit),
         )
         return cursor.fetchall()
 
 
-def _read_trade_rows(db_path: str, limit: int = 400) -> list[tuple[str, str, str, float, float | None, str | None]]:
+def _read_trade_rows(
+    db_path: str,
+    limit: int = 400,
+    bot_name: str = ML_BOT_NAME,
+) -> list[tuple[str, str, str, float, float | None, str | None]]:
+    bot = normalize_bot_name(bot_name)
     with sqlite3.connect(db_path) as conn:
         cursor = conn.execute(
-            "SELECT ts, symbol, side, qty, price, status FROM trades ORDER BY ts DESC LIMIT ?",
-            (limit,),
+            f"SELECT ts, symbol, side, qty, price, status FROM trades WHERE {BOT_SQL} = ? ORDER BY ts DESC LIMIT ?",
+            (bot, limit),
         )
         return cursor.fetchall()
 
 
-def _read_latest_positions(db_path: str) -> list[tuple[str, float, float | None]]:
+def _read_latest_positions(
+    db_path: str,
+    bot_name: str = ML_BOT_NAME,
+) -> list[tuple[str, float, float | None]]:
+    bot = normalize_bot_name(bot_name)
     with sqlite3.connect(db_path) as conn:
-        latest = conn.execute("SELECT ts FROM positions ORDER BY ts DESC LIMIT 1").fetchone()
+        latest = conn.execute(
+            f"SELECT ts FROM positions WHERE {BOT_SQL} = ? ORDER BY ts DESC LIMIT 1",
+            (bot,),
+        ).fetchone()
         if not latest:
             return []
         ts = latest[0]
         rows = conn.execute(
-            "SELECT symbol, qty, market_value FROM positions WHERE ts = ?",
-            (ts,),
+            f"SELECT symbol, qty, market_value FROM positions WHERE ts = ? AND {BOT_SQL} = ?",
+            (ts, bot),
         ).fetchall()
         return rows
 
@@ -177,8 +197,8 @@ def _call_llm(config: Config, context: dict) -> dict | None:
     return call_json_llm(config, system_prompt=system, payload=context, max_output_tokens=500)
 
 
-def generate_advisor_report(config: Config) -> AdvisorReport:
-    rows = list(reversed(_read_equity_rows(config.db_path, limit=200)))
+def generate_advisor_report(config: Config, bot_name: str = ML_BOT_NAME) -> AdvisorReport:
+    rows = list(reversed(_read_equity_rows(config.db_path, limit=200, bot_name=bot_name)))
     if len(rows) < 5:
         ts = datetime.now(timezone.utc).isoformat()
         return AdvisorReport(
@@ -214,7 +234,7 @@ def generate_advisor_report(config: Config) -> AdvisorReport:
     vol = _safe_mean([abs(r) for r in daily_returns])
 
     # Simple trade activity metric
-    trades = _read_trade_rows(config.db_path, limit=400)
+    trades = _read_trade_rows(config.db_path, limit=400, bot_name=bot_name)
     cutoff = datetime.now(timezone.utc) - timedelta(days=1)
     recent_trades = []
     for t in trades:
@@ -266,7 +286,7 @@ def generate_advisor_report(config: Config) -> AdvisorReport:
     metrics["notional_24h"] = notional
 
     # Factor & sector analysis from latest positions
-    positions = _read_latest_positions(config.db_path)
+    positions = _read_latest_positions(config.db_path, bot_name=bot_name)
     factor_summary = ""
     if positions:
         symbols = [p[0] for p in positions]

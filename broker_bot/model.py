@@ -66,6 +66,8 @@ def train_model(features_df: pd.DataFrame, horizon_days: int) -> tuple[Any, dict
     valid = labels.notna()
     train_df = train_df.loc[valid]
     labels = labels.loc[valid]
+    if train_df.empty:
+        raise RuntimeError("Not enough labeled feature rows to train the model.")
 
     X = train_df[FEATURE_COLUMNS].values
     y = labels.values

@@ -79,16 +79,6 @@ jobs:
             echo "CARETAKER_DAILY_DRAWDOWN_LIMIT=${CARETAKER_DAILY_DRAWDOWN_LIMIT}" >> "$GITHUB_ENV"
           fi
 
-      - name: Validate required configuration
-        run: |
-          python - <<'PY'
-          import os
-          missing = [name for name in ["ALPACA_API_KEY", "ALPACA_SECRET_KEY"] if not os.getenv(name, "").strip()]
-          if missing:
-              raise SystemExit(f"Missing required GitHub Actions secrets: {', '.join(missing)}")
-          print("Required caretaker secrets present.")
-          PY
-
       - name: Check market-hours window
         id: market_clock
         run: |
@@ -107,6 +97,17 @@ jobs:
               handle.write(f"ny_time={now.isoformat()}\n")
           print(f"New York time: {now.isoformat()}")
           print(f"Run caretaker: {should_run}")
+          PY
+
+      - name: Validate required configuration
+        if: ${{ steps.market_clock.outputs.run == 'true' }}
+        run: |
+          python - <<'PY'
+          import os
+          missing = [name for name in ["ALPACA_API_KEY", "ALPACA_SECRET_KEY"] if not os.getenv(name, "").strip()]
+          if missing:
+              raise SystemExit(f"Missing required GitHub Actions secrets: {', '.join(missing)}")
+          print("Required caretaker secrets present.")
           PY
 
       - name: Restore DB from snapshot
