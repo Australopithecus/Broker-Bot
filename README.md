@@ -178,6 +178,8 @@ The optional dashboard run button triggers the same GitHub Actions workflow as t
 
 The dashboard also includes a Champion/Challenger lab. It explains the current live policy, the stricter shadow policy being tested, recent outcomes, implemented safety changes, and historical report entries so you can inspect how the strategy comparison changes over time.
 
+The Strategy Blueprint panel explains how each bot works, which strategy layers are active, the current revision number, and the changelog. When bot behavior changes, update `broker_bot/bot_blueprint.py` so the dashboard revision text evolves with the code.
+
 ### GitHub Actions (Full Scheduled Cloud Run)
 
 This workflow runs on a schedule and performs the full paper-trading cloud loop:

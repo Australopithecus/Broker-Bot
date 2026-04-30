@@ -5,6 +5,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
+from broker_bot.bot_blueprint import get_strategy_blueprint
 from broker_bot.dashboard_metrics import (
     WINDOW_OPTIONS,
     agreement_summary,
@@ -172,6 +173,8 @@ def fetch(path: str):
         requested_bot = (_bot_query(path) or "ml").lower()
         bot_payload = bots.get(requested_bot, {})
 
+        if route == "/api/blueprint":
+            return data.get("strategy_blueprint") or get_strategy_blueprint()
         if route == "/api/bots":
             return {
                 "data": [
@@ -378,6 +381,20 @@ def _bot_payload(bot_name: str, label: str, snapshot_meta: dict) -> dict:
     }
 
 
+def _strategy_blueprint(snapshot_meta: dict) -> dict:
+    if DATA_URL and isinstance(snapshot_meta, dict):
+        blueprint = snapshot_meta.get("strategy_blueprint")
+        if isinstance(blueprint, dict) and blueprint:
+            return blueprint
+    try:
+        blueprint = fetch("/api/blueprint")
+        if isinstance(blueprint, dict) and blueprint:
+            return blueprint
+    except Exception:
+        pass
+    return get_strategy_blueprint()
+
+
 def _fmt_metric_pct(value) -> str:
     return "n/a" if value is None else f"{float(value):+.2%}"
 
@@ -492,6 +509,49 @@ def _render_system_health(snapshot_meta: dict, bots_payload: dict[str, dict]) ->
         st.caption("Auth status appears after the next cloud snapshot build. Local API mode reports freshness from live requests.")
 
     _render_cloud_run_controls()
+
+
+def _render_strategy_blueprint(blueprint: dict) -> None:
+    st.subheader(str(blueprint.get("title") or "Strategy Blueprint"))
+    col1, col2, col3, col4 = st.columns(4)
+    models = blueprint.get("models") if isinstance(blueprint.get("models"), list) else []
+    changelog = blueprint.get("changelog") if isinstance(blueprint.get("changelog"), list) else []
+    col1.metric("Revision", str(blueprint.get("revision") or "unknown"))
+    col2.metric("Updated", str(blueprint.get("revision_date") or "unknown"))
+    col3.metric("Models", str(len(models)))
+    col4.metric("Changelog Entries", str(len(changelog)))
+    st.write(blueprint.get("summary") or "")
+
+    model_tabs = st.tabs([str(model.get("name") or f"Model {idx + 1}") for idx, model in enumerate(models)]) if models else []
+    for tab, model in zip(model_tabs, models):
+        with tab:
+            st.markdown(f"**Role:** {model.get('role', 'Not specified')}")
+            st.write(model.get("description", ""))
+            strategies = model.get("strategies") if isinstance(model.get("strategies"), list) else []
+            for item in strategies:
+                st.markdown(f"- {item}")
+
+    shared_layers = blueprint.get("shared_layers") if isinstance(blueprint.get("shared_layers"), list) else []
+    safety = blueprint.get("current_safety_posture") if isinstance(blueprint.get("current_safety_posture"), list) else []
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown("**Shared Strategy Layers**")
+        for item in shared_layers:
+            st.markdown(f"- {item}")
+    with col_b:
+        st.markdown("**Current Safety Posture**")
+        for item in safety:
+            st.markdown(f"- {item}")
+
+    with st.expander("Revision History", expanded=False):
+        for entry in changelog:
+            st.markdown(
+                f"**Revision {entry.get('revision', 'unknown')} - {entry.get('title', 'Untitled')}**  \n"
+                f"{entry.get('date', '')}"
+            )
+            changes = entry.get("changes") if isinstance(entry.get("changes"), list) else []
+            for item in changes:
+                st.markdown(f"- {item}")
 
 
 def _render_cloud_run_controls() -> None:
@@ -791,8 +851,10 @@ comparison_frames: dict[str, pd.DataFrame] = {name: _equity_df(name) for name, _
 snapshot_meta = _load_snapshot() if DATA_URL else {}
 snapshot_updated = _format_snapshot_timestamp(snapshot_meta.get("generated_at") if isinstance(snapshot_meta, dict) else None)
 bots_payload = {name: _bot_payload(name, label, snapshot_meta) for name, label in bot_names}
+strategy_blueprint = _strategy_blueprint(snapshot_meta)
 
 _render_system_health(snapshot_meta, bots_payload)
+_render_strategy_blueprint(strategy_blueprint)
 
 st.subheader("Trend Graph")
 control_col1, control_col2, control_col3 = st.columns([1, 1.4, 1.6])

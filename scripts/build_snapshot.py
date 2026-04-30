@@ -15,6 +15,7 @@ from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
 
+from broker_bot.bot_blueprint import get_strategy_blueprint
 from broker_bot.config import configured_bot_names, get_bot_account_config, load_config
 from broker_bot.bots import bot_label
 from broker_bot.dashboard_metrics import agreement_summary, comparison_table, freshness_status
@@ -176,6 +177,7 @@ def main() -> None:
     generated_at = datetime.now(timezone.utc).isoformat()
     data = {
         "generated_at": generated_at,
+        "strategy_blueprint": get_strategy_blueprint(),
         "health": {
             "generated_at": generated_at,
             "freshness": freshness_status(generated_at),

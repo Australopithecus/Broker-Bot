@@ -7,6 +7,7 @@ import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from .bot_blueprint import get_strategy_blueprint
 from .bots import ML_BOT_NAME, bot_label, normalize_bot_name
 from .config import Config, configured_bot_names
 from .dashboard_metrics import WINDOW_OPTIONS, agreement_summary, comparison_table, freshness_status
@@ -49,6 +50,11 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
             pass
         data = [{"name": bot_name, "label": bot_label(bot_name)} for bot_name in sorted(discovered)]
         return JSONResponse({"data": data})
+
+    @app.get("/api/blueprint")
+    def blueprint(request: Request) -> JSONResponse:
+        _check_token(request)
+        return JSONResponse(get_strategy_blueprint())
 
     @app.get("/", response_class=HTMLResponse)
     def index() -> str:
@@ -455,6 +461,11 @@ def _dashboard_html() -> str:
       <div class="card"><h3>Agreement</h3><div class="value" id="agreementRate">--</div></div>
     </section>
 
+    <section class="panel">
+      <h2>Strategy Blueprint</h2>
+      <div id="strategyBlueprintBox" class="muted">Loading strategy revision...</div>
+    </section>
+
     <section class="summary">
       <div class="card"><h3>Equity</h3><div class="value" id="equity">--</div></div>
       <div class="card"><h3>Cash</h3><div class="value" id="cash">--</div></div>
@@ -627,6 +638,13 @@ const pct = (num) => {
   if (num === null || num === undefined || Number.isNaN(num)) return "--";
   return (num * 100).toFixed(2) + "%";
 };
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+})[char]);
 const stdev = (arr) => {
   if (!arr.length || arr.length < 2) return 0;
   const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
@@ -1261,6 +1279,46 @@ function renderTakeaways(body) {
   return items ? `<ul class="muted">${items}</ul>` : '';
 }
 
+async function loadStrategyBlueprint() {
+  const res = await fetch('/api/blueprint', { headers: apiHeaders });
+  const blueprint = await res.json();
+  const container = document.getElementById('strategyBlueprintBox');
+  const models = Array.isArray(blueprint.models) ? blueprint.models : [];
+  const shared = Array.isArray(blueprint.shared_layers) ? blueprint.shared_layers : [];
+  const safety = Array.isArray(blueprint.current_safety_posture) ? blueprint.current_safety_posture : [];
+  const changelog = Array.isArray(blueprint.changelog) ? blueprint.changelog : [];
+  const modelCards = models.map(model => `
+    <div class="card" style="margin-top: 10px;">
+      <strong>${esc(model.name)} - ${esc(model.role)}</strong><br />
+      ${esc(model.description)}
+      <ul>${(model.strategies || []).map(item => `<li>${esc(item)}</li>`).join('')}</ul>
+    </div>
+  `).join('');
+  const changes = changelog.map((entry, index) => `
+    <details ${index === 0 ? 'open' : ''} style="margin-top: 10px;">
+      <summary><strong>Revision ${esc(entry.revision)}</strong> (${esc(entry.date)}) - ${esc(entry.title)}</summary>
+      <ul>${(entry.changes || []).map(item => `<li>${esc(item)}</li>`).join('')}</ul>
+    </details>
+  `).join('');
+  container.innerHTML = `
+    <div class="grid cards">
+      <div class="card"><h3>Revision</h3><div class="value">${esc(blueprint.revision || '--')}</div></div>
+      <div class="card"><h3>Updated</h3><div class="value">${esc(blueprint.revision_date || '--')}</div></div>
+      <div class="card"><h3>Models</h3><div class="value">${models.length}</div></div>
+      <div class="card"><h3>Change Log</h3><div class="value">${changelog.length}</div></div>
+    </div>
+    <p>${esc(blueprint.summary || '')}</p>
+    <h3>Models And Strategies</h3>
+    ${modelCards || '<p class="muted">No model description available.</p>'}
+    <h3>Shared Strategy Layers</h3>
+    <ul>${shared.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
+    <h3>Current Safety Posture</h3>
+    <ul>${safety.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
+    <h3>Revision History</h3>
+    ${changes || '<p class="muted">No changelog entries available.</p>'}
+  `;
+}
+
 function compactPct(num) {
   if (num === null || num === undefined || Number.isNaN(Number(num))) return '--';
   return `${(Number(num) * 100).toFixed(2)}%`;
@@ -1397,7 +1455,7 @@ async function loadDecisions() {
 }
 
 async function refreshAll() {
-  await Promise.all([loadSummary(), loadHealth(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadChampionChallenger(), loadStrategy(), loadDecisions()]);
+  await Promise.all([loadSummary(), loadHealth(), loadStrategyBlueprint(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadChampionChallenger(), loadStrategy(), loadDecisions()]);
 }
 
 loadBots().then(refreshAll);
