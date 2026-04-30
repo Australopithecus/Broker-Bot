@@ -30,6 +30,11 @@ def _secret(name: str) -> str:
 API_BASE = _secret("API_BASE_URL")
 API_TOKEN = _secret("API_TOKEN")
 DATA_URL = _secret("DATA_URL")
+GITHUB_ACTIONS_TOKEN = _secret("GITHUB_ACTIONS_TOKEN")
+GITHUB_REPOSITORY = _secret("GITHUB_REPOSITORY")
+GITHUB_WORKFLOW_ID = _secret("GITHUB_WORKFLOW_ID") or "advisor_snapshot.yml"
+GITHUB_WORKFLOW_REF = _secret("GITHUB_WORKFLOW_REF") or "main"
+LLM_TREND_CUTOFF = pd.Timestamp("2026-04-23T00:00:00Z")
 
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
 st.title("Broker Bot Dashboard")
@@ -57,6 +62,52 @@ def _bot_query(path: str) -> str | None:
     params = parse_qs(parsed.query)
     values = params.get("bot")
     return values[0] if values else None
+
+
+def _github_repo_from_data_url() -> str:
+    if GITHUB_REPOSITORY:
+        return GITHUB_REPOSITORY
+    if not DATA_URL:
+        return ""
+    parsed = urlsplit(DATA_URL)
+    parts = [part for part in parsed.path.split("/") if part]
+    if parsed.netloc == "raw.githubusercontent.com" and len(parts) >= 2:
+        return f"{parts[0]}/{parts[1]}"
+    if parsed.netloc in {"github.com", "www.github.com"} and len(parts) >= 2:
+        return f"{parts[0]}/{parts[1]}"
+    return ""
+
+
+def _github_actions_url(repo: str) -> str:
+    if not repo:
+        return ""
+    return f"https://github.com/{repo}/actions/workflows/{GITHUB_WORKFLOW_ID}"
+
+
+def _dispatch_github_workflow(repo: str) -> tuple[bool, str]:
+    if not repo:
+        return False, "Set GITHUB_REPOSITORY in Streamlit secrets, for example YOUR_USERNAME/YOUR_REPO."
+    if not GITHUB_ACTIONS_TOKEN:
+        return False, "Set GITHUB_ACTIONS_TOKEN in Streamlit secrets before triggering runs from the dashboard."
+
+    url = f"https://api.github.com/repos/{repo}/actions/workflows/{GITHUB_WORKFLOW_ID}/dispatches"
+    resp = requests.post(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {GITHUB_ACTIONS_TOKEN}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        json={"ref": GITHUB_WORKFLOW_REF},
+        timeout=20,
+    )
+    if resp.status_code == 204:
+        return True, f"Started Broker Bot Cloud Run on {GITHUB_WORKFLOW_REF}."
+    try:
+        detail = resp.json().get("message", resp.text)
+    except Exception:
+        detail = resp.text
+    return False, f"GitHub returned {resp.status_code}: {detail}"
 
 
 def fetch(path: str):
@@ -104,6 +155,7 @@ def fetch(path: str):
                     {
                         "ts": row.get("ts"),
                         "equity": row.get("equity"),
+                        "portfolio_value": row.get("portfolio_value", row.get("equity")),
                         "spy": row.get("spy", row.get("spy_value")),
                     }
                     for row in rows
@@ -147,9 +199,13 @@ def _equity_df(bot_name: str) -> pd.DataFrame:
     if "spy" not in df.columns and "spy_value" in df.columns:
         df["spy"] = df["spy_value"]
     df["equity"] = pd.to_numeric(df["equity"], errors="coerce")
+    if "portfolio_value" in df.columns:
+        df["portfolio_value"] = pd.to_numeric(df["portfolio_value"], errors="coerce")
+    else:
+        df["portfolio_value"] = df["equity"]
     if "spy" in df.columns:
         df["spy"] = pd.to_numeric(df["spy"], errors="coerce")
-    df["ts"] = pd.to_datetime(df["ts"], errors="coerce")
+    df["ts"] = pd.to_datetime(df["ts"], errors="coerce", utc=True)
     df = df.dropna(subset=["ts", "equity"]).sort_values("ts")
     if df.empty:
         return df
@@ -177,6 +233,20 @@ def _normalized_series(series: pd.Series) -> pd.Series:
     if base == 0:
         return clean
     return (clean / base) * 100.0
+
+
+def _trend_source_df(bot_name: str, df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+    if bot_name.lower() == "llm":
+        return df[df.index >= LLM_TREND_CUTOFF].copy()
+    return df
+
+
+def _actual_value_series(df: pd.DataFrame) -> pd.Series:
+    if "portfolio_value" in df.columns and df["portfolio_value"].notna().sum() > 0:
+        return pd.to_numeric(df["portfolio_value"], errors="coerce")
+    return pd.to_numeric(df["equity"], errors="coerce")
 
 
 def _format_snapshot_timestamp(raw_ts: str | None) -> str | None:
@@ -270,7 +340,7 @@ def _fmt_metric_num(value) -> str:
     return "n/a" if value is None else f"{float(value):,.2f}"
 
 
-def _nearest_indexed_value(trend_df: pd.DataFrame, label: str, ts) -> float | None:
+def _nearest_trend_value(trend_df: pd.DataFrame, label: str, ts) -> float | None:
     if trend_df.empty or label not in trend_df.columns:
         return None
     ts = pd.to_datetime(ts, errors="coerce", utc=True)
@@ -296,7 +366,7 @@ def _trade_markers(selected_bots: list[tuple[str, str]], trend_df: pd.DataFrame,
             ts = pd.to_datetime(row.get("ts"), errors="coerce", utc=True)
             if pd.isna(ts) or ts < cutoff or ts > global_latest:
                 continue
-            y_value = _nearest_indexed_value(trend_df, label, ts)
+            y_value = _nearest_trend_value(trend_df, label, ts)
             if y_value is None:
                 continue
             markers.append(
@@ -364,6 +434,47 @@ def _render_system_health(snapshot_meta: dict, bots_payload: dict[str, dict]) ->
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     else:
         st.caption("Auth status appears after the next cloud snapshot build. Local API mode reports freshness from live requests.")
+
+    _render_cloud_run_controls()
+
+
+def _render_cloud_run_controls() -> None:
+    repo = _github_repo_from_data_url()
+    actions_url = _github_actions_url(repo)
+
+    with st.expander("Run Bot Now", expanded=False):
+        st.caption(
+            "This starts the existing GitHub Actions cloud workflow. "
+            "The full run can rebalance Alpaca paper portfolios and update the dashboard snapshot."
+        )
+        cols = st.columns(3)
+        cols[0].metric("Workflow", GITHUB_WORKFLOW_ID)
+        cols[1].metric("Branch", GITHUB_WORKFLOW_REF)
+        cols[2].metric("Repository", repo or "not set")
+
+        confirmed = st.checkbox(
+            "I understand this may submit paper-trading orders.",
+            key="confirm_cloud_run",
+        )
+        disabled = not confirmed or not repo or not GITHUB_ACTIONS_TOKEN
+        if st.button("Start Cloud Run", disabled=disabled, type="primary"):
+            ok, message = _dispatch_github_workflow(repo)
+            if ok:
+                st.success(message)
+                if actions_url:
+                    st.link_button("Open GitHub Actions", actions_url)
+            else:
+                st.error(message)
+
+        if not repo:
+            st.warning("Set GITHUB_REPOSITORY in Streamlit secrets to enable dashboard-triggered runs.")
+        elif not GITHUB_ACTIONS_TOKEN:
+            st.info("Add GITHUB_ACTIONS_TOKEN in Streamlit secrets to enable the button.")
+            if actions_url:
+                st.link_button("Run Manually In GitHub", actions_url)
+        elif actions_url:
+            st.caption("After starting a run, GitHub usually takes a few minutes to rebuild and commit the new snapshot.")
+            st.link_button("View Workflow Runs", actions_url)
 
 
 def _render_comparison_summary(bots_payload: dict[str, dict], selected_window_key: str) -> None:
@@ -516,12 +627,18 @@ bots_payload = {name: _bot_payload(name, label, snapshot_meta) for name, label i
 _render_system_health(snapshot_meta, bots_payload)
 
 st.subheader("Trend Graph")
-control_col1, control_col2 = st.columns([1, 2])
+control_col1, control_col2, control_col3 = st.columns([1, 1.4, 1.6])
 with control_col1:
     selected_window_key = st.selectbox("Date range", list(WINDOW_OPTIONS.keys()), index=4)
+with control_col2:
+    graph_mode = st.radio(
+        "Graph scale",
+        ["Indexed performance", "Actual holding value"],
+        horizontal=True,
+    )
 display_labels = [label for _, label in bot_names]
 display_options = ["Both models"] + display_labels
-with control_col2:
+with control_col3:
     selected_display = st.radio("Show", display_options, horizontal=True)
 selected_window = WINDOW_OPTIONS[selected_window_key]
 if snapshot_updated:
@@ -531,14 +648,15 @@ elif DATA_URL:
 else:
     st.caption("Using live API data.")
 _render_comparison_summary(bots_payload, selected_window_key)
-trend_df = pd.DataFrame()
-spy_trend = pd.Series(dtype=float)
-global_latest = max((df.index.max() for df in comparison_frames.values() if not df.empty), default=None)
+trend_series: list[pd.Series] = []
+spy_series: list[pd.Series] = []
+trend_frames = {name: _trend_source_df(name, df) for name, df in comparison_frames.items()}
+global_latest = max((df.index.max() for df in trend_frames.values() if not df.empty), default=None)
 excluded_labels: list[str] = []
 selected_labels = set(display_labels if selected_display == "Both models" else [selected_display])
 selected_bots = [(name, label) for name, label in bot_names if label in selected_labels]
 for name, label in bot_names:
-    df = comparison_frames.get(name, pd.DataFrame())
+    df = trend_frames.get(name, pd.DataFrame())
     if df.empty:
         continue
     if label not in selected_labels:
@@ -547,33 +665,53 @@ for name, label in bot_names:
     if len(filtered) < 2:
         excluded_labels.append(label)
         continue
-    trend_df[label] = _normalized_series(filtered["equity"])
-    if spy_trend.empty and "spy" in filtered.columns and filtered["spy"].notna().sum() > 1:
-        spy_trend = _normalized_series(filtered["spy"])
+    value_series = _actual_value_series(filtered)
+    equity_trend = (
+        _normalized_series(value_series)
+        if graph_mode == "Indexed performance"
+        else value_series.dropna()
+    ).rename(label)
+    if equity_trend.dropna().shape[0] >= 2:
+        trend_series.append(equity_trend)
+    if "spy" in filtered.columns and filtered["spy"].notna().sum() > 1:
+        spy_series.append(filtered["spy"].dropna())
 
-if not spy_trend.empty:
-    trend_df["SPY"] = spy_trend
+if spy_series:
+    spy_values = pd.concat(spy_series).sort_index()
+    spy_values = spy_values[~spy_values.index.duplicated(keep="last")]
+    if graph_mode == "Indexed performance":
+        spy_trend = _normalized_series(spy_values).rename("SPY")
+        if spy_trend.dropna().shape[0] >= 2:
+            trend_series.append(spy_trend)
 
-trend_df = trend_df.sort_index()
+trend_df = pd.concat(trend_series, axis=1).sort_index() if trend_series else pd.DataFrame()
 trade_marker_df = _trade_markers(selected_bots, trend_df, selected_window, global_latest)
 
 trend_col, holdings_col = st.columns([2.2, 1])
 
 with trend_col:
-    st.caption("Indexed to 100 at the first visible point in the selected window.")
+    if graph_mode == "Indexed performance":
+        st.caption("Indexed to 100 at the first visible point in the selected window. LLM trend data before April 23, 2026 is hidden.")
+    else:
+        st.caption("Actual account holding value in dollars. LLM trend data before April 23, 2026 is hidden; SPY is omitted because it is a price, not an account value.")
     if not trend_df.empty:
         try:
             import plotly.graph_objects as go
 
             fig = go.Figure()
             for column in trend_df.columns:
+                series = trend_df[column].dropna()
+                if len(series) < 2:
+                    continue
                 trace_kwargs = {}
                 if column == "SPY":
                     trace_kwargs["line"] = {"dash": "dash"}
+                if graph_mode == "Actual holding value":
+                    trace_kwargs["hovertemplate"] = "%{fullData.name}<br>%{x}<br>$%{y:,.2f}<extra></extra>"
                 fig.add_trace(
                     go.Scatter(
-                        x=trend_df.index,
-                        y=trend_df[column],
+                        x=series.index,
+                        y=series,
                         mode="lines+markers",
                         name=column,
                         **trace_kwargs,
@@ -606,7 +744,17 @@ with trend_col:
                 height=360,
                 margin={"l": 10, "r": 10, "t": 10, "b": 10},
                 yaxis_title="Indexed Performance",
+                hovermode="x unified",
             )
+            if graph_mode == "Actual holding value":
+                fig.update_layout(yaxis_title="Actual Holding Value")
+                fig.update_yaxes(tickprefix="$", separatethousands=True)
+            y_values = pd.concat([trend_df[column].dropna() for column in trend_df.columns])
+            if not y_values.empty:
+                y_min = float(y_values.min())
+                y_max = float(y_values.max())
+                y_pad = max((y_max - y_min) * 0.08, 0.4)
+                fig.update_yaxes(range=[y_min - y_pad, y_max + y_pad])
             if global_latest is not None:
                 fig.update_xaxes(range=[global_latest - selected_window, global_latest])
             st.plotly_chart(fig, use_container_width=True)

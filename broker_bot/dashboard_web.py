@@ -97,6 +97,7 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
             {
                 "ts": row[0],
                 "equity": row[1],
+                "portfolio_value": row[3],
                 "spy": row[4],
             }
             for row in rows
@@ -475,6 +476,12 @@ def _dashboard_html() -> str:
           <h2>Bot Performance Comparison</h2>
           <div class="inline-controls">
             <div class="choice-row" id="displaySelector"></div>
+            <label class="muted" for="graphModeSelector">Scale
+              <select id="graphModeSelector" style="margin-left: 8px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;">
+                <option value="indexed" selected>Indexed performance</option>
+                <option value="actual">Actual holding value</option>
+              </select>
+            </label>
             <label class="muted" for="rangeSelector">Window
               <select id="rangeSelector" style="margin-left: 8px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;">
                 <option value="24h">24h</option>
@@ -628,9 +635,11 @@ const apiHeaders = tokenParam ? { 'X-API-Token': tokenParam } : {};
 let currentBot = 'ml';
 let currentRange = '90d';
 let currentDisplay = 'both';
+let currentGraphMode = 'indexed';
 let availableBots = [];
 let latestPositions = [];
 let latestDecisions = [];
+const LLM_TREND_CUTOFF_MS = Date.UTC(2026, 3, 23);
 const RANGE_WINDOWS_MS = {
   '24h': 24 * 60 * 60 * 1000,
   '7d': 7 * 24 * 60 * 60 * 1000,
@@ -656,12 +665,23 @@ const filterSeriesToWindow = (clean, cutoffTs) => {
 
 const cleanSeries = (points, valueKey) => {
   return (points || [])
-    .map(point => ({
-      ts: Number(new Date(point.ts)),
-      value: Number(point[valueKey]),
-    }))
+    .map(point => {
+      let value = Number(point[valueKey]);
+      if (!Number.isFinite(value) && valueKey !== 'equity') {
+        value = Number(point.equity);
+      }
+      return {
+        ts: Number(new Date(point.ts)),
+        value,
+      };
+    })
     .filter(point => Number.isFinite(point.ts) && Number.isFinite(point.value))
     .sort((a, b) => a.ts - b.ts);
+};
+
+const applyTrendCutoff = (botName, clean) => {
+  if (String(botName || '').toLowerCase() !== 'llm') return clean;
+  return clean.filter(point => point.ts >= LLM_TREND_CUTOFF_MS);
 };
 
 const normalizeSeries = (clean) => {
@@ -674,6 +694,12 @@ const normalizeSeries = (clean) => {
     raw: point.value,
   }));
 };
+
+const actualSeries = (clean) => clean.map(point => ({
+  x: point.ts,
+  y: point.value,
+  raw: point.value,
+}));
 
 const pctChange = (current, prior) => {
   if (!Number.isFinite(current) || !Number.isFinite(prior) || prior === 0) return null;
@@ -753,6 +779,12 @@ async function loadBots() {
   rangeSelector.addEventListener('change', async (event) => {
     currentRange = event.target.value || '90d';
     await Promise.all([loadEquity(), loadHealth()]);
+  });
+  const graphModeSelector = document.getElementById('graphModeSelector');
+  graphModeSelector.value = currentGraphMode;
+  graphModeSelector.addEventListener('change', async (event) => {
+    currentGraphMode = event.target.value || 'indexed';
+    await loadEquity();
   });
   document.getElementById('decisionSymbol')?.addEventListener('input', loadDecisions);
   document.getElementById('decisionOutcome')?.addEventListener('change', loadDecisions);
@@ -862,7 +894,8 @@ async function loadEquity() {
     || visibleCurves[0]
     || botCurves.find(bot => bot.name === currentBot)
     || botCurves[0];
-  const allTimestamps = botCurves.flatMap(bot => cleanSeries(bot.points, 'equity').map(point => point.ts));
+  const valueKey = currentGraphMode === 'actual' ? 'portfolio_value' : 'equity';
+  const allTimestamps = botCurves.flatMap(bot => applyTrendCutoff(bot.name, cleanSeries(bot.points, valueKey)).map(point => point.ts));
   const latestTs = allTimestamps.length ? Math.max(...allTimestamps) : null;
   const windowMs = RANGE_WINDOWS_MS[currentRange] || RANGE_WINDOWS_MS['90d'];
   const cutoffTs = latestTs === null ? null : latestTs - windowMs;
@@ -875,16 +908,16 @@ async function loadEquity() {
   let paletteIndex = 0;
   const omittedBots = [];
   const equitySeries = visibleCurves.map(bot => {
-    const cleaned = cleanSeries(bot.points, 'equity');
+    const cleaned = applyTrendCutoff(bot.name, cleanSeries(bot.points, valueKey));
     const filtered = filterSeriesToWindow(cleaned, cutoffTs);
-    const normalized = normalizeSeries(filtered);
+    const chartPoints = currentGraphMode === 'actual' ? actualSeries(filtered) : normalizeSeries(filtered);
     if (cleaned.length >= 2 && filtered.length < 2) {
       omittedBots.push(bot.label);
     }
     if (bot.name === currentBot) {
       return {
         ...bot,
-        normalized,
+        normalized: chartPoints,
         color: '#22d3ee',
         colorLabel: 'Cyan',
         lineWidth: 3,
@@ -894,16 +927,16 @@ async function loadEquity() {
     paletteIndex += 1;
     return {
       ...bot,
-      normalized,
+      normalized: chartPoints,
       color: palette.color,
       colorLabel: palette.label,
       lineWidth: 2,
     };
   }).filter(bot => bot.normalized.length >= 2);
 
-  const selectedSpyClean = selectedCurve ? cleanSeries(selectedCurve.points, 'spy') : [];
+  const selectedSpyClean = selectedCurve ? applyTrendCutoff(selectedCurve.name, cleanSeries(selectedCurve.points, 'spy')) : [];
   const selectedSpyFiltered = filterSeriesToWindow(selectedSpyClean, cutoffTs);
-  const spySeries = normalizeSeries(selectedSpyFiltered);
+  const spySeries = currentGraphMode === 'indexed' ? normalizeSeries(selectedSpyFiltered) : [];
   const canvas = document.getElementById('equityChart');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -928,7 +961,7 @@ async function loadEquity() {
     lineWidth: bot.lineWidth,
     points: bot.normalized,
   }));
-  if (spySeries.length >= 2) {
+  if (currentGraphMode === 'indexed' && spySeries.length >= 2) {
     allLines.push({
       label: `${selectedCurve.label} SPY`,
       color: '#a78bfa',
@@ -946,10 +979,10 @@ async function loadEquity() {
   const xMin = cutoffTs === null ? Math.min(...xValues) : cutoffTs;
   const xMax = latestTs === null ? Math.max(...xValues) : latestTs;
   const pad = 20;
-  const yPad = Math.max((max - min) * 0.12, 2);
+  const yPad = Math.max((max - min) * 0.08, 0.4);
   const scaleX = (value) => pad + (canvas.width - pad * 2) * ((value - xMin) / (xMax - xMin || 1));
   const scaleY = (value) => canvas.height - pad - (canvas.height - pad * 2) * ((value - (min - yPad)) / ((max - min) + yPad * 2 || 1));
-  const selectedClean = selectedCurve ? cleanSeries(selectedCurve.points, 'equity') : [];
+  const selectedClean = selectedCurve ? applyTrendCutoff(selectedCurve.name, cleanSeries(selectedCurve.points, valueKey)) : [];
   const selectedFiltered = filterSeriesToWindow(selectedClean, cutoffTs);
   if (selectedFiltered.length >= 2) {
     const ret = pctChange(selectedFiltered[selectedFiltered.length - 1].value, selectedFiltered[0].value);
@@ -1029,7 +1062,13 @@ async function loadEquity() {
   const xStartLabel = new Date(xMin).toLocaleString();
   const xEndLabel = new Date(xMax).toLocaleString();
   const markerText = markerCount ? ` • Trade markers: ${markerCount}` : '';
-  document.getElementById('equityHint').textContent = `${currentRange} window (${xStartLabel} to ${xEndLabel}) • Normalized to 100 at the start of the selected window • Range: ${min.toFixed(1)} to ${max.toFixed(1)} • ${legend}${omittedText}${markerText}`;
+  const modeText = currentGraphMode === 'actual'
+    ? 'Actual holding value in dollars; SPY is omitted because it is a price, not an account value'
+    : 'Normalized to 100 at the start of the selected window';
+  const rangeText = currentGraphMode === 'actual'
+    ? `${fmt(min)} to ${fmt(max)}`
+    : `${min.toFixed(1)} to ${max.toFixed(1)}`;
+  document.getElementById('equityHint').textContent = `${currentRange} window (${xStartLabel} to ${xEndLabel}) • ${modeText} • LLM starts Apr 23, 2026 • Range: ${rangeText} • ${legend}${omittedText}${markerText}`;
 
   // Alpha + tracking error (20D) if we have SPY values
   const aligned = (selectedCurve?.points || [])
