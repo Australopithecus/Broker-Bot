@@ -1203,10 +1203,15 @@ with st.expander("Detailed bot tables", expanded=False):
                     st.divider()
 
             if strategy_reports:
-                for report in strategy_reports[:8]:
+                for report_index, report in enumerate(strategy_reports[:8]):
                     st.markdown(f"**[{report.get('report_type','report')}] {report.get('headline','Report')}** — {report.get('ts','')}")
                     st.write(report.get("summary", ""))
-                    with st.expander("Show report body"):
+                    show_body = st.toggle(
+                        "Show report body",
+                        key=f"detailed_report_body_{bot_name}_{report_index}",
+                        value=False,
+                    )
+                    if show_body:
                         st.markdown(report.get("body", ""))
                     st.divider()
             else:

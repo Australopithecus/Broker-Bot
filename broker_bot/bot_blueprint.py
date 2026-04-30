@@ -6,7 +6,7 @@ from typing import Any
 
 STRATEGY_BLUEPRINT: dict[str, Any] = {
     "title": "Strategy Blueprint",
-    "revision": "2.7.2",
+    "revision": "2.7.3",
     "revision_date": "2026-04-30",
     "summary": (
         "Broker Bot is a paper-trading research system with two competing bots: an ML ensemble bot and an LLM decision-network bot. "
@@ -58,6 +58,15 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
         "Champion/challenger evaluation is shadow-only until enough evidence supports promotion.",
     ],
     "changelog": [
+        {
+            "revision": "2.7.3",
+            "date": "2026-04-30",
+            "title": "Detailed table disclosure fix",
+            "changes": [
+                "Replaced nested Streamlit report-body expanders with toggles inside Detailed bot tables.",
+                "Prevented the Detailed Tables section from throwing a Streamlit nested-expander error.",
+            ],
+        },
         {
             "revision": "2.7.2",
             "date": "2026-04-30",
