@@ -175,7 +175,7 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
     def strategy(request: Request) -> JSONResponse:
         _check_token(request)
         bot_name = _bot_name(request)
-        rows = read_latest_strategy_reports(db_path, limit=20, bot_name=bot_name)
+        rows = read_latest_strategy_reports(db_path, limit=80, bot_name=bot_name)
         data = []
         for row in rows:
             data.append(
@@ -484,9 +484,9 @@ def _dashboard_html() -> str:
               <select id="rangeSelector" style="margin-left: 8px; padding: 6px 8px; border-radius: 10px; background: #0f172a; color: #e5e7eb; border: 1px solid #1f2937;">
                 <option value="24h">24h</option>
                 <option value="7d">7d</option>
-                <option value="14d">14d</option>
+                <option value="14d" selected>14d</option>
                 <option value="28d">28d</option>
-                <option value="90d" selected>90d</option>
+                <option value="90d">90d</option>
                 <option value="180d">180d</option>
                 <option value="360d">360d</option>
               </select>
@@ -520,6 +520,12 @@ def _dashboard_html() -> str:
         <tbody id="comparisonBody"></tbody>
       </table>
       <div class="muted" id="comparisonHint"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Champion / Challenger Lab</h2>
+      <p class="muted">Champion is the current live policy. Challenger is a stricter shadow policy tested against historical outcomes before we trust it with more influence.</p>
+      <div id="championChallengerBox" class="muted">No Champion/Challenger reports yet.</div>
     </section>
 
     <section class="panel">
@@ -631,7 +637,7 @@ const stdev = (arr) => {
 const tokenParam = new URLSearchParams(window.location.search).get('token');
 const apiHeaders = tokenParam ? { 'X-API-Token': tokenParam } : {};
 let currentBot = 'ml';
-let currentRange = '90d';
+let currentRange = '14d';
 let currentDisplay = 'both';
 let currentGraphMode = 'indexed';
 let availableBots = [];
@@ -775,7 +781,7 @@ async function loadBots() {
   const rangeSelector = document.getElementById('rangeSelector');
   rangeSelector.value = currentRange;
   rangeSelector.addEventListener('change', async (event) => {
-    currentRange = event.target.value || '90d';
+    currentRange = event.target.value || '14d';
     await Promise.all([loadEquity(), loadHealth()]);
   });
   const graphModeSelector = document.getElementById('graphModeSelector');
@@ -1255,6 +1261,72 @@ function renderTakeaways(body) {
   return items ? `<ul class="muted">${items}</ul>` : '';
 }
 
+function compactPct(num) {
+  if (num === null || num === undefined || Number.isNaN(Number(num))) return '--';
+  return `${(Number(num) * 100).toFixed(2)}%`;
+}
+
+async function loadChampionChallenger() {
+  const res = await fetch(apiPath('/api/strategy'), { headers: apiHeaders });
+  const data = await res.json();
+  const reports = (data.data || []).filter(report => report.report_type === 'champion_challenger');
+  const container = document.getElementById('championChallengerBox');
+  if (!reports.length) {
+    container.textContent = 'No Champion/Challenger reports yet. The next cloud report run will populate this panel.';
+    return;
+  }
+  const latest = reports[0];
+  const metrics = latest.metrics || {};
+  const changes = latest.changes || {};
+  const implemented = Array.isArray(changes.implemented_changes) ? changes.implemented_changes : [];
+  const rows = reports.slice(0, 10).map(report => {
+    const m = report.metrics || {};
+    const c = report.changes || {};
+    return `
+      <tr>
+        <td>${report.ts || ''}</td>
+        <td>${compactPct(m.champion_avg_signed_return)}</td>
+        <td>${compactPct(m.challenger_avg_signed_return)}</td>
+        <td>${Number(m.champion_samples || 0).toFixed(0)} / ${Number(m.challenger_samples || 0).toFixed(0)}</td>
+        <td>${compactPct(m.excluded_avg_signed_return)}</td>
+        <td>${c.verdict || report.summary || ''}</td>
+      </tr>
+    `;
+  }).join('');
+  const historicalDetails = reports.slice(0, 6).map((report, index) => `
+    <details ${index === 0 ? 'open' : ''} style="margin-top: 10px;">
+      <summary><strong>${report.ts || 'Report'}</strong> - ${report.summary || ''}</summary>
+      <div class="muted" style="white-space: pre-wrap; margin-top: 8px;">${(report.body || '').slice(0, 2600)}</div>
+    </details>
+  `).join('');
+  container.innerHTML = `
+    <div class="grid cards">
+      <div class="card"><h3>Champion Avg</h3><div class="value">${compactPct(metrics.champion_avg_signed_return)}</div></div>
+      <div class="card"><h3>Challenger Avg</h3><div class="value">${compactPct(metrics.challenger_avg_signed_return)}</div></div>
+      <div class="card"><h3>Champion Samples</h3><div class="value">${Number(metrics.champion_samples || 0).toFixed(0)}</div></div>
+      <div class="card"><h3>Challenger Samples</h3><div class="value">${Number(metrics.challenger_samples || 0).toFixed(0)}</div></div>
+    </div>
+    <p><strong>Models being tested</strong></p>
+    <p>${changes.champion_description || 'Champion: current selected-decision policy.'}</p>
+    <p>${changes.challenger_description || 'Challenger: stricter confidence-gated shadow policy.'}</p>
+    ${implemented.length ? `<p><strong>Changes implemented</strong></p><ul>${implemented.map(item => `<li>${item}</li>`).join('')}</ul>` : ''}
+    <table style="margin-top: 10px;">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Champion Avg</th>
+          <th>Challenger Avg</th>
+          <th>Samples</th>
+          <th>Excluded Avg</th>
+          <th>Verdict</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${historicalDetails}
+  `;
+}
+
 async function loadStrategy() {
   const res = await fetch(apiPath('/api/strategy'), { headers: apiHeaders });
   const data = await res.json();
@@ -1325,7 +1397,7 @@ async function loadDecisions() {
 }
 
 async function refreshAll() {
-  await Promise.all([loadSummary(), loadHealth(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadStrategy(), loadDecisions()]);
+  await Promise.all([loadSummary(), loadHealth(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadChampionChallenger(), loadStrategy(), loadDecisions()]);
 }
 
 loadBots().then(refreshAll);

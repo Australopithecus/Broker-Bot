@@ -86,7 +86,7 @@ def main() -> None:
             positions_live = []
         positions_rows = read_latest_positions(config.db_path, limit=500, bot_name=bot_name) if not positions_live else []
         advisor_rows = read_latest_advisor_reports(config.db_path, limit=20, bot_name=bot_name)
-        strategy_rows = read_latest_strategy_reports(config.db_path, limit=30, bot_name=bot_name)
+        strategy_rows = read_latest_strategy_reports(config.db_path, limit=80, bot_name=bot_name)
         decision_rows = read_recent_selected_decisions(config.db_path, limit=150, bot_name=bot_name)
 
         bots_payload[bot_name] = {

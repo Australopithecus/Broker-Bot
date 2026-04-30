@@ -176,6 +176,8 @@ Equity vs SPY, positions, trades, analyst/trader/coach reports, strategy-report 
 
 The optional dashboard run button triggers the same GitHub Actions workflow as the manual `Run workflow` button in GitHub. It requires a confirmation checkbox because the workflow can rebalance Alpaca paper portfolios.
 
+The dashboard also includes a Champion/Challenger lab. It explains the current live policy, the stricter shadow policy being tested, recent outcomes, implemented safety changes, and historical report entries so you can inspect how the strategy comparison changes over time.
+
 ### GitHub Actions (Full Scheduled Cloud Run)
 
 This workflow runs on a schedule and performs the full paper-trading cloud loop:

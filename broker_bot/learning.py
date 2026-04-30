@@ -619,9 +619,35 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
     if normalized_bot == LLM_BOT_NAME:
         threshold = max(float(config.llm_min_conviction), 0.0)
         threshold_label = "LLM minimum conviction"
+        champion_description = (
+            "Champion: the current LLM network, including Stock Selector, Analyst, Trader, "
+            "Skeptic review, conviction gate, and normal execution/risk controls."
+        )
+        challenger_description = (
+            "Challenger: a stricter shadow version of the LLM policy that counts only selected "
+            f"decisions with absolute conviction/final score at or above {threshold:.4f}."
+        )
+        implemented_changes = [
+            f"LLM conviction gate is active at {threshold:.4f}.",
+            "LLM Skeptic review can caution, reduce conviction, or veto weakly supported trades before execution.",
+            "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.",
+        ]
     else:
         threshold = max(float(config.min_signal_abs_score), 0.0)
         threshold_label = "minimum absolute signal score"
+        champion_description = (
+            "Champion: the current ML ensemble policy using the trained return model, research overlays, "
+            "symbol memory, confidence gate, and normal execution/risk controls."
+        )
+        challenger_description = (
+            "Challenger: a stricter shadow version of the ML policy that counts only selected "
+            f"decisions with absolute final score at or above {threshold:.4f}."
+        )
+        implemented_changes = [
+            f"ML confidence gate is active at {threshold:.4f}; weaker selected signals are converted to HOLD before sizing.",
+            "Post-trade attribution now tracks which signal components are associated with wins or losses.",
+            "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.",
+        ]
 
     challenger = [row for row in evaluated if abs(float(row[4])) >= threshold]
     excluded = [row for row in evaluated if abs(float(row[4])) < threshold]
@@ -648,6 +674,10 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
             "",
             f"Threshold used: {threshold_label} = {threshold:.4f}",
             "",
+            "## Models being tested",
+            f"- {champion_description}",
+            f"- {challenger_description}",
+            "",
             "## Verdict",
             verdict,
             sample_note,
@@ -660,6 +690,9 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
             "",
             "## Trades excluded by the challenger",
             json.dumps(excluded_metrics, indent=2, sort_keys=True),
+            "",
+            "## Changes implemented",
+            *[f"- {item}" for item in implemented_changes],
             "",
             "## Interpretation",
             "- If challenger returns and hit rate beat the champion with enough samples, tightening the gate may improve future results.",
@@ -679,6 +712,13 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
         "excluded_samples": excluded_metrics["samples"],
         "excluded_avg_signed_return": excluded_metrics["avg_signed_return"],
     }
+    changes = {
+        "verdict": verdict,
+        "champion_description": champion_description,
+        "challenger_description": challenger_description,
+        "implemented_changes": implemented_changes,
+        "threshold_label": threshold_label,
+    }
     report_path = _write_report_file(config, f"champion_challenger_{normalized_bot}", body)
     headline = f"{bot_label(normalized_bot)} Champion / Challenger"
     summary = (
@@ -694,7 +734,7 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
         summary,
         body,
         json.dumps(metrics, sort_keys=True),
-        json.dumps({"verdict": verdict}, sort_keys=True),
+        json.dumps(changes, sort_keys=True),
         bot_name=normalized_bot,
     )
     return StrategyReport(ts=ts, headline=headline, summary=summary, report_path=report_path)

@@ -61,6 +61,7 @@ GITHUB_REPOSITORY = _secret("GITHUB_REPOSITORY")
 GITHUB_WORKFLOW_ID = _secret("GITHUB_WORKFLOW_ID") or "advisor_snapshot.yml"
 GITHUB_WORKFLOW_REF = _secret("GITHUB_WORKFLOW_REF") or "main"
 LLM_TREND_CUTOFF = pd.Timestamp("2026-04-23T00:00:00Z")
+DEFAULT_WINDOW_KEY = "14d"
 
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
 st.title("Broker Bot Dashboard")
@@ -438,6 +439,16 @@ def _latest_reports_by_type(reports: list[dict]) -> dict[str, dict]:
     return latest
 
 
+def _sorted_reports_by_type(reports: list[dict], report_type: str) -> list[dict]:
+    filtered = [report for report in reports or [] if report.get("report_type") == report_type]
+    return sorted(filtered, key=lambda report: str(report.get("ts") or ""), reverse=True)
+
+
+def _report_metric(report: dict, name: str):
+    metrics = report.get("metrics") if isinstance(report.get("metrics"), dict) else {}
+    return metrics.get(name)
+
+
 def _render_system_health(snapshot_meta: dict, bots_payload: dict[str, dict]) -> None:
     st.subheader("System Health")
     health = snapshot_meta.get("health", {}) if isinstance(snapshot_meta, dict) else {}
@@ -584,6 +595,76 @@ def _render_comparison_summary(bots_payload: dict[str, dict], selected_window_ke
         st.caption("Not enough overlapping ML/LLM decisions yet to score agreement quality.")
 
 
+def _render_champion_challenger_info(bots_payload: dict[str, dict]) -> None:
+    st.subheader("Champion / Challenger Lab")
+    st.caption(
+        "Champion is the bot's current live policy. Challenger is a stricter shadow policy tested against historical outcomes before we trust it with more influence."
+    )
+    report_tabs = st.tabs([payload.get("label", name.upper()) for name, payload in bots_payload.items()])
+    for tab, (bot_name, payload) in zip(report_tabs, bots_payload.items()):
+        with tab:
+            reports = _sorted_reports_by_type(payload.get("strategy_reports", []), "champion_challenger")
+            if not reports:
+                st.caption("No Champion/Challenger reports yet. The next cloud report run will populate this panel.")
+                continue
+
+            latest = reports[0]
+            latest_changes = latest.get("changes") if isinstance(latest.get("changes"), dict) else {}
+            latest_metrics = latest.get("metrics") if isinstance(latest.get("metrics"), dict) else {}
+
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Champion Avg", _fmt_metric_pct(latest_metrics.get("champion_avg_signed_return")))
+            col2.metric("Challenger Avg", _fmt_metric_pct(latest_metrics.get("challenger_avg_signed_return")))
+            col3.metric("Champion Samples", f"{int(float(latest_metrics.get('champion_samples') or 0))}")
+            col4.metric("Challenger Samples", f"{int(float(latest_metrics.get('challenger_samples') or 0))}")
+
+            st.markdown("**Models Being Tested**")
+            st.write(latest_changes.get("champion_description") or "Champion: current selected-decision policy.")
+            st.write(latest_changes.get("challenger_description") or "Challenger: stricter confidence-gated shadow policy.")
+
+            implemented = latest_changes.get("implemented_changes")
+            if isinstance(implemented, list) and implemented:
+                st.markdown("**Changes Implemented**")
+                for item in implemented:
+                    st.markdown(f"- {item}")
+
+            history_rows = []
+            for report in reports:
+                changes = report.get("changes") if isinstance(report.get("changes"), dict) else {}
+                history_rows.append(
+                    {
+                        "Time": report.get("ts"),
+                        "Champion Avg": _report_metric(report, "champion_avg_signed_return"),
+                        "Challenger Avg": _report_metric(report, "challenger_avg_signed_return"),
+                        "Champion Samples": _report_metric(report, "champion_samples"),
+                        "Challenger Samples": _report_metric(report, "challenger_samples"),
+                        "Excluded Avg": _report_metric(report, "excluded_avg_signed_return"),
+                        "Threshold": _report_metric(report, "threshold"),
+                        "Verdict": changes.get("verdict") or report.get("summary", ""),
+                    }
+                )
+            history_df = pd.DataFrame(history_rows)
+            for column in ["Champion Avg", "Challenger Avg", "Excluded Avg", "Threshold", "Champion Samples", "Challenger Samples"]:
+                if column in history_df.columns:
+                    history_df[column] = pd.to_numeric(history_df[column], errors="coerce")
+            st.dataframe(history_df, use_container_width=True, hide_index=True)
+
+            labels = [
+                f"{report.get('ts', 'unknown')} - {str(report.get('summary', ''))[:90]}"
+                for report in reports
+            ]
+            selected_idx = st.selectbox(
+                "Historical report",
+                range(len(reports)),
+                format_func=lambda idx, labels=labels: labels[idx],
+                key=f"champion_challenger_history_{bot_name}",
+            )
+            selected_report = reports[int(selected_idx)]
+            with st.expander("Show selected historical report", expanded=False):
+                st.write(selected_report.get("summary", ""))
+                st.markdown(selected_report.get("body", ""))
+
+
 def _render_risk_panel(bots_payload: dict[str, dict], selected_window_key: str) -> None:
     st.subheader("Risk Cockpit")
     window = WINDOW_OPTIONS[selected_window_key]
@@ -716,7 +797,12 @@ _render_system_health(snapshot_meta, bots_payload)
 st.subheader("Trend Graph")
 control_col1, control_col2, control_col3 = st.columns([1, 1.4, 1.6])
 with control_col1:
-    selected_window_key = st.selectbox("Date range", list(WINDOW_OPTIONS.keys()), index=4)
+    window_keys = list(WINDOW_OPTIONS.keys())
+    selected_window_key = st.selectbox(
+        "Date range",
+        window_keys,
+        index=window_keys.index(DEFAULT_WINDOW_KEY) if DEFAULT_WINDOW_KEY in window_keys else 0,
+    )
 with control_col2:
     graph_mode = st.radio(
         "Graph scale",
@@ -883,6 +969,7 @@ if excluded_labels:
     st.caption(f"No recent data in the selected date range for: {', '.join(excluded_labels)}")
 
 _render_risk_panel(bots_payload, selected_window_key)
+_render_champion_challenger_info(bots_payload)
 _render_report_cockpit(bots_payload)
 _render_decision_explorer(bots_payload)
 

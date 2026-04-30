@@ -248,6 +248,108 @@ def _coach_report_body(coach_report: dict) -> str:
     return "\n".join(lines).strip() + "\n"
 
 
+def _fmt_signed_return(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    return f"{float(value):+.2%}"
+
+
+def _short_note(value: object, limit: int = 180) -> str:
+    text = " ".join(str(value or "").split())
+    if not text:
+        return "No rationale captured."
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3].rstrip() + "..."
+
+
+def _specific_fallback_coach_report(recent_rows: list[tuple], evaluated_now_count: int) -> dict:
+    if not recent_rows:
+        return {
+            "headline": "LLM Coach Report",
+            "summary": (
+                "No mature LLM decisions are available yet. The coach is requiring testable theses, explicit invalidation points, "
+                "and concrete expected upside/downside before the Trader acts."
+            ),
+            "strengths": [
+                "No mature wins are available yet, so the useful behavior to preserve is disciplined evidence capture: named catalyst, contrary evidence, and risk note for every trade."
+            ],
+            "mistakes": [
+                "No mature losses are available yet, so the main current failure mode would be accepting vague theses that cannot be reviewed later."
+            ],
+            "adjustments": [
+                "For every proposed trade, require one concrete catalyst, one disconfirming fact, one invalidation condition, and a quantified upside/downside estimate."
+            ],
+            "trader_guidance": (
+                "Do not trade a name unless the analyst memo names a catalyst, a contrary fact, and an invalidation condition that can be checked after the horizon."
+            ),
+        }
+
+    winners = sorted([row for row in recent_rows if float(row[10]) > 0], key=lambda row: float(row[10]), reverse=True)
+    losers = sorted([row for row in recent_rows if float(row[10]) <= 0], key=lambda row: float(row[10]))
+    best = winners[0] if winners else None
+    worst = losers[0] if losers else None
+
+    summary_bits = [f"Reviewed {len(recent_rows)} mature LLM decisions and evaluated {evaluated_now_count} new outcomes this run."]
+    if best:
+        summary_bits.append(f"Best recent decision: {best[1]} {best[2]} returned {_fmt_signed_return(best[10])}.")
+    if worst:
+        summary_bits.append(f"Worst recent decision: {worst[1]} {worst[2]} returned {_fmt_signed_return(worst[10])}.")
+
+    strengths: list[str] = []
+    for row in winners[:3]:
+        strengths.append(
+            f"{row[1]} {row[2]} worked with signed return {_fmt_signed_return(row[10])}"
+            f"{' and alpha ' + _fmt_signed_return(row[11]) if row[11] is not None else ''}. Original rationale: {_short_note(row[6])}"
+        )
+    if not strengths:
+        strengths.append("No recent mature LLM trade had a positive signed return; preserve caution and avoid expanding risk until a repeatable winner pattern appears.")
+
+    mistakes: list[str] = []
+    for row in losers[:3]:
+        mistakes.append(
+            f"{row[1]} {row[2]} missed with signed return {_fmt_signed_return(row[10])}"
+            f"{' and alpha ' + _fmt_signed_return(row[11]) if row[11] is not None else ''}. Original rationale to challenge next time: {_short_note(row[6])}"
+        )
+    if not mistakes:
+        mistakes.append("No recent mature losses were recorded; the next risk is overgeneralizing from a small set of wins.")
+
+    adjustments = []
+    if worst:
+        adjustments.append(
+            f"Before repeating a setup like {worst[1]} {worst[2]}, require the Trader to name what would make the thesis wrong and let the Skeptic veto if that evidence is already present."
+        )
+    if best:
+        adjustments.append(
+            f"Preserve the useful pattern from {best[1]} {best[2]} only when the new memo has a similarly concrete catalyst/risk balance, not merely a similar direction."
+        )
+    adjustments.append("If expected upside is not clearly larger than expected downside, prefer HOLD and record why the pass was made.")
+
+    guidance_symbols = [str(row[1]) for row in [item for item in [best, worst] if item is not None]]
+    trader_guidance = (
+        f"Use the latest concrete lessons from {', '.join(guidance_symbols)}: demand symbol-specific catalyst, contrary evidence, invalidation point, and quantified upside/downside. "
+        "Avoid generic confidence language; if those four items are weak, choose HOLD."
+        if guidance_symbols
+        else "Demand symbol-specific catalyst, contrary evidence, invalidation point, and quantified upside/downside. If those four items are weak, choose HOLD."
+    )
+
+    return {
+        "headline": "LLM Coach Report",
+        "summary": " ".join(summary_bits),
+        "strengths": strengths,
+        "mistakes": mistakes,
+        "adjustments": adjustments,
+        "trader_guidance": trader_guidance,
+    }
+
+
+def _coach_symbol_mentions(coach_report: dict, symbols: set[str]) -> int:
+    if not symbols:
+        return 0
+    haystack = json.dumps(coach_report, sort_keys=True).upper()
+    return sum(1 for symbol in symbols if symbol.upper() in haystack)
+
+
 def generate_llm_coach_report(config: Config) -> dict:
     cutoff_ts = (datetime.now(timezone.utc) - timedelta(days=max(config.prediction_horizon_days, 1) + 1)).isoformat()
     pending_rows = read_pending_decision_logs(config.db_path, cutoff_ts=cutoff_ts, limit=1200, bot_name=LLM_BOT_NAME)
@@ -256,19 +358,13 @@ def generate_llm_coach_report(config: Config) -> dict:
         log_decision_outcomes(config.db_path, evaluated_rows)
 
     recent_outcomes = read_recent_evaluated_decisions(config.db_path, limit=25, bot_name=LLM_BOT_NAME)
-    fallback = {
-        "headline": "LLM Coach Report",
-        "summary": (
-            f"Reviewed {len(recent_outcomes)} mature LLM decisions and evaluated {len(evaluated_rows)} new outcomes this run."
-            if recent_outcomes or evaluated_rows
-            else "The LLM bot does not have enough mature outcomes yet, so the coach is staying cautious."
-        ),
-        "strengths": ["Use concise theses tied to actual evidence rather than broad market storytelling."],
-        "mistakes": ["Avoid overreacting to a small number of recent wins or losses."],
-        "adjustments": ["Prefer clearer setups where the thesis, catalyst, and risk are all explicit."],
-        "trader_guidance": "Trade only when the analyst memo is specific, balanced, and supported by recent evidence.",
-    }
-    if not recent_outcomes:
+    recent_selected = [
+        row
+        for row in read_recent_selected_decisions(config.db_path, limit=40, bot_name=LLM_BOT_NAME)
+        if row[10] is not None
+    ]
+    fallback = _specific_fallback_coach_report(recent_selected, len(evaluated_rows))
+    if not recent_selected:
         body = _coach_report_body(fallback)
         log_strategy_report(
             config.db_path,
@@ -302,24 +398,34 @@ def generate_llm_coach_report(config: Config) -> dict:
         "objective": "Coach the LLM trader based on recent paper-trading outcomes.",
         "recent_outcomes": [
             {
-                "symbol": row[0],
-                "side": row[1],
-                "evaluated_ts": row[2],
-                "realized_return": _round_pct(row[3]),
-                "signed_return": _round_pct(row[4]),
-                "spy_return": _round_pct(row[5]),
-                "beat_spy": _round_pct(row[6]),
-                "components": _load_components(row[7]),
+                "decision_ts": row[0],
+                "symbol": row[1],
+                "side": row[2],
+                "base_score": _round_pct(row[3]),
+                "final_score": _round_pct(row[4]),
+                "components": _load_components(row[5]),
+                "rationale": row[6],
+                "evaluated_ts": row[7],
+                "horizon_days": row[8],
+                "realized_return": _round_pct(row[9]),
+                "signed_return": _round_pct(row[10]),
+                "beat_spy": _round_pct(row[11]),
+                "outcome_label": row[12],
             }
-            for row in recent_outcomes[:18]
+            for row in recent_selected[:18]
+        ],
+        "requirements": [
+            "Every strength, mistake, and adjustment should mention a concrete ticker when recent outcomes exist.",
+            "Tie feedback to signed_return, beat_spy, rationale, side, or component mix.",
+            "Do not write generic advice such as make better trades, be selective, or use good risk management unless paired with a concrete ticker-specific reason.",
         ],
         "output_format": {
             "headline": "short title",
-            "summary": "short paragraph",
-            "strengths": ["bullet"],
-            "mistakes": ["bullet"],
-            "adjustments": ["bullet"],
-            "trader_guidance": "concise guidance for tomorrow's trader prompt",
+            "summary": "short paragraph naming the biggest win and/or loss",
+            "strengths": ["ticker-specific bullet"],
+            "mistakes": ["ticker-specific bullet"],
+            "adjustments": ["ticker-specific bullet"],
+            "trader_guidance": "concise ticker-aware guidance for tomorrow's trader prompt",
         },
     }
     response = call_json_llm(
@@ -327,7 +433,8 @@ def generate_llm_coach_report(config: Config) -> dict:
         system_prompt=(
             "You are the Coach for a paper-trading bot. "
             "Return JSON only. Identify what the trader is doing well, what is going poorly, and what should change next. "
-            "Be specific, evidence-bound, and constructive. Recommend behavior changes only when multiple outcomes support the pattern."
+            "Be specific, evidence-bound, and constructive. Name tickers and outcomes. "
+            "Avoid platitudes. Recommend behavior changes only when the supplied outcomes support the pattern."
         ),
         payload=payload,
         max_output_tokens=1800,
@@ -341,6 +448,9 @@ def generate_llm_coach_report(config: Config) -> dict:
         "adjustments": _safe_text_list(response.get("adjustments", [])) or fallback["adjustments"],
         "trader_guidance": str(response.get("trader_guidance", fallback["trader_guidance"])).strip() or fallback["trader_guidance"],
     }
+    recent_symbols = {str(row[1]).upper() for row in recent_selected[:10]}
+    if recent_symbols and _coach_symbol_mentions(coach_report, recent_symbols) == 0:
+        coach_report = fallback
     body = _coach_report_body(coach_report)
     log_strategy_report(
         config.db_path,
