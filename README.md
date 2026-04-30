@@ -45,11 +45,12 @@ python3 scripts/setup_env.py
 - `Stock Selector`: chooses the watchlist
 - `Analyst`: writes daily memos for each watchlist stock, including catalysts, contrary evidence, time horizon, and confidence
 - `Trader`: reads the analyst memos plus coach guidance and makes today’s long/short decisions with structured conviction and expected upside/downside
+- `Skeptic`: challenges the Trader before execution, reducing or vetoing weakly supported ideas
 - `Coach`: reviews mature outcomes and writes the next feedback report for the trader, avoiding behavior changes based on one-off results
 
 Both bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate Alpaca paper accounts.
 
-Reporting: markdown reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots.
+Reporting: markdown reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots. The report loop includes learning, post-trade attribution, and champion/challenger shadow comparisons.
 
 ## Commands
 
@@ -99,11 +100,20 @@ Generate a strategy report explaining recent decisions, lessons, and proposed ch
 python3 -m broker_bot.cli strategy-report
 ```
 
+Generate post-trade attribution and champion/challenger reports:
+
+```bash
+python3 -m broker_bot.cli attribution-report
+python3 -m broker_bot.cli champion-report
+```
+
 Refresh the LLM bot reporting/coaching loop:
 
 ```bash
 python3 -m broker_bot.cli review-decisions-llm
 python3 -m broker_bot.cli strategy-report-llm
+python3 -m broker_bot.cli attribution-report-llm
+python3 -m broker_bot.cli champion-report-llm
 ```
 
 Generate a paper-only options scaffold report that turns the strongest stock ideas into defined-risk vertical spread candidates:
@@ -214,9 +224,13 @@ python3 -m broker_bot.cli snapshot
 python3 -m broker_bot.cli review-decisions
 python3 -m broker_bot.cli advisor-report
 python3 -m broker_bot.cli strategy-report
+python3 -m broker_bot.cli attribution-report
+python3 -m broker_bot.cli champion-report
 python3 -m broker_bot.cli rebalance-llm
 python3 -m broker_bot.cli snapshot-llm
 python3 -m broker_bot.cli review-decisions-llm
+python3 -m broker_bot.cli attribution-report-llm
+python3 -m broker_bot.cli champion-report-llm
 python3 -m broker_bot.cli options-report
 python3 scripts/build_snapshot.py
 ```
@@ -251,11 +265,12 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - The bot uses long/short signals with inverse-volatility sizing and an SPY regime filter (reduces leverage in bear regimes).
 - The base model is a Random Forest regressor on momentum/volatility features with market context.
 - The live signal stack can blend in Alpaca snapshots, market movers, most-active names, recent Alpaca news headlines, symbol memory, and optional LLM watchlist judgments.
-- The new LLM bot keeps its own watchlist, analyst daily reports, trader daily reports, and coach reports.
+- The LLM bot keeps its own watchlist, analyst daily reports, Skeptic reviews, trader daily reports, and coach reports.
 - The backtest uses walk-forward retraining, weekly rebalancing, and transaction cost estimates for realism.
 - The backtest now better matches the live ensemble by simulating bounded overlay components offline from historical price/volume structure.
 - Advisor overrides are stored in `data/advisor_overrides.json` and applied at startup when enabled.
 - Learned ensemble weights are stored in `data/learned_policy.json` and are intentionally kept bounded.
+- Champion/challenger reports are shadow evaluations. They compare stricter gates against recent outcomes, but they do not automatically promote a new policy.
 - Reports are written to `data/reports/`.
 - The dashboard APIs/UI now expose recent selected decisions, component contributions, and later outcomes.
 - Optional sector exposure critiques use `data/sector_map.csv` (set via `SECTOR_MAP_PATH`).
@@ -263,6 +278,9 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 ### Risk & Liquidity Controls
 
 - `MIN_PRICE` and `MIN_DOLLAR_VOL` filter illiquid or low-priced symbols.
+- `MIN_SIGNAL_ABS_SCORE` gates weak ML-style signals before sizing; set it to `0` to disable this confidence gate.
+- `LLM_MIN_CONVICTION` removes low-conviction LLM Trader decisions before Skeptic review.
+- `LLM_SKEPTIC_ENABLED=1` enables the LLM Skeptic; `LLM_SKEPTIC_VETO_ENABLED=1` lets it block weak trades before execution.
 - `VOL_TARGET` + `VOL_WINDOW` scales leverage down in high-volatility regimes.
 - `MAX_DRAWDOWN`, `MIN_LEVERAGE`, and `DRAWDOWN_WINDOW` apply drawdown guardrails.
 - `MAX_SECTOR_EXPOSURE_PCT` caps total absolute exposure in one mapped sector.

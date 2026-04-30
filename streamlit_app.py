@@ -636,7 +636,19 @@ def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
                 st.caption("No reports yet.")
                 continue
             latest_by_type = _latest_reports_by_type(reports)
-            report_types = ["strategy", "watchlist", "learning", "analyst_daily", "trader_daily", "coach", "llm_daily", "options_scaffold"]
+            report_types = [
+                "strategy",
+                "watchlist",
+                "learning",
+                "attribution",
+                "champion_challenger",
+                "analyst_daily",
+                "trader_daily",
+                "skeptic",
+                "coach",
+                "llm_daily",
+                "options_scaffold",
+            ]
             for report_type in report_types:
                 report = latest_by_type.get(report_type)
                 if not report:

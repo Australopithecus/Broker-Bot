@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
@@ -517,6 +517,43 @@ def _target_weights(
     return weights
 
 
+def _apply_confidence_gate(signals: list[Signal], min_abs_score: float) -> tuple[list[Signal], list[dict[str, float | str]]]:
+    if min_abs_score <= 0:
+        return signals, []
+
+    gated_signals: list[Signal] = []
+    gated_details: list[dict[str, float | str]] = []
+    for signal in signals:
+        if signal.selected and signal.side in {"LONG", "SHORT"} and abs(float(signal.score)) < min_abs_score:
+            components = dict(signal.components or {})
+            components["confidence_gate_min_abs_score"] = float(min_abs_score)
+            rationale = (signal.rationale or "").strip()
+            gate_note = (
+                f"Confidence gate changed this to HOLD because score {float(signal.score):+.4f} "
+                f"was below minimum {min_abs_score:.4f}."
+            )
+            gated_signals.append(
+                replace(
+                    signal,
+                    side="HOLD",
+                    selected=False,
+                    components=components,
+                    rationale=f"{rationale} {gate_note}".strip(),
+                )
+            )
+            gated_details.append(
+                {
+                    "symbol": signal.symbol,
+                    "side": signal.side,
+                    "score": float(signal.score),
+                    "min_abs_score": float(min_abs_score),
+                }
+            )
+            continue
+        gated_signals.append(signal)
+    return gated_signals, gated_details
+
+
 def execute_signals(
     config: Config,
     latest: pd.DataFrame,
@@ -546,6 +583,7 @@ def execute_signals(
         leverage *= max(config.max_drawdown / dd, 0.1)
 
     leverage = max(config.min_leverage, min(leverage, config.gross_leverage))
+    signals, confidence_gated = _apply_confidence_gate(signals, config.min_signal_abs_score)
 
     weights = _target_weights(
         signals,
@@ -581,6 +619,9 @@ def execute_signals(
     decision_context["selected_weights"] = {symbol: float(weight) for symbol, weight in weights.items()}
     decision_context["shorting_enabled"] = bool(shorting_enabled)
     decision_context["portfolio_risk"] = risk_summary
+    decision_context["min_signal_abs_score"] = float(config.min_signal_abs_score)
+    decision_context["confidence_gated_count"] = len(confidence_gated)
+    decision_context["confidence_gated"] = confidence_gated
 
     equity = float(account.equity)
 

@@ -21,7 +21,7 @@ from .logging_db import (
     log_signals,
     log_trades,
 )
-from .learning import generate_strategy_report, review_and_learn
+from .learning import generate_attribution_report, generate_champion_challenger_report, generate_strategy_report, review_and_learn
 from .pipeline import train_on_history, run_backtest_on_history
 from .data import fetch_latest_close
 from .trader import caretaker_portfolio, rebalance_portfolio, snapshot_equity, snapshot_positions
@@ -379,6 +379,38 @@ def cmd_strategy_report_llm(args: argparse.Namespace) -> None:
     print(generate_llm_bot_status_report(config))
 
 
+def cmd_attribution_report(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_attribution_report(config, bot_name=ML_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
+def cmd_attribution_report_llm(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_attribution_report(config, bot_name=LLM_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
+def cmd_champion_report(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_champion_challenger_report(config, bot_name=ML_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
+def cmd_champion_report_llm(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_champion_challenger_report(config, bot_name=LLM_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
 def cmd_options_report(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
@@ -410,6 +442,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("review-decisions-llm")
     subparsers.add_parser("strategy-report")
     subparsers.add_parser("strategy-report-llm")
+    subparsers.add_parser("attribution-report")
+    subparsers.add_parser("attribution-report-llm")
+    subparsers.add_parser("champion-report")
+    subparsers.add_parser("champion-report-llm")
     subparsers.add_parser("options-report")
 
     return parser
@@ -456,6 +492,14 @@ def main() -> None:
             cmd_strategy_report(args)
         elif args.command == "strategy-report-llm":
             cmd_strategy_report_llm(args)
+        elif args.command == "attribution-report":
+            cmd_attribution_report(args)
+        elif args.command == "attribution-report-llm":
+            cmd_attribution_report_llm(args)
+        elif args.command == "champion-report":
+            cmd_champion_report(args)
+        elif args.command == "champion-report-llm":
+            cmd_champion_report_llm(args)
         elif args.command == "options-report":
             cmd_options_report(args)
     except RuntimeError as exc:

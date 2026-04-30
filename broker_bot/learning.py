@@ -505,6 +505,201 @@ def _component_metrics(db_path: str, limit: int = 300, bot_name: str = "ml") -> 
     return metrics
 
 
+def _write_report_file(config: Config, prefix: str, body: str) -> str:
+    reports_dir = Path(config.reports_dir)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    report_path = reports_dir / f"{prefix}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.md"
+    report_path.write_text(body, encoding="utf-8")
+    return str(report_path)
+
+
+def _signed_return_metrics(values: list[float], alphas: list[float]) -> dict[str, float]:
+    return {
+        "samples": float(len(values)),
+        "hit_rate": sum(1 for value in values if value > 0) / len(values) if values else 0.0,
+        "avg_signed_return": sum(values) / len(values) if values else 0.0,
+        "avg_beat_spy": sum(alphas) / len(alphas) if alphas else 0.0,
+    }
+
+
+def generate_attribution_report(config: Config, bot_name: str = "ml") -> StrategyReport:
+    normalized_bot = normalize_bot_name(bot_name)
+    recent_rows = read_recent_evaluated_decisions(config.db_path, limit=400, bot_name=normalized_bot)
+    component_metrics = _component_metrics(config.db_path, limit=400, bot_name=normalized_bot)
+    signed_returns = [float(row[4]) for row in recent_rows]
+    alphas = [float(row[6]) for row in recent_rows if row[6] is not None]
+    metrics = _signed_return_metrics(signed_returns, alphas)
+    metrics["component_count"] = float(len(component_metrics))
+
+    by_side = _outcome_breakdown(recent_rows)
+    winners = sorted(recent_rows, key=lambda row: float(row[4]), reverse=True)[:5]
+    losers = sorted(recent_rows, key=lambda row: float(row[4]))[:5]
+    helpful = sorted(component_metrics.items(), key=lambda item: float(item[1].get("edge", 0.0)), reverse=True)[:5]
+    harmful = sorted(component_metrics.items(), key=lambda item: float(item[1].get("edge", 0.0)))[:5]
+    helpful_lines = [
+        f"- {name.replace('_adjustment', '').replace('_', ' ')}: edge={stats.get('edge', 0.0):+.2%}, "
+        f"hit rate={stats.get('hit_rate', 0.0):.1%}, samples={int(stats.get('samples', 0.0))}"
+        for name, stats in helpful
+    ] or ["- Not enough component data yet."]
+    harmful_lines = [
+        f"- {name.replace('_adjustment', '').replace('_', ' ')}: edge={stats.get('edge', 0.0):+.2%}, "
+        f"hit rate={stats.get('hit_rate', 0.0):.1%}, samples={int(stats.get('samples', 0.0))}"
+        for name, stats in harmful
+    ] or ["- Not enough component data yet."]
+    winner_lines = [
+        f"- {symbol} {side} evaluated {evaluated_ts}: signed={signed_return:.2%}, raw={realized_return:.2%}"
+        for symbol, side, evaluated_ts, realized_return, signed_return, _, _, _ in winners
+    ] or ["- No evaluated winners yet."]
+    loser_lines = [
+        f"- {symbol} {side} evaluated {evaluated_ts}: signed={signed_return:.2%}, raw={realized_return:.2%}"
+        for symbol, side, evaluated_ts, realized_return, signed_return, _, _, _ in losers
+    ] or ["- No evaluated losses yet."]
+
+    body = "\n".join(
+        [
+            f"# {bot_label(normalized_bot)} Post-Trade Attribution",
+            "",
+            f"Generated at {datetime.now(timezone.utc).isoformat()}",
+            "",
+            "This report asks a simple question: which ingredients in the bot's decisions have actually been associated with profitable outcomes so far?",
+            "",
+            "## Overall outcome attribution",
+            f"- Evaluated decisions: {len(recent_rows)}",
+            f"- Hit rate: {metrics['hit_rate']:.1%}",
+            f"- Average signed return: {metrics['avg_signed_return']:.2%}",
+            f"- Average alpha versus SPY: {metrics['avg_beat_spy']:.2%}",
+            "",
+            "## Side breakdown",
+            json.dumps(by_side or {"status": "not enough outcomes yet"}, indent=2, sort_keys=True),
+            "",
+            "## Components most associated with better outcomes",
+            *helpful_lines,
+            "",
+            "## Components most associated with worse outcomes",
+            *harmful_lines,
+            "",
+            "## Best recent decisions",
+            *winner_lines,
+            "",
+            "## Worst recent decisions",
+            *loser_lines,
+        ]
+    )
+    ts = datetime.now(timezone.utc).isoformat()
+    report_path = _write_report_file(config, f"attribution_{normalized_bot}", body)
+    headline = f"{bot_label(normalized_bot)} Post-Trade Attribution"
+    summary = (
+        f"Reviewed {len(recent_rows)} evaluated decisions; hit rate {metrics['hit_rate']:.1%}, "
+        f"average signed return {metrics['avg_signed_return']:.2%}."
+    )
+    log_strategy_report(
+        config.db_path,
+        ts,
+        "attribution",
+        headline,
+        summary,
+        body,
+        json.dumps(metrics, sort_keys=True),
+        json.dumps({}, sort_keys=True),
+        bot_name=normalized_bot,
+    )
+    return StrategyReport(ts=ts, headline=headline, summary=summary, report_path=report_path)
+
+
+def _selected_rows_metrics(rows: list[tuple]) -> dict[str, float]:
+    signed_returns = [float(row[10]) for row in rows if row[10] is not None]
+    alphas = [float(row[11]) for row in rows if row[11] is not None]
+    return _signed_return_metrics(signed_returns, alphas)
+
+
+def generate_champion_challenger_report(config: Config, bot_name: str = "ml") -> StrategyReport:
+    normalized_bot = normalize_bot_name(bot_name)
+    rows = read_recent_selected_decisions(config.db_path, limit=500, bot_name=normalized_bot)
+    evaluated = [row for row in rows if row[10] is not None]
+    if normalized_bot == LLM_BOT_NAME:
+        threshold = max(float(config.llm_min_conviction), 0.0)
+        threshold_label = "LLM minimum conviction"
+    else:
+        threshold = max(float(config.min_signal_abs_score), 0.0)
+        threshold_label = "minimum absolute signal score"
+
+    challenger = [row for row in evaluated if abs(float(row[4])) >= threshold]
+    excluded = [row for row in evaluated if abs(float(row[4])) < threshold]
+    champion_metrics = _selected_rows_metrics(evaluated)
+    challenger_metrics = _selected_rows_metrics(challenger)
+    excluded_metrics = _selected_rows_metrics(excluded)
+
+    sample_note = ""
+    if int(challenger_metrics["samples"]) < 10:
+        verdict = "Too early to promote the challenger because it has fewer than 10 evaluated samples."
+        sample_note = "The dashboard should treat this as directional evidence, not proof."
+    elif challenger_metrics["avg_signed_return"] > champion_metrics["avg_signed_return"] + 0.001:
+        verdict = "The challenger is outperforming the current champion on recent evaluated decisions."
+    else:
+        verdict = "The challenger has not yet shown enough improvement over the current champion."
+
+    body = "\n".join(
+        [
+            f"# {bot_label(normalized_bot)} Champion / Challenger",
+            "",
+            f"Generated at {datetime.now(timezone.utc).isoformat()}",
+            "",
+            "Champion is the bot's current selected-decision policy. Challenger is a stricter shadow policy that only counts trades passing the current confidence threshold.",
+            "",
+            f"Threshold used: {threshold_label} = {threshold:.4f}",
+            "",
+            "## Verdict",
+            verdict,
+            sample_note,
+            "",
+            "## Champion metrics",
+            json.dumps(champion_metrics, indent=2, sort_keys=True),
+            "",
+            "## Challenger metrics",
+            json.dumps(challenger_metrics, indent=2, sort_keys=True),
+            "",
+            "## Trades excluded by the challenger",
+            json.dumps(excluded_metrics, indent=2, sort_keys=True),
+            "",
+            "## Interpretation",
+            "- If challenger returns and hit rate beat the champion with enough samples, tightening the gate may improve future results.",
+            "- If excluded trades perform well, the gate may be too strict and should be relaxed.",
+            "- This is shadow evaluation only; it reports what would have happened without automatically changing the strategy.",
+        ]
+    )
+    ts = datetime.now(timezone.utc).isoformat()
+    metrics = {
+        "threshold": threshold,
+        "champion_samples": champion_metrics["samples"],
+        "champion_hit_rate": champion_metrics["hit_rate"],
+        "champion_avg_signed_return": champion_metrics["avg_signed_return"],
+        "challenger_samples": challenger_metrics["samples"],
+        "challenger_hit_rate": challenger_metrics["hit_rate"],
+        "challenger_avg_signed_return": challenger_metrics["avg_signed_return"],
+        "excluded_samples": excluded_metrics["samples"],
+        "excluded_avg_signed_return": excluded_metrics["avg_signed_return"],
+    }
+    report_path = _write_report_file(config, f"champion_challenger_{normalized_bot}", body)
+    headline = f"{bot_label(normalized_bot)} Champion / Challenger"
+    summary = (
+        f"Compared current policy with a stricter confidence-gated challenger. "
+        f"Champion avg {champion_metrics['avg_signed_return']:.2%}; "
+        f"challenger avg {challenger_metrics['avg_signed_return']:.2%}."
+    )
+    log_strategy_report(
+        config.db_path,
+        ts,
+        "champion_challenger",
+        headline,
+        summary,
+        body,
+        json.dumps(metrics, sort_keys=True),
+        json.dumps({"verdict": verdict}, sort_keys=True),
+        bot_name=normalized_bot,
+    )
+    return StrategyReport(ts=ts, headline=headline, summary=summary, report_path=report_path)
+
+
 def _propose_weight_updates(
     config: Config,
     component_metrics: dict[str, dict[str, float]],

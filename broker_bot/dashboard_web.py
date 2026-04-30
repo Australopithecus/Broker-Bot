@@ -1265,7 +1265,7 @@ async function loadStrategy() {
     return;
   }
   container.innerHTML = '';
-  const featuredTypes = new Set(['watchlist', 'options_scaffold']);
+  const featuredTypes = new Set(['watchlist', 'skeptic', 'attribution', 'champion_challenger', 'options_scaffold']);
   reports.filter(report => featuredTypes.has(report.report_type)).slice(0, 2).forEach(report => {
     const div = document.createElement('div');
     div.className = 'card';

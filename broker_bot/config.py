@@ -42,6 +42,10 @@ class Config:
     rebalance_top_k: int
     min_long_return: float
     max_short_return: float
+    min_signal_abs_score: float
+    llm_min_conviction: float
+    llm_skeptic_enabled: bool
+    llm_skeptic_veto_enabled: bool
     max_position_pct: float
     gross_leverage: float
     bear_leverage: float
@@ -170,6 +174,10 @@ def load_config() -> Config:
         rebalance_top_k=_advisor_override_int("rebalance_top_k", int(os.getenv("REBALANCE_TOP_K", "40"))),
         min_long_return=_advisor_override("min_long_return", float(os.getenv("MIN_LONG_RETURN", "0.001"))),
         max_short_return=_advisor_override("max_short_return", float(os.getenv("MAX_SHORT_RETURN", "-0.001"))),
+        min_signal_abs_score=_advisor_override("min_signal_abs_score", float(os.getenv("MIN_SIGNAL_ABS_SCORE", "0.0015"))),
+        llm_min_conviction=float(os.getenv("LLM_MIN_CONVICTION", "0.55")),
+        llm_skeptic_enabled=os.getenv("LLM_SKEPTIC_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
+        llm_skeptic_veto_enabled=os.getenv("LLM_SKEPTIC_VETO_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
         max_position_pct=_advisor_override("max_position_pct", float(os.getenv("MAX_POSITION_PCT", "0.06"))),
         gross_leverage=_advisor_override("gross_leverage", float(os.getenv("GROSS_LEVERAGE", "1.5"))),
         bear_leverage=_advisor_override("bear_leverage", float(os.getenv("BEAR_LEVERAGE", "0.6"))),

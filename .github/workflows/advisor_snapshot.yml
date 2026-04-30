@@ -63,6 +63,10 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_ENABLED: ${{ secrets.LLM_ENABLED }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          MIN_SIGNAL_ABS_SCORE: ${{ secrets.MIN_SIGNAL_ABS_SCORE }}
+          LLM_MIN_CONVICTION: ${{ secrets.LLM_MIN_CONVICTION }}
+          LLM_SKEPTIC_ENABLED: ${{ secrets.LLM_SKEPTIC_ENABLED }}
+          LLM_SKEPTIC_VETO_ENABLED: ${{ secrets.LLM_SKEPTIC_VETO_ENABLED }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
         run: |
           python - <<'PY'
@@ -78,6 +82,10 @@ jobs:
               "OPENAI_API_KEY",
               "LLM_ENABLED",
               "LLM_MODEL",
+              "MIN_SIGNAL_ABS_SCORE",
+              "LLM_MIN_CONVICTION",
+              "LLM_SKEPTIC_ENABLED",
+              "LLM_SKEPTIC_VETO_ENABLED",
               "API_TOKEN",
           ]
           missing = [name for name in required if not os.getenv(name, "").strip()]
@@ -101,6 +109,10 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_ENABLED: ${{ secrets.LLM_ENABLED }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          MIN_SIGNAL_ABS_SCORE: ${{ secrets.MIN_SIGNAL_ABS_SCORE }}
+          LLM_MIN_CONVICTION: ${{ secrets.LLM_MIN_CONVICTION }}
+          LLM_SKEPTIC_ENABLED: ${{ secrets.LLM_SKEPTIC_ENABLED }}
+          LLM_SKEPTIC_VETO_ENABLED: ${{ secrets.LLM_SKEPTIC_VETO_ENABLED }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
           UNIVERSE_PATH: data/sp500.csv
           BROKER_BOT_DB: data/broker_bot.sqlite
@@ -126,6 +138,12 @@ jobs:
             echo "MODEL_DIR=${MODEL_DIR}"
             echo "REPORTS_DIR=${REPORTS_DIR}"
             echo "LEARNED_POLICY_PATH=${LEARNED_POLICY_PATH}"
+            for name in MIN_SIGNAL_ABS_SCORE LLM_MIN_CONVICTION LLM_SKEPTIC_ENABLED LLM_SKEPTIC_VETO_ENABLED; do
+              value="${!name}"
+              if [ -n "$value" ]; then
+                echo "${name}=${value}"
+              fi
+            done
           } >> "$GITHUB_ENV"
 
       - name: Detect whether LLM bot credentials are configured
@@ -211,6 +229,14 @@ jobs:
         run: |
           python -m broker_bot.cli strategy-report
 
+      - name: Generate attribution report
+        run: |
+          python -m broker_bot.cli attribution-report
+
+      - name: Generate champion challenger report
+        run: |
+          python -m broker_bot.cli champion-report
+
       - name: Rebalance LLM paper portfolio
         if: ${{ steps.llm_bot_config.outputs.enabled == 'true' }}
         run: |
@@ -225,6 +251,16 @@ jobs:
         if: ${{ steps.llm_bot_config.outputs.enabled == 'true' }}
         run: |
           python -m broker_bot.cli review-decisions-llm
+
+      - name: Generate LLM attribution report
+        if: ${{ steps.llm_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli attribution-report-llm
+
+      - name: Generate LLM champion challenger report
+        if: ${{ steps.llm_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli champion-report-llm
 
       - name: Generate options scaffold report
         run: |

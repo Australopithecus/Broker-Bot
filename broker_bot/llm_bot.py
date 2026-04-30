@@ -57,8 +57,12 @@ def _parse_pct_value(value: object, default: float = 0.0) -> float:
     return max(0.0, parsed)
 
 
-def _safe_text_list(values: list[object], limit: int = 4) -> list[str]:
+def _safe_text_list(values: object, limit: int = 4) -> list[str]:
+    if values is None:
+        return []
     if isinstance(values, str):
+        values = [values]
+    if not isinstance(values, (list, tuple, set)):
         values = [values]
     cleaned: list[str] = []
     for value in values:
@@ -457,6 +461,223 @@ def _trader_decisions(config: Config, watchlist: list[dict], analyst_reports: li
     return decisions, str(response.get("summary", "")).strip() or "LLM trader selected today's trades from the analyst reports."
 
 
+def _apply_llm_conviction_gate(config: Config, decisions: list[dict]) -> tuple[list[dict], list[dict]]:
+    min_conviction = max(float(config.llm_min_conviction), 0.0)
+    if min_conviction <= 0:
+        return decisions, []
+
+    passed: list[dict] = []
+    gated: list[dict] = []
+    for decision in decisions:
+        conviction = float(decision.get("conviction", 0.0) or 0.0)
+        if conviction < min_conviction:
+            removed = dict(decision)
+            removed["gate_reason"] = f"Conviction {conviction:.2f} was below minimum {min_conviction:.2f}."
+            gated.append(removed)
+            continue
+        passed.append(decision)
+    return passed, gated
+
+
+def _fallback_skeptic_review(config: Config, decisions: list[dict], analyst_reports: list[dict]) -> dict:
+    analyst_by_symbol = {str(report.get("symbol", "")).upper(): report for report in analyst_reports}
+    reviews: list[dict] = []
+    for decision in decisions:
+        symbol = decision["symbol"]
+        conviction = float(decision.get("conviction", 0.0) or 0.0)
+        expected_edge = float(decision.get("expected_upside_pct", 0.0) or 0.0) - float(
+            decision.get("expected_downside_pct", 0.0) or 0.0
+        )
+        analyst_confidence = float((analyst_by_symbol.get(symbol) or {}).get("confidence", 0.5) or 0.5)
+        concerns: list[str] = []
+        approval = "approve"
+        risk_level = "low"
+        if expected_edge <= 0:
+            concerns.append("Expected upside did not clearly exceed expected downside.")
+            approval = "veto"
+            risk_level = "high"
+        elif expected_edge < 0.01:
+            concerns.append("Expected edge is positive but thin.")
+            approval = "caution"
+            risk_level = "medium"
+        if conviction < max(config.llm_min_conviction + 0.05, 0.60):
+            concerns.append("Trader conviction is only modest after the minimum gate.")
+            approval = "caution" if approval != "veto" else approval
+            risk_level = "medium" if risk_level != "high" else risk_level
+        if analyst_confidence < 0.50:
+            concerns.append("Analyst confidence is below neutral.")
+            approval = "caution" if approval != "veto" else approval
+            risk_level = "medium" if risk_level != "high" else risk_level
+        if not str(decision.get("disconfirming_evidence", "")).strip():
+            concerns.append("Trader did not provide clear disconfirming evidence.")
+            approval = "caution" if approval != "veto" else approval
+            risk_level = "medium" if risk_level != "high" else risk_level
+        reviews.append(
+            {
+                "symbol": symbol,
+                "approval": approval,
+                "risk_level": risk_level,
+                "concerns": concerns or ["No major contradiction found in the supplied evidence."],
+                "adjustment": "Proceed normally." if approval == "approve" else "Reduce conviction or skip if sizing is crowded.",
+            }
+        )
+    return {
+        "summary": "Fallback Skeptic checked edge, conviction, analyst confidence, and contradiction coverage.",
+        "reviews": reviews,
+    }
+
+
+def _skeptic_review(config: Config, decisions: list[dict], analyst_reports: list[dict], coach_report: dict) -> dict:
+    if not decisions:
+        return {"summary": "No trader decisions were available for Skeptic review.", "reviews": []}
+    if not config.llm_skeptic_enabled:
+        return {
+            "summary": "LLM Skeptic is disabled by configuration.",
+            "reviews": [
+                {
+                    "symbol": decision["symbol"],
+                    "approval": "approve",
+                    "risk_level": "not_reviewed",
+                    "concerns": ["Skeptic review disabled."],
+                    "adjustment": "No adjustment.",
+                }
+                for decision in decisions
+            ],
+        }
+
+    fallback = _fallback_skeptic_review(config, decisions, analyst_reports)
+    if not llm_is_available(config):
+        return fallback
+
+    payload = {
+        "objective": "Challenge the Trader's decisions before execution.",
+        "role": "LLM Skeptic",
+        "instructions": [
+            "Try to falsify each trade thesis using only supplied evidence.",
+            "Flag unsupported, crowded, asymmetric, or weakly timed trades.",
+            "Approve strong trades, caution weaker trades, and veto trades whose upside/downside or evidence quality is poor.",
+        ],
+        "vetoes_enabled": config.llm_skeptic_veto_enabled,
+        "coach_guidance": coach_report.get("trader_guidance", ""),
+        "analyst_reports": analyst_reports,
+        "trader_decisions": decisions,
+        "output_format": {
+            "summary": "brief explanation",
+            "reviews": [
+                {
+                    "symbol": "ticker",
+                    "approval": "approve|caution|veto",
+                    "risk_level": "low|medium|high",
+                    "concerns": ["bullet", "bullet"],
+                    "adjustment": "one sentence",
+                }
+            ],
+        },
+    }
+    response = call_json_llm(
+        config,
+        system_prompt=(
+            "You are the Skeptic for a paper-trading LLM bot. "
+            "Return JSON only. Your job is to challenge the Trader, not to be agreeable. "
+            "Use only the supplied analyst reports, trader decisions, and coach guidance. "
+            "Be concrete about what evidence is weak, stale, contradictory, or insufficient."
+        ),
+        payload=payload,
+        max_output_tokens=1800,
+    )
+    if not response:
+        return fallback
+
+    allowed = {decision["symbol"] for decision in decisions}
+    fallback_by_symbol = {review["symbol"]: review for review in fallback.get("reviews", [])}
+    reviews: list[dict] = []
+    for item in response.get("reviews", []):
+        if not isinstance(item, dict):
+            continue
+        symbol = str(item.get("symbol", "")).strip().upper()
+        if symbol not in allowed:
+            continue
+        approval = str(item.get("approval", "caution")).strip().lower()
+        if approval not in {"approve", "caution", "veto"}:
+            approval = "caution"
+        risk_level = str(item.get("risk_level", "medium")).strip().lower()
+        if risk_level not in {"low", "medium", "high"}:
+            risk_level = "medium"
+        concerns = _safe_text_list(item.get("concerns", []), limit=5)
+        reviews.append(
+            {
+                "symbol": symbol,
+                "approval": approval,
+                "risk_level": risk_level,
+                "concerns": concerns or fallback_by_symbol.get(symbol, {}).get("concerns", []),
+                "adjustment": str(item.get("adjustment", "")).strip()
+                or fallback_by_symbol.get(symbol, {}).get("adjustment", ""),
+            }
+        )
+
+    reviewed_symbols = {review["symbol"] for review in reviews}
+    for symbol, review in fallback_by_symbol.items():
+        if symbol not in reviewed_symbols:
+            reviews.append(review)
+
+    return {
+        "summary": str(response.get("summary", "")).strip() or fallback["summary"],
+        "reviews": reviews,
+    }
+
+
+def _apply_skeptic_review(config: Config, decisions: list[dict], review: dict) -> tuple[list[dict], dict]:
+    reviews_by_symbol = {str(item.get("symbol", "")).upper(): item for item in review.get("reviews", []) if isinstance(item, dict)}
+    final_decisions: list[dict] = []
+    vetoed: list[dict] = []
+    cautioned = 0
+
+    for decision in decisions:
+        symbol = decision["symbol"]
+        item = reviews_by_symbol.get(symbol, {})
+        approval = str(item.get("approval", "approve")).lower()
+        risk_level = str(item.get("risk_level", "low")).lower()
+        concerns = _safe_text_list(item.get("concerns", []), limit=5)
+        if approval == "veto" and config.llm_skeptic_veto_enabled:
+            vetoed.append(
+                {
+                    "symbol": symbol,
+                    "side": decision.get("side", ""),
+                    "reason": "; ".join(concerns) or "Skeptic vetoed the trade.",
+                }
+            )
+            continue
+
+        penalty = 0.0
+        if approval == "caution":
+            penalty = max(penalty, 0.15)
+        if risk_level == "medium":
+            penalty = max(penalty, 0.10)
+        elif risk_level == "high":
+            penalty = max(penalty, 0.25)
+
+        adjusted = dict(decision)
+        adjusted["skeptic_approval"] = approval
+        adjusted["skeptic_risk_level"] = risk_level
+        adjusted["skeptic_concerns"] = concerns
+        adjusted["skeptic_adjustment"] = str(item.get("adjustment", "")).strip()
+        adjusted["skeptic_penalty"] = penalty
+        if penalty > 0:
+            adjusted["conviction"] = max(0.05, float(adjusted.get("conviction", 0.0) or 0.0) * (1.0 - penalty))
+            cautioned += 1
+        final_decisions.append(adjusted)
+
+    action_summary = {
+        "reviewed_count": len(decisions),
+        "approved_count": sum(1 for decision in final_decisions if decision.get("skeptic_approval") == "approve"),
+        "cautioned_count": cautioned,
+        "vetoed_count": len(vetoed),
+        "vetoes_enabled": bool(config.llm_skeptic_veto_enabled),
+        "vetoed": vetoed,
+    }
+    return final_decisions, action_summary
+
+
 def _signals_from_trader(latest: pd.DataFrame, watchlist: list[dict], decisions: list[dict]) -> list[Signal]:
     vol_by_symbol = {str(row["Symbol"]): float(row.get("vol_20d", 0.0) or 0.0) for _, row in latest.iterrows()}
     watchlist_map = {row["symbol"]: row for row in watchlist}
@@ -474,11 +695,16 @@ def _signals_from_trader(latest: pd.DataFrame, watchlist: list[dict], decisions:
             rationale = f"{rationale} Contrary evidence: {decision['disconfirming_evidence']}".strip()
         if decision.get("risk_note"):
             rationale = f"{rationale} Risk: {decision['risk_note']}".strip()
+        if decision.get("skeptic_concerns"):
+            rationale = f"{rationale} Skeptic: {'; '.join(decision['skeptic_concerns'])}".strip()
         components = dict(source.get("components") or {})
         components["llm_conviction_adjustment"] = conviction * 0.001
         components["llm_expected_edge"] = (
             float(decision.get("expected_upside_pct", 0.0)) - float(decision.get("expected_downside_pct", 0.0))
         ) * 0.001
+        skeptic_penalty = float(decision.get("skeptic_penalty", 0.0) or 0.0)
+        if skeptic_penalty > 0:
+            components["llm_skeptic_penalty"] = -skeptic_penalty * 0.001
         signals.append(
             Signal(
                 symbol=symbol,
@@ -546,7 +772,49 @@ def _analyst_body(analyst_reports: list[dict], selector_summary: str) -> str:
     return "\n".join(lines).strip() + "\n"
 
 
-def _trader_body(trader_summary: str, decisions: list[dict], coach_report: dict) -> str:
+def _skeptic_body(review: dict, action_summary: dict, gated_decisions: list[dict]) -> str:
+    lines = [
+        f"# {bot_label(LLM_BOT_NAME)} Skeptic Report",
+        "",
+        str(review.get("summary", "")).strip() or "No Skeptic summary was provided.",
+        "",
+        "## Execution impact",
+        f"- Reviewed decisions: {int(action_summary.get('reviewed_count', 0))}",
+        f"- Cautioned/reduced conviction: {int(action_summary.get('cautioned_count', 0))}",
+        f"- Vetoed: {int(action_summary.get('vetoed_count', 0))}",
+        f"- Conviction-gated before Skeptic: {len(gated_decisions)}",
+        "",
+        "## Reviews",
+    ]
+    for item in review.get("reviews", []):
+        if not isinstance(item, dict):
+            continue
+        lines.extend(
+            [
+                f"- {item.get('symbol', 'UNKNOWN')}: {item.get('approval', 'unknown')} / risk={item.get('risk_level', 'unknown')}",
+                f"  Concerns: {'; '.join(_safe_text_list(item.get('concerns', []), limit=5)) or 'None recorded.'}",
+                f"  Adjustment: {item.get('adjustment') or 'No adjustment.'}",
+            ]
+        )
+    if gated_decisions:
+        lines.extend(["", "## Removed by conviction gate"])
+        for decision in gated_decisions:
+            lines.append(f"- {decision.get('symbol', 'UNKNOWN')} {decision.get('side', '')}: {decision.get('gate_reason', '')}")
+    vetoed = action_summary.get("vetoed", [])
+    if vetoed:
+        lines.extend(["", "## Vetoed before execution"])
+        for item in vetoed:
+            lines.append(f"- {item.get('symbol', 'UNKNOWN')} {item.get('side', '')}: {item.get('reason', '')}")
+    return "\n".join(lines).strip() + "\n"
+
+
+def _trader_body(
+    trader_summary: str,
+    decisions: list[dict],
+    coach_report: dict,
+    gated_decisions: list[dict] | None = None,
+    skeptic_action_summary: dict | None = None,
+) -> str:
     lines = [
         f"# {bot_label(LLM_BOT_NAME)} Trader Report",
         "",
@@ -554,6 +822,13 @@ def _trader_body(trader_summary: str, decisions: list[dict], coach_report: dict)
         "",
         "Coach guidance used:",
         coach_report.get("trader_guidance", ""),
+        "",
+        "Skeptic / gate impact:",
+        (
+            f"{int((skeptic_action_summary or {}).get('cautioned_count', 0))} cautioned, "
+            f"{int((skeptic_action_summary or {}).get('vetoed_count', 0))} vetoed, "
+            f"{len(gated_decisions or [])} below conviction threshold."
+        ),
         "",
         "## Decisions",
     ]
@@ -567,8 +842,13 @@ def _trader_body(trader_summary: str, decisions: list[dict], coach_report: dict)
                 f"  Contrary evidence: {decision.get('disconfirming_evidence') or 'Not specified'}",
                 f"  Thesis: {decision['thesis']}",
                 f"  Risk: {decision['risk_note']}",
+                f"  Skeptic: {decision.get('skeptic_approval', 'not_reviewed')} / risk={decision.get('skeptic_risk_level', 'unknown')}",
             ]
         )
+    if gated_decisions:
+        lines.extend(["", "## Removed before execution"])
+        for decision in gated_decisions:
+            lines.append(f"- {decision.get('symbol', 'UNKNOWN')} {decision.get('side', '')}: {decision.get('gate_reason', '')}")
     return "\n".join(lines).strip() + "\n"
 
 
@@ -611,9 +891,38 @@ def rebalance_llm_bot(config: Config, symbols: list[str]) -> LlmBotRunResult:
         bot_name=LLM_BOT_NAME,
     )
 
-    decisions, trader_summary = _trader_decisions(config, watchlist, analyst_reports, coach_report)
+    raw_decisions, trader_summary = _trader_decisions(config, watchlist, analyst_reports, coach_report)
+    decisions, conviction_gated = _apply_llm_conviction_gate(config, raw_decisions)
+    skeptic_review = _skeptic_review(config, decisions, analyst_reports, coach_report)
+    decisions, skeptic_action_summary = _apply_skeptic_review(config, decisions, skeptic_review)
     decisions = sorted(decisions, key=lambda item: float(item.get("conviction", 0.0)), reverse=True)
-    trader_body = _trader_body(trader_summary, decisions, coach_report)
+    skeptic_body = _skeptic_body(skeptic_review, skeptic_action_summary, conviction_gated)
+    log_strategy_report(
+        config.db_path,
+        datetime.now(timezone.utc).isoformat(),
+        "skeptic",
+        f"{bot_label(LLM_BOT_NAME)} Skeptic Report",
+        (
+            f"Reviewed {skeptic_action_summary.get('reviewed_count', 0)} trader decisions; "
+            f"cautioned {skeptic_action_summary.get('cautioned_count', 0)}, "
+            f"vetoed {skeptic_action_summary.get('vetoed_count', 0)}, "
+            f"conviction-gated {len(conviction_gated)}."
+        ),
+        skeptic_body,
+        json.dumps(
+            {
+                "reviewed_count": skeptic_action_summary.get("reviewed_count", 0),
+                "cautioned_count": skeptic_action_summary.get("cautioned_count", 0),
+                "vetoed_count": skeptic_action_summary.get("vetoed_count", 0),
+                "conviction_gated_count": len(conviction_gated),
+                "llm_min_conviction": config.llm_min_conviction,
+            },
+            sort_keys=True,
+        ),
+        json.dumps({"vetoed": skeptic_action_summary.get("vetoed", [])}, sort_keys=True),
+        bot_name=LLM_BOT_NAME,
+    )
+    trader_body = _trader_body(trader_summary, decisions, coach_report, conviction_gated, skeptic_action_summary)
     log_strategy_report(
         config.db_path,
         datetime.now(timezone.utc).isoformat(),
@@ -635,6 +944,10 @@ def rebalance_llm_bot(config: Config, symbols: list[str]) -> LlmBotRunResult:
             "analyst_reports": analyst_reports,
             "coach_report": coach_report,
             "trader_summary": trader_summary,
+            "raw_trader_decision_count": len(raw_decisions),
+            "conviction_gated": conviction_gated,
+            "skeptic_review": skeptic_review,
+            "skeptic_action_summary": skeptic_action_summary,
             "bot_name": LLM_BOT_NAME,
         }
     )
@@ -656,6 +969,8 @@ def rebalance_llm_bot(config: Config, symbols: list[str]) -> LlmBotRunResult:
         f"Selector summary: {selector_summary}",
         "",
         f"Trader summary: {trader_summary}",
+        "",
+        f"Skeptic summary: {skeptic_review.get('summary', '')}",
         "",
         f"Coach summary: {coach_report.get('summary', '')}",
         "",
