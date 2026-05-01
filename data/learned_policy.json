@@ -1,33 +1,33 @@
 {
   "component_metrics": {
     "memory_adjustment": {
-      "edge": -0.0013740831236878108,
-      "hit_rate": 0.3181818181818182,
-      "samples": 44.0
+      "edge": 0.0006557013547022227,
+      "hit_rate": 0.3269230769230769,
+      "samples": 52.0
     },
     "screener_adjustment": {
-      "edge": -0.005171385590627845,
-      "hit_rate": 0.2857142857142857,
-      "samples": 7.0
+      "edge": -0.010382378202642456,
+      "hit_rate": 0.25,
+      "samples": 8.0
     },
     "snapshot_adjustment": {
-      "edge": 0.0029730870862091007,
-      "hit_rate": 0.47435897435897434,
-      "samples": 78.0
+      "edge": 0.005046561744218417,
+      "hit_rate": 0.4883720930232558,
+      "samples": 86.0
     },
     "technical_adjustment": {
-      "edge": 0.00033878559652845866,
-      "hit_rate": 0.3974358974358974,
-      "samples": 78.0
+      "edge": 0.002405886826191179,
+      "hit_rate": 0.4186046511627907,
+      "samples": 86.0
     }
   },
-  "generated_at": "2026-04-30T22:09:25.968401+00:00",
-  "summary": "Evaluated 0 mature decisions this run; recent hit rate 52.6%, average signed return 0.36%.",
+  "generated_at": "2026-05-01T12:55:37.764023+00:00",
+  "summary": "Evaluated 0 mature decisions this run; recent hit rate 51.2%, average signed return 0.25%.",
   "weights": {
     "llm_weight": 0.8,
     "memory_weight": 0.8,
     "news_weight": 0.9,
-    "screener_weight": 0.7,
+    "screener_weight": 0.4,
     "snapshot_weight": 2.0,
     "technical_weight": 2.0
   }
