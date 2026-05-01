@@ -572,7 +572,7 @@ def _dashboard_html() -> str:
         <select id="botSelector" class="control"></select>
       </div>
       <div class="sidebar-status">
-        <div><span>Revision</span><strong id="sidebarRevision">--</strong></div>
+        <div><span>Bot Revision</span><strong id="sidebarRevision">--</strong></div>
         <div><span>Data</span><strong id="sidebarFreshness">--</strong></div>
       </div>
       <nav class="sidebar-nav">
@@ -1446,10 +1446,10 @@ async function loadStrategyBlueprint() {
   `).join('');
   container.innerHTML = `
     <div class="grid cards">
-      <div class="card"><h3>Revision</h3><div class="value">${esc(blueprint.revision || '--')}</div></div>
+      <div class="card"><h3>Bot Revision</h3><div class="value">${esc(blueprint.revision || '--')}</div></div>
       <div class="card"><h3>Updated</h3><div class="value">${esc(blueprint.revision_date || '--')}</div></div>
       <div class="card"><h3>Models</h3><div class="value">${models.length}</div></div>
-      <div class="card"><h3>Change Log</h3><div class="value">${changelog.length}</div></div>
+      <div class="card"><h3>Bot Changes</h3><div class="value">${changelog.length}</div></div>
     </div>
     <p>${esc(blueprint.summary || '')}</p>
     <details>
@@ -1465,7 +1465,7 @@ async function loadStrategyBlueprint() {
       <ul>${safety.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
     </details>
     <details>
-      <summary>Revision history</summary>
+      <summary>Bot behavior revision history</summary>
       ${changes || '<p class="muted">No changelog entries available.</p>'}
     </details>
   `;

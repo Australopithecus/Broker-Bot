@@ -152,7 +152,7 @@ def _render_sidebar_nav(
 ) -> None:
     st.sidebar.title("Broker Bot")
     st.sidebar.caption("Paper-trading research cockpit")
-    st.sidebar.metric("Revision", str(strategy_blueprint.get("revision") or "unknown"))
+    st.sidebar.metric("Bot Revision", str(strategy_blueprint.get("revision") or "unknown"))
     if snapshot_updated:
         st.sidebar.caption(f"Snapshot updated: {snapshot_updated}")
     elif DATA_URL:
@@ -623,13 +623,13 @@ def _render_strategy_blueprint(blueprint: dict) -> None:
     col1, col2, col3, col4 = st.columns(4)
     models = blueprint.get("models") if isinstance(blueprint.get("models"), list) else []
     changelog = blueprint.get("changelog") if isinstance(blueprint.get("changelog"), list) else []
-    col1.metric("Revision", str(blueprint.get("revision") or "unknown"))
+    col1.metric("Bot Revision", str(blueprint.get("revision") or "unknown"))
     col2.metric("Updated", str(blueprint.get("revision_date") or "unknown"))
     col3.metric("Models", str(len(models)))
-    col4.metric("Changelog Entries", str(len(changelog)))
+    col4.metric("Bot Changes", str(len(changelog)))
     st.write(blueprint.get("summary") or "")
 
-    with st.expander("Show model details, safety posture, and revision history", expanded=False):
+    with st.expander("Show model details, safety posture, and bot behavior revision history", expanded=False):
         model_tabs = st.tabs([str(model.get("name") or f"Model {idx + 1}") for idx, model in enumerate(models)]) if models else []
         for tab, model in zip(model_tabs, models):
             with tab:
@@ -651,7 +651,7 @@ def _render_strategy_blueprint(blueprint: dict) -> None:
             for item in safety:
                 st.markdown(f"- {item}")
 
-        st.markdown("**Revision History**")
+        st.markdown("**Bot Behavior Revision History**")
         for entry in changelog:
             st.markdown(
                 f"**Revision {entry.get('revision', 'unknown')} - {entry.get('title', 'Untitled')}**  \n"
