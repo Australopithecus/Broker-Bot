@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Any
 import json
 import os
 
@@ -20,7 +21,23 @@ from .logging_db import (
     read_latest_trades,
     read_recent_selected_decisions,
 )
+from .model_revisions import apply_model_revision, model_revision
 from .trader import snapshot_positions_with_protection
+
+
+def _strategy_report_dicts(rows: list[tuple]) -> list[dict[str, Any]]:
+    return [
+        {
+            "ts": row[0],
+            "report_type": row[1],
+            "headline": row[2],
+            "summary": row[3],
+            "body": row[4],
+            "metrics": json.loads(row[5]) if row[5] else {},
+            "changes": json.loads(row[6]) if row[6] else {},
+        }
+        for row in rows
+    ]
 
 
 def create_app(db_path: str, config: Config | None = None) -> FastAPI:
@@ -48,7 +65,21 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
             discovered.update(read_available_bot_names(db_path))
         except Exception:
             pass
-        data = [{"name": bot_name, "label": bot_label(bot_name)} for bot_name in sorted(discovered)]
+        data = []
+        for bot_name in sorted(discovered):
+            try:
+                reports = _strategy_report_dicts(read_latest_strategy_reports(db_path, limit=20, bot_name=bot_name))
+            except Exception:
+                reports = []
+            revision = model_revision(bot_name, reports)
+            data.append(
+                {
+                    "name": bot_name,
+                    "label": revision["display_label"],
+                    "base_label": revision["base_label"],
+                    "revision": revision,
+                }
+            )
         return JSONResponse({"data": data})
 
     @app.get("/api/blueprint")
@@ -182,19 +213,7 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
         _check_token(request)
         bot_name = _bot_name(request)
         rows = read_latest_strategy_reports(db_path, limit=80, bot_name=bot_name)
-        data = []
-        for row in rows:
-            data.append(
-                {
-                    "ts": row[0],
-                    "report_type": row[1],
-                    "headline": row[2],
-                    "summary": row[3],
-                    "body": row[4],
-                    "metrics": json.loads(row[5]) if row[5] else {},
-                    "changes": json.loads(row[6]) if row[6] else {},
-                }
-            )
+        data = _strategy_report_dicts(rows)
         return JSONResponse({"data": data})
 
     @app.get("/api/decisions")
@@ -243,8 +262,10 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
             trades_rows = read_latest_trades(db_path, limit=1000, bot_name=bot_name)
             decision_rows = read_recent_selected_decisions(db_path, limit=150, bot_name=bot_name)
             positions_rows = read_latest_positions(db_path, limit=500, bot_name=bot_name)
+            strategy_reports = _strategy_report_dicts(read_latest_strategy_reports(db_path, limit=30, bot_name=bot_name))
             payload = {
                 "label": bot_label(bot_name),
+                "base_label": bot_label(bot_name),
                 "equity": [
                     {"ts": row[0], "equity": row[1], "cash": row[2], "portfolio_value": row[3], "spy_value": row[4]}
                     for row in equity_rows
@@ -257,6 +278,7 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
                     {"symbol": row[0], "qty": row[1], "avg_entry": row[2], "market_value": row[3], "unreal_pl": row[4]}
                     for row in positions_rows
                 ],
+                "strategy_reports": strategy_reports,
                 "decisions": [
                     {
                         "ts": row[0],
@@ -276,6 +298,7 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
                     for row in decision_rows
                 ],
             }
+            payload = apply_model_revision(bot_name, payload)
             bots_payload[bot_name] = payload
             if equity_rows:
                 ts = equity_rows[-1][0]
@@ -572,7 +595,7 @@ def _dashboard_html() -> str:
         <select id="botSelector" class="control"></select>
       </div>
       <div class="sidebar-status">
-        <div><span>Bot Revision</span><strong id="sidebarRevision">--</strong></div>
+        <div><span>Bot Behavior Revision</span><strong id="sidebarRevision">--</strong></div>
         <div><span>Data</span><strong id="sidebarFreshness">--</strong></div>
       </div>
       <nav class="sidebar-nav">
@@ -600,7 +623,7 @@ def _dashboard_html() -> str:
     <section class="summary" aria-label="System overview">
       <div class="card"><h3>Data Freshness</h3><div class="value" id="freshness">--</div></div>
       <div class="card"><h3>Source</h3><div class="value">Local API</div></div>
-      <div class="card"><h3>Bots Seen</h3><div class="value" id="botsSeen">--</div></div>
+      <div class="card"><h3>Models Seen</h3><div class="value" id="botsSeen">--</div></div>
       <div class="card"><h3>Agreement</h3><div class="value" id="agreementRate">--</div></div>
     </section>
 
@@ -625,7 +648,7 @@ def _dashboard_html() -> str:
     <section class="grid" aria-label="Performance and holdings">
       <div class="panel" id="performance">
         <div class="panel-header">
-          <h2>Bot Performance Comparison</h2>
+          <h2>Model Performance Comparison</h2>
           <div class="inline-controls">
             <div class="choice-row" id="displaySelector"></div>
             <label class="muted" for="graphModeSelector">Scale
@@ -658,11 +681,12 @@ def _dashboard_html() -> str:
     </section>
 
     <section class="panel" id="comparison">
-      <h2>Bot Comparison</h2>
+      <h2>Model Comparison</h2>
       <table>
         <thead>
           <tr>
-            <th>Bot</th>
+            <th>Model</th>
+            <th>Revision</th>
             <th>Return</th>
             <th>Vs SPY</th>
             <th>Max DD</th>
@@ -987,6 +1011,7 @@ async function loadHealth() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${row.label || row.bot}</td>
+        <td>${[row.behavior_revision, row.revision_name || row.revision_label].filter(Boolean).join(' / ') || '--'}</td>
         <td>${pct(row.window_return)}</td>
         <td>${pct(row.window_alpha)}</td>
         <td>${pct(row.max_drawdown)}</td>
@@ -1441,15 +1466,16 @@ async function loadStrategyBlueprint() {
   const changes = changelog.map((entry, index) => `
     <details ${index === 0 ? 'open' : ''} style="margin-top: 10px;">
       <summary><strong>Revision ${esc(entry.revision)}</strong> (${esc(entry.date)}) - ${esc(entry.title)}</summary>
+      ${Array.isArray(entry.models) && entry.models.length ? `<p class="muted">Models changed: ${entry.models.map(esc).join(', ')}</p>` : ''}
       <ul>${(entry.changes || []).map(item => `<li>${esc(item)}</li>`).join('')}</ul>
     </details>
   `).join('');
   container.innerHTML = `
     <div class="grid cards">
-      <div class="card"><h3>Bot Revision</h3><div class="value">${esc(blueprint.revision || '--')}</div></div>
+      <div class="card"><h3>Bot Behavior Revision</h3><div class="value">${esc(blueprint.revision || '--')}</div></div>
       <div class="card"><h3>Updated</h3><div class="value">${esc(blueprint.revision_date || '--')}</div></div>
       <div class="card"><h3>Models</h3><div class="value">${models.length}</div></div>
-      <div class="card"><h3>Bot Changes</h3><div class="value">${changelog.length}</div></div>
+      <div class="card"><h3>Behavior Changes</h3><div class="value">${changelog.length}</div></div>
     </div>
     <p>${esc(blueprint.summary || '')}</p>
     <details>
@@ -1547,8 +1573,8 @@ async function loadStrategy() {
     return;
   }
   container.innerHTML = '';
-  const featuredTypes = new Set(['watchlist', 'skeptic', 'attribution', 'champion_challenger', 'options_scaffold']);
-  reports.filter(report => featuredTypes.has(report.report_type)).slice(0, 2).forEach(report => {
+  const featuredTypes = new Set(['model_eval', 'watchlist', 'skeptic', 'attribution', 'champion_challenger', 'options_scaffold']);
+  reports.filter(report => featuredTypes.has(report.report_type)).slice(0, 3).forEach(report => {
     const div = document.createElement('div');
     div.className = 'card';
     div.style.marginBottom = '10px';

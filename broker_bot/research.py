@@ -11,6 +11,7 @@ from alpaca.data.requests import MarketMoversRequest, MostActivesRequest, NewsRe
 
 from .config import Config, get_bot_account_config
 from .llm_utils import call_json_llm
+from .overlay_learning import apply_component_scales, load_component_scales
 
 
 POSITIVE_NEWS_WORDS = {
@@ -75,6 +76,7 @@ class ResearchContext:
     news_headlines: dict[str, list[str]] = field(default_factory=dict)
     llm_scores: dict[str, float] = field(default_factory=dict)
     llm_rationales: dict[str, str] = field(default_factory=dict)
+    component_scales: dict[str, float] = field(default_factory=dict)
     llm_summary: str = ""
     notes: list[str] = field(default_factory=list)
 
@@ -89,6 +91,7 @@ class ResearchContext:
             "news_headlines": self.news_headlines,
             "llm_scores": self.llm_scores,
             "llm_rationales": self.llm_rationales,
+            "component_scales": self.component_scales,
             "llm_summary": self.llm_summary,
             "notes": self.notes,
         }
@@ -338,7 +341,11 @@ def build_research_overlay(
     technical_raw = (0.40 * mom_signal) + (0.20 * short_signal) + (0.25 * rank_signal) + (0.15 * vol_signal)
     overlay["technical_adjustment"] = technical_raw * TECHNICAL_MAX_ADJ * config.technical_weight
 
-    context = ResearchContext(candidate_symbols=_candidate_symbols(overlay, config.research_candidate_limit))
+    component_scales = load_component_scales(config.learned_policy_path)
+    context = ResearchContext(
+        candidate_symbols=_candidate_symbols(overlay, config.research_candidate_limit),
+        component_scales=component_scales,
+    )
     _fetch_screener_context(config, context, bot_name=bot_name)
     _fetch_snapshot_context(config, context, bot_name=bot_name)
     _fetch_news_context(config, context, bot_name=bot_name)
@@ -369,15 +376,7 @@ def build_research_overlay(
         overlay["Symbol"].map(context.llm_scores).fillna(0.0).astype(float) * LLM_MAX_ADJ * config.llm_weight
     )
 
-    overlay["pred_return"] = (
-        overlay["base_pred_return"]
-        + overlay["technical_adjustment"]
-        + overlay["snapshot_adjustment"]
-        + overlay["screener_adjustment"]
-        + overlay["news_adjustment"]
-        + overlay["memory_adjustment"]
-        + overlay["llm_adjustment"]
-    )
+    overlay = apply_component_scales(overlay, component_scales)
 
     rationales: list[str] = []
     for _, row in overlay.iterrows():

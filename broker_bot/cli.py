@@ -22,6 +22,7 @@ from .logging_db import (
     log_trades,
 )
 from .learning import generate_attribution_report, generate_champion_challenger_report, generate_strategy_report, review_and_learn
+from .model_eval import generate_model_eval_report
 from .pipeline import train_on_history, run_backtest_on_history
 from .data import fetch_latest_close
 from .trader import caretaker_portfolio, rebalance_portfolio, snapshot_equity, snapshot_positions
@@ -420,6 +421,15 @@ def cmd_options_report(args: argparse.Namespace) -> None:
     print(f"Saved report to {report.report_path}")
 
 
+def cmd_model_eval(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    symbols = _load_symbols(config)
+    report = generate_model_eval_report(config, symbols, bot_name=ML_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Broker Bot - Paper Trading")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -447,6 +457,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("champion-report")
     subparsers.add_parser("champion-report-llm")
     subparsers.add_parser("options-report")
+    subparsers.add_parser("model-eval")
 
     return parser
 
@@ -502,6 +513,8 @@ def main() -> None:
             cmd_champion_report_llm(args)
         elif args.command == "options-report":
             cmd_options_report(args)
+        elif args.command == "model-eval":
+            cmd_model_eval(args)
     except RuntimeError as exc:
         if os.getenv("BROKER_BOT_DEBUG", "").strip().lower() in {"1", "true", "yes", "y"}:
             raise

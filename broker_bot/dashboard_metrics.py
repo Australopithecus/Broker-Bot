@@ -6,6 +6,8 @@ from typing import Any
 
 import pandas as pd
 
+from .model_revisions import model_revision
+
 
 WINDOW_OPTIONS = {
     "24h": pd.Timedelta(hours=24),
@@ -161,10 +163,21 @@ def comparison_table(bots_payload: dict[str, dict[str, Any]], window_key: str = 
     rows: list[dict[str, Any]] = []
     for name, payload in bots_payload.items():
         metrics = bot_performance_metrics(payload, window, anchor)
+        revision = payload.get("revision")
+        if not isinstance(revision, dict):
+            revision = model_revision(name, payload.get("strategy_reports", []))
         rows.append(
             {
                 "bot": name,
-                "label": payload.get("label", name.upper()),
+                "label": revision.get("display_label") or payload.get("label", name.upper()),
+                "base_label": revision.get("base_label") or payload.get("base_label") or payload.get("label", name.upper()),
+                "revision_id": revision.get("id"),
+                "revision_label": revision.get("label"),
+                "revision_name": revision.get("name"),
+                "revision_summary": revision.get("summary"),
+                "revision_status": revision.get("status"),
+                "behavior_revision": revision.get("behavior_revision"),
+                "revision_report_ts": revision.get("report_ts"),
                 **metrics,
             }
         )

@@ -20,6 +20,7 @@ from .logging_db import (
     read_recent_evaluated_decisions,
     read_recent_selected_decisions,
 )
+from .overlay_learning import derive_component_scales, load_component_scales
 
 
 COMPONENT_TO_WEIGHT = {
@@ -126,8 +127,12 @@ def _component_attribution_lines(component_metrics: dict[str, dict[str, float]])
         edge = float(stats.get("edge", 0.0))
         hit_rate = float(stats.get("hit_rate", 0.0))
         samples = int(float(stats.get("samples", 0.0)))
+        scale = float(stats.get("learned_scale", 1.0))
         verdict = "helping" if edge > 0.001 else ("hurting" if edge < -0.001 else "mixed")
-        lines.append(f"- {readable}: {verdict}; edge={edge:+.2%}, hit rate={hit_rate:.1%}, samples={samples}.")
+        lines.append(
+            f"- {readable}: {verdict}; edge={edge:+.2%}, hit rate={hit_rate:.1%}, "
+            f"samples={samples}, learned scale={scale:.2f}."
+        )
     return lines
 
 
@@ -481,16 +486,31 @@ def _component_metrics(db_path: str, limit: int = 300, bot_name: str = "ml") -> 
     rows = read_recent_evaluated_decisions(db_path, limit=limit, bot_name=bot_name)
     metrics: dict[str, dict[str, float]] = {}
 
-    for _, _, _, _, signed_return, _, _, components_json in rows:
+    for _, side, _, _, signed_return, _, _, components_json in rows:
         components = _load_components(components_json)
+        side_sign = 1.0 if side == "LONG" else (-1.0 if side == "SHORT" else 0.0)
+        if side_sign == 0.0:
+            continue
         for component_name in COMPONENT_TO_WEIGHT:
             component_value = float(components.get(component_name, 0.0))
             if abs(component_value) < 1e-9:
                 continue
-            bucket = metrics.setdefault(component_name, {"samples": 0.0, "edge": 0.0, "hits": 0.0})
+            bucket = metrics.setdefault(
+                component_name,
+                {
+                    "samples": 0.0,
+                    "edge": 0.0,
+                    "hits": 0.0,
+                    "avg_abs_adjustment": 0.0,
+                    "avg_aligned_adjustment": 0.0,
+                },
+            )
             bucket["samples"] += 1.0
-            directional_edge = signed_return if component_value > 0 else -signed_return
+            aligned_adjustment = component_value * side_sign
+            directional_edge = signed_return if aligned_adjustment > 0 else -signed_return
             bucket["edge"] += directional_edge
+            bucket["avg_abs_adjustment"] += abs(component_value)
+            bucket["avg_aligned_adjustment"] += aligned_adjustment
             if directional_edge > 0:
                 bucket["hits"] += 1.0
 
@@ -499,9 +519,14 @@ def _component_metrics(db_path: str, limit: int = 300, bot_name: str = "ml") -> 
         if samples > 0:
             bucket["edge"] /= samples
             bucket["hit_rate"] = bucket["hits"] / samples
+            bucket["avg_abs_adjustment"] /= samples
+            bucket["avg_aligned_adjustment"] /= samples
         else:
             bucket["hit_rate"] = 0.0
         del bucket["hits"]
+    learned_scales = derive_component_scales(metrics)
+    for component_name, bucket in metrics.items():
+        bucket["learned_scale"] = learned_scales.get(component_name, 1.0)
     return metrics
 
 
@@ -786,15 +811,46 @@ def _write_learned_policy(
     component_metrics: dict[str, dict[str, float]],
     summary: str,
 ) -> None:
+    out_path = Path(config.learned_policy_path)
+    if not component_metrics and out_path.exists():
+        try:
+            existing = json.loads(out_path.read_text(encoding="utf-8"))
+        except Exception:
+            existing = {}
+        if isinstance(existing, dict):
+            existing_metrics = existing.get("component_metrics")
+            if isinstance(existing_metrics, dict) and existing_metrics:
+                component_metrics = existing_metrics
+            existing_scales = existing.get("component_scales")
+            if isinstance(existing_scales, dict):
+                for name, scale in existing_scales.items():
+                    if name in component_metrics and isinstance(component_metrics[name], dict):
+                        try:
+                            component_metrics[name]["learned_scale"] = float(scale)
+                        except Exception:
+                            pass
+    component_scales = derive_component_scales(component_metrics)
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": summary,
         "weights": weights,
+        "component_scales": component_scales,
         "component_metrics": component_metrics,
     }
-    out_path = Path(config.learned_policy_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _existing_component_metrics(config: Config) -> dict[str, dict[str, float]]:
+    path = Path(config.learned_policy_path)
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    metrics = payload.get("component_metrics") if isinstance(payload, dict) else None
+    return metrics if isinstance(metrics, dict) else {}
 
 
 def review_and_learn(config: Config, bot_name: str = "ml") -> LearningReport:
@@ -814,6 +870,9 @@ def review_and_learn(config: Config, bot_name: str = "ml") -> LearningReport:
     ) if recent_rows else 0.0
 
     component_metrics = _component_metrics(config.db_path, limit=300, bot_name=normalized_bot)
+    if not component_metrics:
+        component_metrics = _existing_component_metrics(config)
+    component_scales = derive_component_scales(component_metrics)
     updated_weights, changed_weights = _propose_weight_updates(config, component_metrics)
     outcome_breakdown = _outcome_breakdown(recent_rows)
     hold_metrics, hold_lines = _counterfactual_hold_scan(config, cutoff_ts, normalized_bot)
@@ -844,6 +903,9 @@ def review_and_learn(config: Config, bot_name: str = "ml") -> LearningReport:
             "",
             "## Component attribution",
             *_component_attribution_lines(component_metrics),
+            "",
+            "## Learned overlay scales",
+            json.dumps(component_scales, indent=2, sort_keys=True),
             "",
             "## Counterfactual HOLD scan",
             *hold_lines,
@@ -958,6 +1020,7 @@ def generate_strategy_report(config: Config, bot_name: str = "ml") -> StrategyRe
         "memory_weight": current_config.memory_weight,
         "llm_weight": current_config.llm_weight,
     }
+    component_scales = load_component_scales(current_config.learned_policy_path)
 
     watchlist_lines = []
     for row in watchlist_rows[:10]:
@@ -1004,6 +1067,9 @@ def generate_strategy_report(config: Config, bot_name: str = "ml") -> StrategyRe
             "",
             "## Current learned weights",
             json.dumps(current_weights, indent=2, sort_keys=True),
+            "",
+            "## Current learned overlay scales",
+            json.dumps(component_scales, indent=2, sort_keys=True),
             "",
             "## Market regime and risk controls",
             f"Regime: {market_regime.get('label', 'unknown')}",

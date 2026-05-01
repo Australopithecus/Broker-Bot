@@ -15,6 +15,7 @@ from broker_bot.dashboard_metrics import (
     filter_frame_to_window,
     freshness_status,
 )
+from broker_bot.model_revisions import apply_model_revision
 
 
 def _secret(name: str) -> str:
@@ -152,7 +153,7 @@ def _render_sidebar_nav(
 ) -> None:
     st.sidebar.title("Broker Bot")
     st.sidebar.caption("Paper-trading research cockpit")
-    st.sidebar.metric("Bot Revision", str(strategy_blueprint.get("revision") or "unknown"))
+    st.sidebar.metric("Bot Behavior Revision", str(strategy_blueprint.get("revision") or "unknown"))
     if snapshot_updated:
         st.sidebar.caption(f"Snapshot updated: {snapshot_updated}")
     elif DATA_URL:
@@ -199,6 +200,10 @@ def _bot_query(path: str) -> str | None:
     params = parse_qs(parsed.query)
     values = params.get("bot")
     return values[0] if values else None
+
+
+def _with_revision(bot_name: str, payload: dict) -> dict:
+    return apply_model_revision(bot_name, payload if isinstance(payload, dict) else {})
 
 
 def _github_repo_from_data_url() -> str:
@@ -287,7 +292,12 @@ def fetch(path: str):
         if route == "/api/bots":
             return {
                 "data": [
-                    {"name": name, "label": payload.get("label", name.upper())}
+                    {
+                        "name": name,
+                        "label": _with_revision(name, payload).get("label", payload.get("label", name.upper())),
+                        "base_label": _with_revision(name, payload).get("base_label"),
+                        "revision": _with_revision(name, payload).get("revision"),
+                    }
                     for name, payload in bots.items()
                 ]
             }
@@ -472,20 +482,20 @@ def _bot_payload(bot_name: str, label: str, snapshot_meta: dict) -> dict:
     if DATA_URL and isinstance(snapshot_meta, dict):
         payload = (snapshot_meta.get("bots") or {}).get(bot_name, {})
         if isinstance(payload, dict):
-            return payload
+            return _with_revision(bot_name, payload)
     equity = fetch(f"/api/equity?bot={bot_name}&limit=1000").get("data", [])
     positions = fetch(f"/api/positions?bot={bot_name}").get("data", [])
     trades = fetch(f"/api/trades?bot={bot_name}").get("data", [])
     strategy_reports = fetch(f"/api/strategy?bot={bot_name}").get("data", [])
     decisions = fetch(f"/api/decisions?bot={bot_name}&limit=150").get("data", [])
-    return {
+    return _with_revision(bot_name, {
         "label": label,
         "equity": equity,
         "positions": positions,
         "trades": trades,
         "strategy_reports": strategy_reports,
         "decisions": decisions,
-    }
+    })
 
 
 def _strategy_blueprint(snapshot_meta: dict) -> dict:
@@ -586,7 +596,7 @@ def _render_system_health(snapshot_meta: dict, bots_payload: dict[str, dict]) ->
     cols = st.columns(5)
     cols[0].metric("Snapshot", fresh.get("status", "unknown").title(), f"{fresh.get('age_minutes', 0) or 0:.0f} min old" if fresh.get("age_minutes") is not None else None)
     cols[1].metric("Data Source", "Snapshot" if DATA_URL else "Live API")
-    cols[2].metric("Bots Seen", str(len(bots_payload)))
+    cols[2].metric("Models Seen", str(len(bots_payload)))
     total_positions = sum(len(payload.get("positions", []) or []) for payload in bots_payload.values())
     cols[3].metric("Open Positions", str(total_positions))
     total_unprotected = 0
@@ -607,7 +617,7 @@ def _render_system_health(snapshot_meta: dict, bots_payload: dict[str, dict]) ->
             row = health_bots.get(bot_name, {})
             rows.append(
                 {
-                    "Bot": payload.get("label", bot_name.upper()),
+                    "Model": payload.get("label", bot_name.upper()),
                     "Trading Auth": row.get("trading_auth", "unknown"),
                     "Market Data": row.get("market_data_auth", "unknown"),
                     "Trading Detail": row.get("trading_message", ""),
@@ -626,10 +636,10 @@ def _render_strategy_blueprint(blueprint: dict) -> None:
     col1, col2, col3, col4 = st.columns(4)
     models = blueprint.get("models") if isinstance(blueprint.get("models"), list) else []
     changelog = blueprint.get("changelog") if isinstance(blueprint.get("changelog"), list) else []
-    col1.metric("Bot Revision", str(blueprint.get("revision") or "unknown"))
+    col1.metric("Bot Behavior Revision", str(blueprint.get("revision") or "unknown"))
     col2.metric("Updated", str(blueprint.get("revision_date") or "unknown"))
     col3.metric("Models", str(len(models)))
-    col4.metric("Bot Changes", str(len(changelog)))
+    col4.metric("Behavior Changes", str(len(changelog)))
     st.write(blueprint.get("summary") or "")
 
     with st.expander("Show model details, safety posture, and bot behavior revision history", expanded=False):
@@ -656,9 +666,11 @@ def _render_strategy_blueprint(blueprint: dict) -> None:
 
         st.markdown("**Bot Behavior Revision History**")
         for entry in changelog:
+            models_changed = entry.get("models") if isinstance(entry.get("models"), list) else []
+            applies_to = f"  \nModels changed: {', '.join(models_changed)}" if models_changed else ""
             st.markdown(
                 f"**Revision {entry.get('revision', 'unknown')} - {entry.get('title', 'Untitled')}**  \n"
-                f"{entry.get('date', '')}"
+                f"{entry.get('date', '')}{applies_to}"
             )
             changes = entry.get("changes") if isinstance(entry.get("changes"), list) else []
             for item in changes:
@@ -735,13 +747,19 @@ def _render_cloud_run_controls() -> None:
 
 
 def _render_comparison_summary(bots_payload: dict[str, dict], selected_window_key: str) -> None:
-    st.subheader("Bot Comparison")
+    st.subheader("Model Comparison")
     rows = comparison_table(bots_payload, selected_window_key)
     if rows:
         table = pd.DataFrame(
             [
                 {
-                    "Bot": row["label"],
+                    "Model": row["label"],
+                    "Revision": " / ".join(
+                        str(value)
+                        for value in [row.get("behavior_revision"), row.get("revision_name") or row.get("revision_label")]
+                        if value
+                    )
+                    or "n/a",
                     "Return": _fmt_metric_pct(row.get("window_return")),
                     "Vs SPY": _fmt_metric_pct(row.get("window_alpha")),
                     "Max DD": _fmt_metric_pct(row.get("max_drawdown")),
@@ -846,7 +864,16 @@ def _render_risk_panel(bots_payload: dict[str, dict], selected_window_key: str) 
         report_metrics = latest_report.get("metrics", {}) if isinstance(latest_report.get("metrics"), dict) else {}
         rows.append(
             {
-                "Bot": payload.get("label", bot_name.upper()),
+                "Model": payload.get("label", bot_name.upper()),
+                "Revision": " / ".join(
+                    str(value)
+                    for value in [
+                        (payload.get("revision") or {}).get("behavior_revision"),
+                        (payload.get("revision") or {}).get("name"),
+                    ]
+                    if value
+                )
+                or "n/a",
                 "Gross Exposure": _fmt_metric_pct(metrics.get("gross_exposure_pct")),
                 "Long $": _fmt_money(metrics.get("long_exposure")),
                 "Short $": _fmt_money(metrics.get("short_exposure")),
@@ -864,7 +891,7 @@ def _render_risk_panel(bots_payload: dict[str, dict], selected_window_key: str) 
             for row in payload.get("positions", []) or []:
                 protection_rows.append(
                     {
-                        "Bot": payload.get("label", bot_name.upper()),
+                        "Model": payload.get("label", bot_name.upper()),
                         "Symbol": row.get("symbol"),
                         "Qty": row.get("qty"),
                         "Market Value": row.get("market_value"),
@@ -890,6 +917,7 @@ def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
             latest_by_type = _latest_reports_by_type(reports)
             report_types = [
                 "strategy",
+                "model_eval",
                 "watchlist",
                 "learning",
                 "attribution",
@@ -928,7 +956,7 @@ def _render_decision_explorer(bots_payload: dict[str, dict]) -> None:
             )
             rows.append(
                 {
-                    "Bot": payload.get("label", bot_name.upper()),
+                    "Model": payload.get("label", bot_name.upper()),
                     "Time": row.get("ts"),
                     "Symbol": row.get("symbol"),
                     "Side": row.get("side"),
@@ -947,11 +975,12 @@ def _render_decision_explorer(bots_payload: dict[str, dict]) -> None:
 
     df = pd.DataFrame(rows)
     col1, col2, col3 = st.columns(3)
-    bot_filter = col1.multiselect("Bot", sorted(df["Bot"].dropna().unique()), default=sorted(df["Bot"].dropna().unique()))
+    model_options = sorted(df["Model"].dropna().unique())
+    model_filter = col1.multiselect("Model", model_options, default=model_options)
     symbol_options = sorted(df["Symbol"].dropna().unique())
     symbol_filter = col2.multiselect("Symbol", symbol_options, default=symbol_options[: min(8, len(symbol_options))])
     outcome_filter = col3.multiselect("Outcome", sorted(df["Outcome"].dropna().unique()), default=sorted(df["Outcome"].dropna().unique()))
-    filtered = df[df["Bot"].isin(bot_filter) & df["Symbol"].isin(symbol_filter) & df["Outcome"].isin(outcome_filter)].copy()
+    filtered = df[df["Model"].isin(model_filter) & df["Symbol"].isin(symbol_filter) & df["Outcome"].isin(outcome_filter)].copy()
     for column in ["Base", "Final", "Signed Return", "Beat SPY"]:
         filtered[column] = pd.to_numeric(filtered[column], errors="coerce")
     st.dataframe(filtered, use_container_width=True, hide_index=True)

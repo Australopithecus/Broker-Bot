@@ -3,26 +3,34 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from .behavior_revisions import (
+    CURRENT_BEHAVIOR_REVISION,
+    CURRENT_BEHAVIOR_REVISION_DATE,
+    behavior_revision_history,
+    validate_behavior_revisions,
+)
+
 
 STRATEGY_BLUEPRINT: dict[str, Any] = {
     "title": "Strategy Blueprint",
-    "revision": "2.6.0",
-    "revision_date": "2026-04-30",
+    "revision": CURRENT_BEHAVIOR_REVISION,
+    "revision_date": CURRENT_BEHAVIOR_REVISION_DATE,
     "summary": (
-        "Broker Bot is a paper-trading research system with two competing bots: an ML ensemble bot and an LLM decision-network bot. "
-        "Both bots use separate brokerage paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports."
+        "Broker Bot is a paper-trading research system with two competing models: an ML ensemble model and an LLM decision-network model. "
+        "Both models use separate brokerage paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports."
     ),
     "models": [
         {
-            "name": "ML Bot",
+            "name": "ML Bot R2",
             "role": "Quantitative champion",
             "description": (
-                "The ML Bot starts with a supervised return model and then applies bounded research overlays before portfolio construction."
+                "The ML Bot R2 starts with a supervised return model and then applies bounded, learned research overlays before portfolio construction."
             ),
             "strategies": [
                 "Predicts short-horizon returns from momentum, volatility, liquidity, and market-context features.",
                 "Uses an ensemble-style model stack with tree models, boosting, and a linear challenger.",
                 "Adds bounded overlays from brokerage-service snapshots, mover/activity screens, recent news, symbol memory, and optional LLM review.",
+                "Uses learned component reliability scales from mature decision outcomes to avoid over-weighting weaker signal families.",
                 "Applies a minimum absolute signal score gate so weak selected signals become HOLD before sizing.",
                 "Uses inverse-volatility target weighting, SPY regime leverage, sector caps, correlation caps, and drawdown controls.",
             ],
@@ -47,6 +55,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
         "Rebalance runs can submit paper orders, while snapshot and caretaker runs update dashboard data and protection status.",
         "Caretaker runs can attach broker-side trailing stops to compatible whole-share positions and can enforce an optional daily drawdown kill switch.",
         "Learning reports evaluate mature decisions, calculate signed returns, compare against SPY, and update bounded learned-policy weights.",
+        "Model evaluation reports score walk-forward out-of-sample folds before a model revision is trusted on the dashboard.",
         "Champion/Challenger reports compare the current live policy against stricter shadow policies before changing strategy behavior.",
         "Options reports are currently planning-only scaffolds for defined-risk vertical spread ideas; they are not live options execution.",
     ],
@@ -57,70 +66,10 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
         "Confidence gates, sector caps, correlation caps, volatility targeting, drawdown controls, and broker-side exit protection reduce runaway behavior.",
         "Champion/challenger evaluation is shadow-only until enough evidence supports promotion.",
     ],
-    "changelog": [
-        {
-            "revision": "2.6.0",
-            "date": "2026-04-30",
-            "title": "Ticker-specific LLM Coach feedback",
-            "changes": [
-                "Changed the LLM Coach feedback style from generic advice to ticker-specific wins, mistakes, and next-action guidance.",
-                "Fed more concrete Coach lessons back into the LLM Trader context so future decisions can adapt to prior outcomes.",
-            ],
-        },
-        {
-            "revision": "2.5.0",
-            "date": "2026-04-30",
-            "title": "Skeptic and strategy evaluation layer",
-            "changes": [
-                "Added LLM Skeptic review before LLM Trader decisions reach execution.",
-                "Added ML confidence gating and LLM conviction gating.",
-                "Added post-trade attribution reports.",
-                "Added Champion/Challenger shadow evaluation reports.",
-            ],
-        },
-        {
-            "revision": "2.4.0",
-            "date": "2026-04-29",
-            "title": "Market-hours caretaker",
-            "changes": [
-                "Added lightweight caretaker commands and workflow.",
-                "Added broker-side trailing-stop protection checks.",
-                "Added optional same-day drawdown kill switch.",
-            ],
-        },
-        {
-            "revision": "2.2.0",
-            "date": "2026-04-24",
-            "title": "Second paper account and LLM bot",
-            "changes": [
-                "Separated ML and LLM bots into distinct brokerage paper accounts.",
-                "Added LLM Stock Selector, Analyst, Trader, and Coach reports.",
-                "Enabled ML and LLM bots to generate independent decisions and outcomes for direct performance comparison.",
-            ],
-        },
-        {
-            "revision": "2.1.0",
-            "date": "2026-04-23",
-            "title": "Learning and research reports",
-            "changes": [
-                "Added richer strategy, watchlist, and learning reports.",
-                "Added deep research notes for current watchlist names.",
-                "Added decision outcome logging for later learning.",
-            ],
-        },
-        {
-            "revision": "2.0.0",
-            "date": "2026-04-22",
-            "title": "Paper-trading automation baseline",
-            "changes": [
-                "Added model training and rebalance commands for automated paper-trading decisions.",
-                "Added advisor and strategy report automation to explain generated decisions.",
-                "Added snapshot generation so model outcomes could feed later learning and review loops.",
-            ],
-        },
-    ],
+    "changelog": behavior_revision_history(),
 }
 
 
 def get_strategy_blueprint() -> dict[str, Any]:
+    validate_behavior_revisions()
     return deepcopy(STRATEGY_BLUEPRINT)

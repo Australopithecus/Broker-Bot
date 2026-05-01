@@ -1,19 +1,20 @@
 {
-  "generated_at": "2026-05-01T19:58:33.517259+00:00",
+  "generated_at": "2026-05-01T19:59:47.055471+00:00",
   "strategy_blueprint": {
     "title": "Strategy Blueprint",
-    "revision": "2.6.0",
-    "revision_date": "2026-04-30",
-    "summary": "Broker Bot is a paper-trading research system with two competing bots: an ML ensemble bot and an LLM decision-network bot. Both bots use separate brokerage paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports.",
+    "revision": "2.7.0",
+    "revision_date": "2026-05-01",
+    "summary": "Broker Bot is a paper-trading research system with two competing models: an ML ensemble model and an LLM decision-network model. Both models use separate brokerage paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports.",
     "models": [
       {
-        "name": "ML Bot",
+        "name": "ML Bot R2",
         "role": "Quantitative champion",
-        "description": "The ML Bot starts with a supervised return model and then applies bounded research overlays before portfolio construction.",
+        "description": "The ML Bot R2 starts with a supervised return model and then applies bounded, learned research overlays before portfolio construction.",
         "strategies": [
           "Predicts short-horizon returns from momentum, volatility, liquidity, and market-context features.",
           "Uses an ensemble-style model stack with tree models, boosting, and a linear challenger.",
           "Adds bounded overlays from brokerage-service snapshots, mover/activity screens, recent news, symbol memory, and optional LLM review.",
+          "Uses learned component reliability scales from mature decision outcomes to avoid over-weighting weaker signal families.",
           "Applies a minimum absolute signal score gate so weak selected signals become HOLD before sizing.",
           "Uses inverse-volatility target weighting, SPY regime leverage, sector caps, correlation caps, and drawdown controls."
         ]
@@ -36,6 +37,7 @@
       "Rebalance runs can submit paper orders, while snapshot and caretaker runs update dashboard data and protection status.",
       "Caretaker runs can attach broker-side trailing stops to compatible whole-share positions and can enforce an optional daily drawdown kill switch.",
       "Learning reports evaluate mature decisions, calculate signed returns, compare against SPY, and update bounded learned-policy weights.",
+      "Model evaluation reports score walk-forward out-of-sample folds before a model revision is trusted on the dashboard.",
       "Champion/Challenger reports compare the current live policy against stricter shadow policies before changing strategy behavior.",
       "Options reports are currently planning-only scaffolds for defined-risk vertical spread ideas; they are not live options execution."
     ],
@@ -48,9 +50,25 @@
     ],
     "changelog": [
       {
+        "revision": "2.7.0",
+        "date": "2026-05-01",
+        "title": "ML Bot R2 learned overlays",
+        "models": [
+          "ML Bot"
+        ],
+        "changes": [
+          "Added walk-forward model evaluation for out-of-sample directional accuracy, return, and overlay impact.",
+          "Promoted the ML model behavior to ML Bot R2 with learned component reliability scales for snapshot, technical, and memory signals.",
+          "Added model revision metadata to dashboard comparison payloads, reports, and snapshot generation."
+        ]
+      },
+      {
         "revision": "2.6.0",
         "date": "2026-04-30",
         "title": "Ticker-specific LLM Coach feedback",
+        "models": [
+          "LLM Bot"
+        ],
         "changes": [
           "Changed the LLM Coach feedback style from generic advice to ticker-specific wins, mistakes, and next-action guidance.",
           "Fed more concrete Coach lessons back into the LLM Trader context so future decisions can adapt to prior outcomes."
@@ -60,6 +78,10 @@
         "revision": "2.5.0",
         "date": "2026-04-30",
         "title": "Skeptic and strategy evaluation layer",
+        "models": [
+          "ML Bot",
+          "LLM Bot"
+        ],
         "changes": [
           "Added LLM Skeptic review before LLM Trader decisions reach execution.",
           "Added ML confidence gating and LLM conviction gating.",
@@ -71,6 +93,10 @@
         "revision": "2.4.0",
         "date": "2026-04-29",
         "title": "Market-hours caretaker",
+        "models": [
+          "ML Bot",
+          "LLM Bot"
+        ],
         "changes": [
           "Added lightweight caretaker commands and workflow.",
           "Added broker-side trailing-stop protection checks.",
@@ -81,6 +107,9 @@
         "revision": "2.2.0",
         "date": "2026-04-24",
         "title": "Second paper account and LLM bot",
+        "models": [
+          "LLM Bot"
+        ],
         "changes": [
           "Separated ML and LLM bots into distinct brokerage paper accounts.",
           "Added LLM Stock Selector, Analyst, Trader, and Coach reports.",
@@ -91,6 +120,9 @@
         "revision": "2.1.0",
         "date": "2026-04-23",
         "title": "Learning and research reports",
+        "models": [
+          "ML Bot"
+        ],
         "changes": [
           "Added richer strategy, watchlist, and learning reports.",
           "Added deep research notes for current watchlist names.",
@@ -101,6 +133,9 @@
         "revision": "2.0.0",
         "date": "2026-04-22",
         "title": "Paper-trading automation baseline",
+        "models": [
+          "ML Bot"
+        ],
         "changes": [
           "Added model training and rebalance commands for automated paper-trading decisions.",
           "Added advisor and strategy report automation to explain generated decisions.",
@@ -110,10 +145,10 @@
     ]
   },
   "health": {
-    "generated_at": "2026-05-01T19:58:33.517259+00:00",
+    "generated_at": "2026-05-01T19:59:47.055471+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.451666666666667e-05,
+      "age_minutes": 4.686666666666666e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -140,7 +175,15 @@
       "24h": [
         {
           "bot": "ml",
-          "label": "ML Bot",
+          "label": "ML Bot R2",
+          "base_label": "ML Bot",
+          "revision_id": "ml-r2-learned-overlays",
+          "revision_label": "R2",
+          "revision_name": "Learned Overlays",
+          "revision_summary": "Out-of-sample model evaluation plus learned component reliability scales.",
+          "revision_status": "active",
+          "behavior_revision": "2.7.0",
+          "revision_report_ts": null,
           "latest_equity": 103642.61,
           "window_return": 0.002658079857518425,
           "spy_window_return": 0.003367237612878826,
@@ -164,7 +207,15 @@
         },
         {
           "bot": "llm",
-          "label": "LLM Bot",
+          "label": "LLM Bot R1",
+          "base_label": "LLM Bot",
+          "revision_id": "llm-r1-multi-role",
+          "revision_label": "R1",
+          "revision_name": "Multi-role LLM",
+          "revision_summary": "Multi-role LLM selection, analysis, trading, and coaching workflow.",
+          "revision_status": "active",
+          "behavior_revision": "2.6.0",
+          "revision_report_ts": null,
           "latest_equity": 100118.89,
           "window_return": -0.00022288526371916362,
           "spy_window_return": 0.003367237612878826,
@@ -190,7 +241,15 @@
       "7d": [
         {
           "bot": "ml",
-          "label": "ML Bot",
+          "label": "ML Bot R2",
+          "base_label": "ML Bot",
+          "revision_id": "ml-r2-learned-overlays",
+          "revision_label": "R2",
+          "revision_name": "Learned Overlays",
+          "revision_summary": "Out-of-sample model evaluation plus learned component reliability scales.",
+          "revision_status": "active",
+          "behavior_revision": "2.7.0",
+          "revision_report_ts": null,
           "latest_equity": 103642.61,
           "window_return": 0.014687833725400612,
           "spy_window_return": 0.017927471379568294,
@@ -214,7 +273,15 @@
         },
         {
           "bot": "llm",
-          "label": "LLM Bot",
+          "label": "LLM Bot R1",
+          "base_label": "LLM Bot",
+          "revision_id": "llm-r1-multi-role",
+          "revision_label": "R1",
+          "revision_name": "Multi-role LLM",
+          "revision_summary": "Multi-role LLM selection, analysis, trading, and coaching workflow.",
+          "revision_status": "active",
+          "behavior_revision": "2.6.0",
+          "revision_report_ts": null,
           "latest_equity": 100118.89,
           "window_return": 0.003956607575764881,
           "spy_window_return": 0.017927471379568294,
@@ -240,7 +307,15 @@
       "14d": [
         {
           "bot": "ml",
-          "label": "ML Bot",
+          "label": "ML Bot R2",
+          "base_label": "ML Bot",
+          "revision_id": "ml-r2-learned-overlays",
+          "revision_label": "R2",
+          "revision_name": "Learned Overlays",
+          "revision_summary": "Out-of-sample model evaluation plus learned component reliability scales.",
+          "revision_status": "active",
+          "behavior_revision": "2.7.0",
+          "revision_report_ts": null,
           "latest_equity": 103642.61,
           "window_return": 0.03569593436627172,
           "spy_window_return": 0.03698643926429779,
@@ -264,7 +339,15 @@
         },
         {
           "bot": "llm",
-          "label": "LLM Bot",
+          "label": "LLM Bot R1",
+          "base_label": "LLM Bot",
+          "revision_id": "llm-r1-multi-role",
+          "revision_label": "R1",
+          "revision_name": "Multi-role LLM",
+          "revision_summary": "Multi-role LLM selection, analysis, trading, and coaching workflow.",
+          "revision_status": "active",
+          "behavior_revision": "2.6.0",
+          "revision_report_ts": null,
           "latest_equity": 100118.89,
           "window_return": 0.0011889000000000483,
           "spy_window_return": 0.024434941967012902,
@@ -290,7 +373,15 @@
       "28d": [
         {
           "bot": "ml",
-          "label": "ML Bot",
+          "label": "ML Bot R2",
+          "base_label": "ML Bot",
+          "revision_id": "ml-r2-learned-overlays",
+          "revision_label": "R2",
+          "revision_name": "Learned Overlays",
+          "revision_summary": "Out-of-sample model evaluation plus learned component reliability scales.",
+          "revision_status": "active",
+          "behavior_revision": "2.7.0",
+          "revision_report_ts": null,
           "latest_equity": 103642.61,
           "window_return": 0.03569593436627172,
           "spy_window_return": 0.03698643926429779,
@@ -314,7 +405,15 @@
         },
         {
           "bot": "llm",
-          "label": "LLM Bot",
+          "label": "LLM Bot R1",
+          "base_label": "LLM Bot",
+          "revision_id": "llm-r1-multi-role",
+          "revision_label": "R1",
+          "revision_name": "Multi-role LLM",
+          "revision_summary": "Multi-role LLM selection, analysis, trading, and coaching workflow.",
+          "revision_status": "active",
+          "behavior_revision": "2.6.0",
+          "revision_report_ts": null,
           "latest_equity": 100118.89,
           "window_return": 0.0011889000000000483,
           "spy_window_return": 0.024434941967012902,
@@ -340,7 +439,15 @@
       "90d": [
         {
           "bot": "ml",
-          "label": "ML Bot",
+          "label": "ML Bot R2",
+          "base_label": "ML Bot",
+          "revision_id": "ml-r2-learned-overlays",
+          "revision_label": "R2",
+          "revision_name": "Learned Overlays",
+          "revision_summary": "Out-of-sample model evaluation plus learned component reliability scales.",
+          "revision_status": "active",
+          "behavior_revision": "2.7.0",
+          "revision_report_ts": null,
           "latest_equity": 103642.61,
           "window_return": 0.03633189743052356,
           "spy_window_return": 0.03636050071140118,
@@ -364,7 +471,15 @@
         },
         {
           "bot": "llm",
-          "label": "LLM Bot",
+          "label": "LLM Bot R1",
+          "base_label": "LLM Bot",
+          "revision_id": "llm-r1-multi-role",
+          "revision_label": "R1",
+          "revision_name": "Multi-role LLM",
+          "revision_summary": "Multi-role LLM selection, analysis, trading, and coaching workflow.",
+          "revision_status": "active",
+          "behavior_revision": "2.6.0",
+          "revision_report_ts": null,
           "latest_equity": 100118.89,
           "window_return": 0.0011889000000000483,
           "spy_window_return": 0.024434941967012902,
@@ -390,7 +505,15 @@
       "180d": [
         {
           "bot": "ml",
-          "label": "ML Bot",
+          "label": "ML Bot R2",
+          "base_label": "ML Bot",
+          "revision_id": "ml-r2-learned-overlays",
+          "revision_label": "R2",
+          "revision_name": "Learned Overlays",
+          "revision_summary": "Out-of-sample model evaluation plus learned component reliability scales.",
+          "revision_status": "active",
+          "behavior_revision": "2.7.0",
+          "revision_report_ts": null,
           "latest_equity": 103642.61,
           "window_return": 0.03633189743052356,
           "spy_window_return": 0.03636050071140118,
@@ -414,7 +537,15 @@
         },
         {
           "bot": "llm",
-          "label": "LLM Bot",
+          "label": "LLM Bot R1",
+          "base_label": "LLM Bot",
+          "revision_id": "llm-r1-multi-role",
+          "revision_label": "R1",
+          "revision_name": "Multi-role LLM",
+          "revision_summary": "Multi-role LLM selection, analysis, trading, and coaching workflow.",
+          "revision_status": "active",
+          "behavior_revision": "2.6.0",
+          "revision_report_ts": null,
           "latest_equity": 100118.89,
           "window_return": 0.0011889000000000483,
           "spy_window_return": 0.024434941967012902,
@@ -440,7 +571,15 @@
       "360d": [
         {
           "bot": "ml",
-          "label": "ML Bot",
+          "label": "ML Bot R2",
+          "base_label": "ML Bot",
+          "revision_id": "ml-r2-learned-overlays",
+          "revision_label": "R2",
+          "revision_name": "Learned Overlays",
+          "revision_summary": "Out-of-sample model evaluation plus learned component reliability scales.",
+          "revision_status": "active",
+          "behavior_revision": "2.7.0",
+          "revision_report_ts": null,
           "latest_equity": 103642.61,
           "window_return": 0.03633189743052356,
           "spy_window_return": 0.03636050071140118,
@@ -464,7 +603,15 @@
         },
         {
           "bot": "llm",
-          "label": "LLM Bot",
+          "label": "LLM Bot R1",
+          "base_label": "LLM Bot",
+          "revision_id": "llm-r1-multi-role",
+          "revision_label": "R1",
+          "revision_name": "Multi-role LLM",
+          "revision_summary": "Multi-role LLM selection, analysis, trading, and coaching workflow.",
+          "revision_status": "active",
+          "behavior_revision": "2.6.0",
+          "revision_report_ts": null,
           "latest_equity": 100118.89,
           "window_return": 0.0011889000000000483,
           "spy_window_return": 0.024434941967012902,
@@ -509,7 +656,7 @@
   },
   "bots": {
     "llm": {
-      "label": "LLM Bot",
+      "label": "LLM Bot R1",
       "equity": [
         {
           "ts": "2026-04-22T03:08:12.771889+00:00",
@@ -4463,10 +4610,24 @@
           "beat_spy": -0.016666730016650977,
           "outcome_label": "loss"
         }
-      ]
+      ],
+      "base_label": "LLM Bot",
+      "revision": {
+        "id": "llm-r1-multi-role",
+        "label": "R1",
+        "display_label": "LLM Bot R1",
+        "name": "Multi-role LLM",
+        "status": "active",
+        "introduced_at": null,
+        "behavior_revision": "2.6.0",
+        "summary": "Multi-role LLM selection, analysis, trading, and coaching workflow.",
+        "base_label": "LLM Bot",
+        "report_ts": null,
+        "metrics": {}
+      }
     },
     "ml": {
-      "label": "ML Bot",
+      "label": "ML Bot R2",
       "equity": [
         {
           "ts": "2026-02-02T20:32:51.707721+00:00",
@@ -9991,7 +10152,26 @@
           "beat_spy": 0.008929040142166,
           "outcome_label": "win"
         }
-      ]
+      ],
+      "base_label": "ML Bot",
+      "revision": {
+        "id": "ml-r2-learned-overlays",
+        "label": "R2",
+        "display_label": "ML Bot R2",
+        "name": "Learned Overlays",
+        "status": "active",
+        "introduced_at": "2026-05-01",
+        "behavior_revision": "2.7.0",
+        "summary": "Out-of-sample model evaluation plus learned component reliability scales.",
+        "base_label": "ML Bot",
+        "report_ts": null,
+        "metrics": {
+          "base_directional_accuracy": null,
+          "base_total_return": null,
+          "learned_overlay_total_return": null,
+          "learned_overlay_selected_count": null
+        }
+      }
     }
   }
 }

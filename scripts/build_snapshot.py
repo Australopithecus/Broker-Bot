@@ -19,6 +19,7 @@ from broker_bot.bot_blueprint import get_strategy_blueprint
 from broker_bot.config import configured_bot_names, get_bot_account_config, load_config
 from broker_bot.bots import bot_label
 from broker_bot.dashboard_metrics import agreement_summary, comparison_table, freshness_status
+from broker_bot.model_revisions import apply_model_revision
 from broker_bot.logging_db import (
     init_db,
     read_recent_selected_decisions,
@@ -90,8 +91,9 @@ def main() -> None:
         strategy_rows = read_latest_strategy_reports(config.db_path, limit=80, bot_name=bot_name)
         decision_rows = read_recent_selected_decisions(config.db_path, limit=150, bot_name=bot_name)
 
-        bots_payload[bot_name] = {
+        payload = {
             "label": bot_label(bot_name),
+            "base_label": bot_label(bot_name),
             "equity": [
                 {
                     "ts": row[0],
@@ -173,6 +175,7 @@ def main() -> None:
                 for row in decision_rows
             ],
         }
+        bots_payload[bot_name] = apply_model_revision(bot_name, payload)
 
     generated_at = datetime.now(timezone.utc).isoformat()
     data = {

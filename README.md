@@ -66,6 +66,12 @@ Run a backtest (in-sample, for quick feedback):
 python3 -m broker_bot.cli backtest
 ```
 
+Run an out-of-sample model evaluation with learned-overlay ablations:
+
+```bash
+python3 -m broker_bot.cli model-eval
+```
+
 The backtest now evaluates an ensemble-aware proxy of the live system, including:
 
 - the base Random Forest
@@ -178,7 +184,7 @@ The optional dashboard run button triggers the same GitHub Actions workflow as t
 
 The dashboard also includes a Champion/Challenger lab. It explains the current live policy, the stricter shadow policy being tested, recent outcomes, implemented safety changes, and historical report entries so you can inspect how the strategy comparison changes over time.
 
-The Strategy Blueprint panel explains how each bot works, which strategy layers are active, the current bot-behavior revision number, and the bot changelog. When model behavior changes, update `broker_bot/bot_blueprint.py`; dashboard-only changes should not change the bot revision.
+The Strategy Blueprint panel explains how each bot works, which strategy layers are active, the current bot-behavior revision number, and the bot changelog. When model behavior changes, add a new entry to `broker_bot/behavior_revisions.py`; dashboard-only changes should not change the bot behavior revision.
 
 ### GitHub Actions (Full Scheduled Cloud Run)
 
@@ -230,6 +236,7 @@ python3 -m broker_bot.cli advisor-report
 python3 -m broker_bot.cli strategy-report
 python3 -m broker_bot.cli attribution-report
 python3 -m broker_bot.cli champion-report
+python3 -m broker_bot.cli model-eval
 python3 -m broker_bot.cli rebalance-llm
 python3 -m broker_bot.cli snapshot-llm
 python3 -m broker_bot.cli review-decisions-llm
@@ -273,7 +280,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - The backtest uses walk-forward retraining, weekly rebalancing, and transaction cost estimates for realism.
 - The backtest now better matches the live ensemble by simulating bounded overlay components offline from historical price/volume structure.
 - Advisor overrides are stored in `data/advisor_overrides.json` and applied at startup when enabled.
-- Learned ensemble weights are stored in `data/learned_policy.json` and are intentionally kept bounded.
+- Learned ensemble weights and component reliability scales are stored in `data/learned_policy.json` and are intentionally kept bounded.
 - Champion/challenger reports are shadow evaluations. They compare stricter gates against recent outcomes, but they do not automatically promote a new policy.
 - Reports are written to `data/reports/`.
 - The dashboard APIs/UI now expose recent selected decisions, component contributions, and later outcomes.

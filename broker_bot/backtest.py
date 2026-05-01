@@ -5,6 +5,7 @@ import pandas as pd
 
 from .features import build_features, build_labels
 from .model import train_model, predict_return
+from .overlay_learning import apply_component_scales
 from .risk import (
     apply_portfolio_risk_limits,
     classify_market_regime,
@@ -88,6 +89,7 @@ def _apply_ensemble_overlay(
     memory_weight: float,
     llm_weight: float,
     symbol_memory: dict[str, float],
+    component_scales: dict[str, float] | None = None,
 ) -> pd.DataFrame:
     overlay = slice_df.copy()
     overlay["base_pred_return"] = overlay["pred_return"].astype(float)
@@ -131,16 +133,7 @@ def _apply_ensemble_overlay(
     conviction_proxy = (0.5 * mom_signal) + (0.3 * directional_event) + (0.2 * rank_signal)
     overlay["llm_adjustment"] = conviction_proxy * 0.0025 * llm_weight
 
-    overlay["pred_return"] = (
-        overlay["base_pred_return"]
-        + overlay["technical_adjustment"]
-        + overlay["snapshot_adjustment"]
-        + overlay["screener_adjustment"]
-        + overlay["news_adjustment"]
-        + overlay["memory_adjustment"]
-        + overlay["llm_adjustment"]
-    )
-    return overlay
+    return apply_component_scales(overlay, component_scales)
 
 
 def run_backtest(
