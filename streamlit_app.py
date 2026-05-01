@@ -489,17 +489,20 @@ def _bot_payload(bot_name: str, label: str, snapshot_meta: dict) -> dict:
 
 
 def _strategy_blueprint(snapshot_meta: dict) -> dict:
-    if DATA_URL and isinstance(snapshot_meta, dict):
-        blueprint = snapshot_meta.get("strategy_blueprint")
-        if isinstance(blueprint, dict) and blueprint:
-            return blueprint
+    local_blueprint = get_strategy_blueprint()
+    if isinstance(local_blueprint, dict) and local_blueprint:
+        return local_blueprint
     try:
         blueprint = fetch("/api/blueprint")
         if isinstance(blueprint, dict) and blueprint:
             return blueprint
     except Exception:
         pass
-    return get_strategy_blueprint()
+    if DATA_URL and isinstance(snapshot_meta, dict):
+        blueprint = snapshot_meta.get("strategy_blueprint")
+        if isinstance(blueprint, dict) and blueprint:
+            return blueprint
+    return {}
 
 
 def _fmt_metric_pct(value) -> str:

@@ -2,7 +2,7 @@
   "generated_at": "2026-04-30T22:09:42.388052+00:00",
   "strategy_blueprint": {
     "title": "Strategy Blueprint",
-    "revision": "2.7.3",
+    "revision": "2.6.0",
     "revision_date": "2026-04-30",
     "summary": "Broker Bot is a paper-trading research system with two competing bots: an ML ensemble bot and an LLM decision-network bot. Both bots use separate brokerage paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports.",
     "models": [
@@ -48,52 +48,12 @@
     ],
     "changelog": [
       {
-        "revision": "2.7.3",
-        "date": "2026-04-30",
-        "title": "Detailed table disclosure fix",
-        "changes": [
-          "Replaced nested Streamlit report-body expanders with toggles inside Detailed bot tables.",
-          "Prevented the Detailed Tables section from throwing a Streamlit nested-expander error."
-        ]
-      },
-      {
-        "revision": "2.7.2",
-        "date": "2026-04-30",
-        "title": "Seven-day default trend window",
-        "changes": [
-          "Changed the dashboard trend graph default window from 14 days to 7 days.",
-          "Kept longer graph windows available for historical review."
-        ]
-      },
-      {
-        "revision": "2.7.1",
-        "date": "2026-04-30",
-        "title": "Unified trend cutoff",
-        "changes": [
-          "Changed the dashboard trend graph so ML Bot, LLM Bot, and SPY all hide data before April 23, 2026.",
-          "Updated graph helper text to make the shared cutoff explicit."
-        ]
-      },
-      {
-        "revision": "2.7.0",
-        "date": "2026-04-30",
-        "title": "Navigation and readability pass",
-        "changes": [
-          "Added left-side dashboard navigation for major cockpit, report, and history sections.",
-          "Grouped dashboard controls and status details so the active bot, data freshness, and revision are visible while scrolling.",
-          "Tightened the dashboard layout to reduce visual noise and make long reports easier to browse.",
-          "Continued replacing vendor-facing dashboard language with generic brokerage-service wording."
-        ]
-      },
-      {
         "revision": "2.6.0",
         "date": "2026-04-30",
-        "title": "Strategy Blueprint and historical explainability",
+        "title": "Ticker-specific LLM Coach feedback",
         "changes": [
-          "Added this Strategy Blueprint panel with revision history and model explanations.",
-          "Made the dashboard default to a 14-day graph window.",
-          "Added historical Champion/Challenger dashboard browsing.",
-          "Made LLM Coach feedback more ticker-specific and less generic."
+          "Changed the LLM Coach feedback style from generic advice to ticker-specific wins, mistakes, and next-action guidance.",
+          "Fed more concrete Coach lessons back into the LLM Trader context so future decisions can adapt to prior outcomes."
         ]
       },
       {
@@ -118,23 +78,13 @@
         ]
       },
       {
-        "revision": "2.3.0",
-        "date": "2026-04-28",
-        "title": "Dashboard cockpit",
-        "changes": [
-          "Added multi-bot dashboard trend comparisons.",
-          "Added indexed vs actual holding value graph mode.",
-          "Added holdings ring chart, decision explorer, and protection summaries."
-        ]
-      },
-      {
         "revision": "2.2.0",
         "date": "2026-04-24",
         "title": "Second paper account and LLM bot",
         "changes": [
           "Separated ML and LLM bots into distinct brokerage paper accounts.",
           "Added LLM Stock Selector, Analyst, Trader, and Coach reports.",
-          "Added separate LLM equity, positions, trades, decisions, and reports in the dashboard."
+          "Enabled ML and LLM bots to generate independent decisions and outcomes for direct performance comparison."
         ]
       },
       {
@@ -150,11 +100,11 @@
       {
         "revision": "2.0.0",
         "date": "2026-04-22",
-        "title": "Cloud paper-trading baseline",
+        "title": "Paper-trading automation baseline",
         "changes": [
-          "Added GitHub Actions cloud runs.",
-          "Added dashboard snapshot generation for Streamlit.",
-          "Added model training, rebalance, snapshot, advisor, and strategy report automation."
+          "Added model training and rebalance commands for automated paper-trading decisions.",
+          "Added advisor and strategy report automation to explain generated decisions.",
+          "Added snapshot generation so model outcomes could feed later learning and review loops."
         ]
       }
     ]
