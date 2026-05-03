@@ -41,7 +41,7 @@
     "snapshot_adjustment": 1.112,
     "technical_adjustment": 1.061
   },
-  "generated_at": "2026-05-02T12:04:41.692250+00:00",
+  "generated_at": "2026-05-03T02:22:10.069947+00:00",
   "summary": "Evaluated 0 mature decisions this run; recent hit rate 51.0%, average signed return 0.16%.",
   "weights": {
     "llm_weight": 0.8,
