@@ -17,20 +17,20 @@
       "samples": 9.0
     },
     "snapshot_adjustment": {
-      "avg_abs_adjustment": 0.00032468126340994913,
-      "avg_aligned_adjustment": 0.00023899295334557972,
-      "edge": 0.0030258476727452657,
-      "hit_rate": 0.45098039215686275,
-      "learned_scale": 1.112,
-      "samples": 102.0
+      "avg_abs_adjustment": 0.0003322002937179486,
+      "avg_aligned_adjustment": 0.0002439153681970832,
+      "edge": 0.0022762709959859148,
+      "hit_rate": 0.43434343434343436,
+      "learned_scale": 1.061,
+      "samples": 99.0
     },
     "technical_adjustment": {
-      "avg_abs_adjustment": 0.0014099752475247515,
-      "avg_aligned_adjustment": 0.0008352722772277232,
-      "edge": 0.0019357933429726517,
-      "hit_rate": 0.45544554455445546,
-      "learned_scale": 1.061,
-      "samples": 101.0
+      "avg_abs_adjustment": 0.0014340051020408156,
+      "avg_aligned_adjustment": 0.0008733418367346943,
+      "edge": 0.0019761688133564416,
+      "hit_rate": 0.45918367346938777,
+      "learned_scale": 1.066,
+      "samples": 98.0
     }
   },
   "component_scales": {
@@ -38,11 +38,11 @@
     "memory_adjustment": 0.947,
     "news_adjustment": 1.0,
     "screener_adjustment": 0.887,
-    "snapshot_adjustment": 1.112,
-    "technical_adjustment": 1.061
+    "snapshot_adjustment": 1.061,
+    "technical_adjustment": 1.066
   },
-  "generated_at": "2026-05-03T02:23:23.520353+00:00",
-  "summary": "Evaluated 0 mature decisions this run; recent hit rate 51.0%, average signed return 0.16%.",
+  "generated_at": "2026-05-04T12:49:25.785147+00:00",
+  "summary": "Evaluated 0 mature decisions this run; recent hit rate 49.5%, average signed return 0.09%.",
   "weights": {
     "llm_weight": 0.8,
     "memory_weight": 0.8,
