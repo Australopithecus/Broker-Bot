@@ -1,0 +1,12 @@
+{
+  "bots": {
+    "ml": {
+      "last_reason": "Trades excluded by the challenger outperformed the champion, so the threshold was relaxed.",
+      "min_signal_abs_score": 0.00125,
+      "updated_at": "2026-05-05T02:13:24.234794+00:00",
+      "updated_by": "champion_challenger"
+    }
+  },
+  "generated_at": "2026-05-05T02:13:24.234806+00:00",
+  "summary": "Conservative threshold overrides promoted by champion/challenger reports."
+}
