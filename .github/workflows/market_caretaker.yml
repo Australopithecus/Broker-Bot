@@ -75,6 +75,7 @@ jobs:
             echo "MODEL_DIR=data/models"
             echo "REPORTS_DIR=data/reports"
             echo "LEARNED_POLICY_PATH=data/learned_policy.json"
+            echo "CHAMPION_POLICY_PATH=data/champion_challenger_policy.json"
           } >> "$GITHUB_ENV"
 
           if [ -n "${CARETAKER_TRAILING_STOP_ENABLED}" ]; then

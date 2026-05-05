@@ -320,7 +320,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - The backtest now better matches the live ensemble by simulating bounded overlay components offline from historical price/volume structure.
 - Advisor overrides are stored in `data/advisor_overrides.json` and applied at startup when enabled.
 - Learned ensemble weights and component reliability scales are stored in `data/learned_policy.json` and are intentionally kept bounded.
-- Champion/challenger reports are shadow evaluations. They compare stricter gates against recent outcomes, but they do not automatically promote a new policy.
+- Champion/challenger reports compare stricter gates against recent outcomes. When enough evaluated evidence supports a change, they write bounded threshold updates to `data/champion_challenger_policy.json`.
 - Reports are written to `data/reports/`.
 - The dashboard APIs/UI now expose recent selected decisions, component contributions, and later outcomes.
 - Optional sector exposure critiques use `data/sector_map.csv` (set via `SECTOR_MAP_PATH`).
@@ -336,6 +336,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - `MAX_SECTOR_EXPOSURE_PCT` caps total absolute exposure in one mapped sector.
 - `MAX_CORRELATED_EXPOSURE_PCT`, `CORRELATION_THRESHOLD`, and `CORRELATION_WINDOW` cap clusters of highly correlated positions.
 - `TECHNICAL_WEIGHT`, `SNAPSHOT_WEIGHT`, `SCREENER_WEIGHT`, `NEWS_WEIGHT`, `MEMORY_WEIGHT`, and `LLM_WEIGHT` set the ensemble blend before learned-policy updates.
+- `CHAMPION_POLICY_PATH` points to the champion/challenger threshold policy file; defaults to `data/champion_challenger_policy.json`.
 - `EXECUTION_ORDER_MODE=simple` keeps the old behavior: market orders are submitted only when the bot runs.
 - `EXECUTION_ORDER_MODE=bracket` tells the brokerage service to hold server-side take-profit and stop-loss exits for fresh entries using `BRACKET_TAKE_PROFIT_PCT` and `BRACKET_STOP_LOSS_PCT`.
 - `ADAPTIVE_EXITS_ENABLED=1` makes bracket exits volatility-aware using `STOP_LOSS_VOL_MULTIPLE`, `TAKE_PROFIT_REWARD_MULTIPLE`, `MIN_STOP_LOSS_PCT`, and `MAX_STOP_LOSS_PCT`.

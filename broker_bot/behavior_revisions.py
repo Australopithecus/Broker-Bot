@@ -4,10 +4,21 @@ from copy import deepcopy
 from typing import Any
 
 
-CURRENT_BEHAVIOR_REVISION = "2.8.0"
-CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-04"
+CURRENT_BEHAVIOR_REVISION = "2.8.1"
+CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-05"
 
 BEHAVIOR_REVISION_HISTORY: list[dict[str, Any]] = [
+    {
+        "revision": "2.8.1",
+        "date": "2026-05-05",
+        "title": "Champion/challenger threshold adaptation",
+        "models": ["ML Bot", "LLM Bot", "Stat Arb Bot"],
+        "changes": [
+            "Promoted champion/challenger from report-only shadow analysis into a bounded threshold-adjustment system.",
+            "Added a shared champion/challenger policy file that can tighten or relax ML confidence, LLM conviction, and Stat Arb z-score thresholds when evaluated outcomes support the change.",
+            "Connected the promoted thresholds back into runtime configuration so future runs use the latest champion/challenger-supported gates.",
+        ],
+    },
     {
         "revision": "2.8.0",
         "date": "2026-05-04",

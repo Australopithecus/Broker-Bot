@@ -70,7 +70,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
         "Caretaker runs can attach broker-side trailing stops to compatible whole-share positions and can enforce an optional daily drawdown kill switch.",
         "Learning reports evaluate mature decisions, calculate signed returns, compare against SPY, and update bounded learned-policy weights.",
         "Model evaluation reports score walk-forward out-of-sample folds before a model revision is trusted on the dashboard.",
-        "Champion/Challenger reports compare the current live policy against stricter shadow policies before changing strategy behavior.",
+        "Champion/Challenger reports compare the current live policy against stricter shadow policies and can write bounded threshold adjustments when enough evaluated evidence supports the change.",
         "Options reports are currently planning-only scaffolds for defined-risk vertical spread ideas; they are not live options execution.",
     ],
     "current_safety_posture": [
@@ -78,7 +78,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
         "LLM outputs are sanitized and bounded before they affect sizing or decisions.",
         "The LLM Skeptic can block trades before execution when evidence quality or upside/downside is poor.",
         "Confidence gates, sector caps, correlation caps, volatility targeting, drawdown controls, and broker-side exit protection reduce runaway behavior.",
-        "Champion/challenger evaluation is shadow-only until enough evidence supports promotion.",
+        "Champion/challenger threshold promotion stays bounded and requires enough evaluated evidence before future runs use a changed gate.",
     ],
     "changelog": behavior_revision_history(),
 }

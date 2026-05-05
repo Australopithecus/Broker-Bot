@@ -54,6 +54,7 @@ def main() -> None:
             "MODEL_DIR=data/models",
             "REPORTS_DIR=data/reports",
             "LEARNED_POLICY_PATH=data/learned_policy.json",
+            "CHAMPION_POLICY_PATH=data/champion_challenger_policy.json",
             "",
             "TRAIN_LOOKBACK_DAYS=252",
             "PRED_HORIZON_DAYS=1",

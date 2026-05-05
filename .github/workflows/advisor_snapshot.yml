@@ -156,6 +156,7 @@ jobs:
           MODEL_DIR: data/models
           REPORTS_DIR: data/reports
           LEARNED_POLICY_PATH: data/learned_policy.json
+          CHAMPION_POLICY_PATH: data/champion_challenger_policy.json
         run: |
           {
             echo "ALPACA_API_KEY=${ALPACA_API_KEY}"
@@ -179,6 +180,7 @@ jobs:
             echo "MODEL_DIR=${MODEL_DIR}"
             echo "REPORTS_DIR=${REPORTS_DIR}"
             echo "LEARNED_POLICY_PATH=${LEARNED_POLICY_PATH}"
+            echo "CHAMPION_POLICY_PATH=${CHAMPION_POLICY_PATH}"
             for name in MIN_SIGNAL_ABS_SCORE LLM_MIN_CONVICTION LLM_SKEPTIC_ENABLED LLM_SKEPTIC_VETO_ENABLED STAT_ARB_LOOKBACK_DAYS STAT_ARB_SYMBOL_LIMIT STAT_ARB_MIN_CORRELATION STAT_ARB_ENTRY_Z STAT_ARB_EXIT_Z STAT_ARB_MAX_PAIRS STAT_ARB_PAIR_GROSS_PCT; do
               value="${!name}"
               if [ -n "$value" ]; then
@@ -353,6 +355,9 @@ jobs:
           git config user.name "broker-bot"
           git config user.email "broker-bot@users.noreply.github.com"
           git add data/dashboard_snapshot.json data/learned_policy.json data/reports
+          if [ -f data/champion_challenger_policy.json ]; then
+            git add data/champion_challenger_policy.json
+          fi
           if git diff --cached --quiet; then
             echo "No bot output changes to commit."
             exit 0

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from urllib.parse import parse_qs, urlsplit
 
@@ -6,6 +8,7 @@ import requests
 import streamlit as st
 
 from broker_bot.bot_blueprint import get_strategy_blueprint
+from broker_bot.bots import BOT_LABELS
 from broker_bot.dashboard_metrics import (
     WINDOW_OPTIONS,
     agreement_summary,
@@ -290,16 +293,20 @@ def fetch(path: str):
         if route == "/api/blueprint":
             return data.get("strategy_blueprint") or get_strategy_blueprint()
         if route == "/api/bots":
-            return {
-                "data": [
+            bot_names = list(dict.fromkeys([*BOT_LABELS.keys(), *bots.keys()]))
+            bot_rows = []
+            for name in bot_names:
+                revised = _with_revision(name, bots.get(name, {}))
+                bot_rows.append(
                     {
                         "name": name,
-                        "label": _with_revision(name, payload).get("label", payload.get("label", name.upper())),
-                        "base_label": _with_revision(name, payload).get("base_label"),
-                        "revision": _with_revision(name, payload).get("revision"),
+                        "label": revised.get("label", BOT_LABELS.get(name, name.upper())),
+                        "base_label": revised.get("base_label"),
+                        "revision": revised.get("revision"),
                     }
-                    for name, payload in bots.items()
-                ]
+                )
+            return {
+                "data": bot_rows
             }
         if route == "/api/summary":
             equity = bot_payload.get("equity", [])
@@ -482,7 +489,19 @@ def _bot_payload(bot_name: str, label: str, snapshot_meta: dict) -> dict:
     if DATA_URL and isinstance(snapshot_meta, dict):
         payload = (snapshot_meta.get("bots") or {}).get(bot_name, {})
         if isinstance(payload, dict):
-            return _with_revision(bot_name, payload)
+            if payload:
+                return _with_revision(bot_name, payload)
+            return _with_revision(
+                bot_name,
+                {
+                    "label": label,
+                    "equity": [],
+                    "positions": [],
+                    "trades": [],
+                    "strategy_reports": [],
+                    "decisions": [],
+                },
+            )
     equity = fetch(f"/api/equity?bot={bot_name}&limit=1000").get("data", [])
     positions = fetch(f"/api/positions?bot={bot_name}").get("data", [])
     trades = fetch(f"/api/trades?bot={bot_name}").get("data", [])
@@ -800,6 +819,7 @@ def _render_champion_challenger_info(bots_payload: dict[str, dict]) -> None:
             latest = reports[0]
             latest_changes = latest.get("changes") if isinstance(latest.get("changes"), dict) else {}
             latest_metrics = latest.get("metrics") if isinstance(latest.get("metrics"), dict) else {}
+            policy_adjustment = latest_changes.get("policy_adjustment") if isinstance(latest_changes.get("policy_adjustment"), dict) else {}
 
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("Champion Avg", _fmt_metric_pct(latest_metrics.get("champion_avg_signed_return")))
@@ -807,9 +827,18 @@ def _render_champion_challenger_info(bots_payload: dict[str, dict]) -> None:
             col3.metric("Champion Samples", f"{int(float(latest_metrics.get('champion_samples') or 0))}")
             col4.metric("Challenger Samples", f"{int(float(latest_metrics.get('challenger_samples') or 0))}")
 
+            if policy_adjustment:
+                st.info(
+                    "Policy adjustment: "
+                    f"{policy_adjustment.get('field', 'threshold')} "
+                    f"{float(policy_adjustment.get('old_value') or 0.0):.4f} -> "
+                    f"{float(policy_adjustment.get('new_value') or 0.0):.4f}. "
+                    f"{policy_adjustment.get('reason', '')}"
+                )
+
             st.markdown("**Models Being Tested**")
             st.write(latest_changes.get("champion_description") or "Champion: current selected-decision policy.")
-            st.write(latest_changes.get("challenger_description") or "Challenger: stricter confidence-gated shadow policy.")
+            st.write(latest_changes.get("challenger_description") or "Challenger: stricter threshold-gated shadow policy.")
 
             implemented = latest_changes.get("implemented_changes")
             if isinstance(implemented, list) and implemented:

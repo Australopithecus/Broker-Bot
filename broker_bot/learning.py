@@ -652,6 +652,110 @@ def _selected_rows_metrics(rows: list[tuple]) -> dict[str, float]:
     return _signed_return_metrics(signed_returns, alphas)
 
 
+def _threshold_policy_spec(bot_name: str) -> dict[str, float | str]:
+    normalized = normalize_bot_name(bot_name)
+    if normalized == LLM_BOT_NAME:
+        return {"field": "llm_min_conviction", "step": 0.05, "low": 0.1, "high": 0.95}
+    if normalized == STAT_ARB_BOT_NAME:
+        return {"field": "stat_arb_entry_z", "step": 0.15, "low": 0.5, "high": 3.5}
+    return {"field": "min_signal_abs_score", "step": 0.00025, "low": 0.0, "high": 0.05}
+
+
+def _adjust_threshold_value(field: str, current: float, direction: str, step: float, low: float, high: float) -> float:
+    if direction == "tighten":
+        if field == "min_signal_abs_score":
+            proposed = max(current * 1.15, current + step)
+        else:
+            proposed = current + step
+    elif direction == "relax":
+        if field == "min_signal_abs_score":
+            proposed = min(current * 0.85, max(current - step, low))
+        else:
+            proposed = current - step
+    else:
+        proposed = current
+    return round(_clip(proposed, low, high), 6)
+
+
+def _load_champion_policy(path: str) -> dict:
+    policy_path = Path(path)
+    if not path or not policy_path.exists():
+        return {"bots": {}}
+    try:
+        payload = json.loads(policy_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"bots": {}}
+    if not isinstance(payload, dict):
+        return {"bots": {}}
+    if not isinstance(payload.get("bots"), dict):
+        payload["bots"] = {}
+    return payload
+
+
+def _apply_champion_threshold_adjustment(
+    config: Config,
+    bot_name: str,
+    threshold: float,
+    champion_metrics: dict[str, float],
+    challenger_metrics: dict[str, float],
+    excluded_metrics: dict[str, float],
+) -> dict:
+    normalized = normalize_bot_name(bot_name)
+    spec = _threshold_policy_spec(normalized)
+    field = str(spec["field"])
+    step = float(spec["step"])
+    low = float(spec["low"])
+    high = float(spec["high"])
+
+    champion_samples = int(champion_metrics.get("samples", 0.0))
+    challenger_samples = int(challenger_metrics.get("samples", 0.0))
+    excluded_samples = int(excluded_metrics.get("samples", 0.0))
+    direction = "hold"
+    reason = "Not enough evaluated champion/challenger evidence to adjust this bot yet."
+
+    if challenger_samples >= 10 and challenger_metrics["avg_signed_return"] > champion_metrics["avg_signed_return"] + 0.001:
+        direction = "tighten"
+        reason = "Challenger outperformed the current champion with enough samples, so the threshold was tightened."
+    elif excluded_samples >= 10 and excluded_metrics["avg_signed_return"] > champion_metrics["avg_signed_return"] + 0.001:
+        direction = "relax"
+        reason = "Trades excluded by the challenger outperformed the champion, so the threshold was relaxed."
+    elif champion_samples >= 10:
+        reason = "Champion/challenger evidence did not justify a threshold change."
+
+    new_threshold = (
+        _adjust_threshold_value(field, threshold, direction, step, low, high)
+        if direction in {"tighten", "relax"}
+        else threshold
+    )
+    changed = abs(float(new_threshold) - float(threshold)) > 1e-9
+    adjustment = {
+        "bot_name": normalized,
+        "field": field,
+        "old_value": float(threshold),
+        "new_value": float(new_threshold),
+        "direction": direction,
+        "changed": changed,
+        "reason": reason,
+    }
+    if not changed:
+        return adjustment
+
+    path = getattr(config, "champion_policy_path", "data/champion_challenger_policy.json")
+    payload = _load_champion_policy(path)
+    bots = payload.setdefault("bots", {})
+    bot_policy = bots.setdefault(normalized, {})
+    bot_policy[field] = new_threshold
+    bot_policy["updated_at"] = datetime.now(timezone.utc).isoformat()
+    bot_policy["updated_by"] = "champion_challenger"
+    bot_policy["last_reason"] = reason
+    payload["generated_at"] = datetime.now(timezone.utc).isoformat()
+    payload["summary"] = "Conservative threshold overrides promoted by champion/challenger reports."
+    out_path = Path(path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return adjustment
+
+
 def generate_champion_challenger_report(config: Config, bot_name: str = "ml") -> StrategyReport:
     normalized_bot = normalize_bot_name(bot_name)
     rows = read_recent_selected_decisions(config.db_path, limit=500, bot_name=normalized_bot)
@@ -670,7 +774,7 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
         implemented_changes = [
             f"LLM conviction gate is active at {threshold:.4f}.",
             "LLM Skeptic review can caution, reduce conviction, or veto weakly supported trades before execution.",
-            "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.",
+            "Champion/challenger can promote bounded threshold changes only after enough evaluated evidence supports the challenger.",
         ]
     elif normalized_bot == STAT_ARB_BOT_NAME:
         threshold = max(float(config.stat_arb_entry_z), 0.0)
@@ -686,7 +790,7 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
         implemented_changes = [
             f"Stat Arb entry gate is active at {threshold:.4f} absolute z-score.",
             f"Pair candidates must pass the minimum correlation gate of {config.stat_arb_min_correlation:.2f}.",
-            "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.",
+            "Champion/challenger can promote bounded threshold changes only after enough evaluated evidence supports the challenger.",
         ]
     else:
         threshold = max(float(config.min_signal_abs_score), 0.0)
@@ -702,7 +806,7 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
         implemented_changes = [
             f"ML confidence gate is active at {threshold:.4f}; weaker selected signals are converted to HOLD before sizing.",
             "Post-trade attribution now tracks which signal components are associated with wins or losses.",
-            "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.",
+            "Champion/challenger can promote bounded threshold changes only after enough evaluated evidence supports the challenger.",
         ]
 
     def _challenger_score(row: tuple) -> float:
@@ -724,6 +828,22 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
         verdict = "The challenger is outperforming the current champion on recent evaluated decisions."
     else:
         verdict = "The challenger has not yet shown enough improvement over the current champion."
+
+    policy_adjustment = _apply_champion_threshold_adjustment(
+        config,
+        normalized_bot,
+        threshold,
+        champion_metrics,
+        challenger_metrics,
+        excluded_metrics,
+    )
+    if policy_adjustment.get("changed"):
+        implemented_changes.append(
+            f"Champion/challenger policy updated {policy_adjustment['field']} from "
+            f"{float(policy_adjustment['old_value']):.4f} to {float(policy_adjustment['new_value']):.4f}."
+        )
+    else:
+        implemented_changes.append(f"Champion/challenger adjustment status: {policy_adjustment.get('reason')}")
 
     body = "\n".join(
         [
@@ -758,7 +878,7 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
             "## Interpretation",
             "- If challenger returns and hit rate beat the champion with enough samples, tightening the gate may improve future results.",
             "- If excluded trades perform well, the gate may be too strict and should be relaxed.",
-            "- This is shadow evaluation only; it reports what would have happened without automatically changing the strategy.",
+            "- Threshold changes are bounded and written to the champion/challenger policy file only when enough evaluated evidence exists.",
         ]
     )
     ts = datetime.now(timezone.utc).isoformat()
@@ -772,6 +892,9 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
         "challenger_avg_signed_return": challenger_metrics["avg_signed_return"],
         "excluded_samples": excluded_metrics["samples"],
         "excluded_avg_signed_return": excluded_metrics["avg_signed_return"],
+        "policy_old_value": policy_adjustment.get("old_value"),
+        "policy_new_value": policy_adjustment.get("new_value"),
+        "policy_changed": 1.0 if policy_adjustment.get("changed") else 0.0,
     }
     changes = {
         "verdict": verdict,
@@ -779,6 +902,7 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
         "challenger_description": challenger_description,
         "implemented_changes": implemented_changes,
         "threshold_label": threshold_label,
+        "policy_adjustment": policy_adjustment,
     }
     report_path = _write_report_file(config, f"champion_challenger_{normalized_bot}", body)
     headline = f"{bot_label(normalized_bot)} Champion / Challenger"

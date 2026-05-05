@@ -40,6 +40,7 @@ class Config:
     reports_dir: str
     advisor_overrides_path: str
     learned_policy_path: str
+    champion_policy_path: str
     sector_map_path: str
     training_lookback_days: int
     prediction_horizon_days: int
@@ -126,6 +127,40 @@ def _load_json_overrides(path: str) -> dict[str, float]:
     return payload
 
 
+def _load_champion_policy(path: str) -> dict[str, dict[str, float]]:
+    if not path or not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle) or {}
+    except Exception:
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    bots = payload.get("bots", payload)
+    if not isinstance(bots, dict):
+        return {}
+
+    clean: dict[str, dict[str, float]] = {}
+    for bot_name, bot_policy in bots.items():
+        if not isinstance(bot_policy, dict):
+            continue
+        normalized = normalize_bot_name(str(bot_name))
+        values: dict[str, float] = {}
+        for key, value in bot_policy.items():
+            try:
+                values[str(key)] = float(value)
+            except Exception:
+                continue
+        if values:
+            clean[normalized] = values
+    return clean
+
+
+def _clip_float(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
+
+
 def load_config() -> Config:
     api_key = os.getenv("ALPACA_API_KEY", "").strip()
     secret_key = os.getenv("ALPACA_SECRET_KEY", "").strip()
@@ -141,6 +176,7 @@ def load_config() -> Config:
     stat_arb_data_feed = os.getenv("ALPACA_STAT_ARB_DATA_FEED", data_feed).strip() or data_feed
     overrides_path = os.getenv("ADVISOR_OVERRIDES_PATH", "data/advisor_overrides.json").strip()
     learned_policy_path = os.getenv("LEARNED_POLICY_PATH", "data/learned_policy.json").strip()
+    champion_policy_path = os.getenv("CHAMPION_POLICY_PATH", "data/champion_challenger_policy.json").strip()
     auto_apply_flag = os.getenv("ADVISOR_AUTO_APPLY", "1").strip().lower() in {"1", "true", "yes", "y"}
     sector_map_path = os.getenv("SECTOR_MAP_PATH", "data/sector_map.csv").strip()
 
@@ -149,6 +185,7 @@ def load_config() -> Config:
 
     advisor_overrides = _load_json_overrides(overrides_path)
     learned_policy = _load_json_overrides(learned_policy_path)
+    champion_policy = _load_champion_policy(champion_policy_path)
 
     def _advisor_override(name: str, default: float) -> float:
         try:
@@ -167,6 +204,13 @@ def load_config() -> Config:
             return float(learned_policy.get(name, default))
         except Exception:
             return default
+
+    def _champion_override(bot_name: str, name: str, default: float, low: float, high: float) -> float:
+        try:
+            value = float(champion_policy.get(normalize_bot_name(bot_name), {}).get(name, default))
+        except Exception:
+            value = default
+        return _clip_float(value, low, high)
 
     return Config(
         alpaca_api_key=api_key,
@@ -187,20 +231,39 @@ def load_config() -> Config:
         reports_dir=os.getenv("REPORTS_DIR", "data/reports"),
         advisor_overrides_path=overrides_path,
         learned_policy_path=learned_policy_path,
+        champion_policy_path=champion_policy_path,
         sector_map_path=sector_map_path,
         training_lookback_days=int(os.getenv("TRAIN_LOOKBACK_DAYS", "252")),
         prediction_horizon_days=int(os.getenv("PRED_HORIZON_DAYS", "1")),
         rebalance_top_k=_advisor_override_int("rebalance_top_k", int(os.getenv("REBALANCE_TOP_K", "40"))),
         min_long_return=_advisor_override("min_long_return", float(os.getenv("MIN_LONG_RETURN", "0.001"))),
         max_short_return=_advisor_override("max_short_return", float(os.getenv("MAX_SHORT_RETURN", "-0.001"))),
-        min_signal_abs_score=_advisor_override("min_signal_abs_score", float(os.getenv("MIN_SIGNAL_ABS_SCORE", "0.0015"))),
-        llm_min_conviction=float(os.getenv("LLM_MIN_CONVICTION", "0.55")),
+        min_signal_abs_score=_champion_override(
+            ML_BOT_NAME,
+            "min_signal_abs_score",
+            _advisor_override("min_signal_abs_score", float(os.getenv("MIN_SIGNAL_ABS_SCORE", "0.0015"))),
+            0.0,
+            0.05,
+        ),
+        llm_min_conviction=_champion_override(
+            LLM_BOT_NAME,
+            "llm_min_conviction",
+            float(os.getenv("LLM_MIN_CONVICTION", "0.55")),
+            0.1,
+            0.95,
+        ),
         llm_skeptic_enabled=os.getenv("LLM_SKEPTIC_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
         llm_skeptic_veto_enabled=os.getenv("LLM_SKEPTIC_VETO_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
         stat_arb_lookback_days=int(os.getenv("STAT_ARB_LOOKBACK_DAYS", "180")),
         stat_arb_symbol_limit=int(os.getenv("STAT_ARB_SYMBOL_LIMIT", "80")),
         stat_arb_min_correlation=float(os.getenv("STAT_ARB_MIN_CORRELATION", "0.72")),
-        stat_arb_entry_z=float(os.getenv("STAT_ARB_ENTRY_Z", "1.25")),
+        stat_arb_entry_z=_champion_override(
+            STAT_ARB_BOT_NAME,
+            "stat_arb_entry_z",
+            float(os.getenv("STAT_ARB_ENTRY_Z", "1.25")),
+            0.5,
+            3.5,
+        ),
         stat_arb_exit_z=float(os.getenv("STAT_ARB_EXIT_Z", "0.35")),
         stat_arb_max_pairs=int(os.getenv("STAT_ARB_MAX_PAIRS", "5")),
         stat_arb_pair_gross_pct=float(os.getenv("STAT_ARB_PAIR_GROSS_PCT", "0.08")),

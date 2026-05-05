@@ -31,7 +31,7 @@ def model_revision(
             "name": "Learned Overlays",
             "status": "active",
             "introduced_at": "2026-05-01",
-            "behavior_revision": "2.7.0",
+            "behavior_revision": CURRENT_BEHAVIOR_REVISION,
             "summary": (
                 model_eval.get("summary")
                 if model_eval
@@ -80,7 +80,7 @@ def model_revision(
         "name": "Multi-role LLM",
         "status": "active",
         "introduced_at": None,
-        "behavior_revision": "2.6.0",
+        "behavior_revision": CURRENT_BEHAVIOR_REVISION,
         "summary": "Multi-role LLM selection, analysis, trading, and coaching workflow.",
         "base_label": base_label,
         "report_ts": None,
