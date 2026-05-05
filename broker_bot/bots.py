@@ -2,10 +2,12 @@ from __future__ import annotations
 
 ML_BOT_NAME = "ml"
 LLM_BOT_NAME = "llm"
+STAT_ARB_BOT_NAME = "stat_arb"
 
 BOT_LABELS = {
     ML_BOT_NAME: "ML Bot",
     LLM_BOT_NAME: "LLM Bot",
+    STAT_ARB_BOT_NAME: "Stat Arb Bot",
 }
 
 

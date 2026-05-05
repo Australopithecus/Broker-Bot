@@ -4,10 +4,21 @@ from copy import deepcopy
 from typing import Any
 
 
-CURRENT_BEHAVIOR_REVISION = "2.7.0"
-CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-01"
+CURRENT_BEHAVIOR_REVISION = "2.8.0"
+CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-04"
 
 BEHAVIOR_REVISION_HISTORY: list[dict[str, Any]] = [
+    {
+        "revision": "2.8.0",
+        "date": "2026-05-04",
+        "title": "Stat Arb Bot R1 pairs mean reversion",
+        "models": ["Stat Arb Bot"],
+        "changes": [
+            "Added a third strategy family that trades explicit statistical pair dislocations instead of LLM decisions or supervised return predictions.",
+            "Added hedge-ratio spread z-scores, minimum pair correlation gates, liquidity filters, and market-neutral long/short pair construction.",
+            "Added Stat Arb Bot reports, decision logs, model revision metadata, and cloud workflow hooks.",
+        ],
+    },
     {
         "revision": "2.7.0",
         "date": "2026-05-01",

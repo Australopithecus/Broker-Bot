@@ -148,7 +148,7 @@ def _build_fallback_analyst_report(row: dict, research: dict, prediction_horizon
         "The signal could be overfit to recent momentum or event noise.",
         "New information could quickly invalidate the current setup.",
     ]
-    current_events = headlines or ["No recent Alpaca headlines were available in the configured lookback window."]
+    current_events = headlines or ["No recent brokerage-service headlines were available in the configured lookback window."]
     return {
         "symbol": symbol,
         "market_analysis": f"{symbol} is being monitored as a {row['side']} candidate based on the current signal stack.",

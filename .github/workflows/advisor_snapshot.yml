@@ -47,6 +47,10 @@ jobs:
           ALPACA_LLM_SECRET_KEY: ${{ secrets.ALPACA_LLM_SECRET_KEY }}
           ALPACA_LLM_PAPER_URL: ${{ secrets.ALPACA_LLM_PAPER_URL }}
           ALPACA_LLM_DATA_FEED: ${{ secrets.ALPACA_LLM_DATA_FEED }}
+          ALPACA_STAT_ARB_API_KEY: ${{ secrets.ALPACA_STAT_ARB_API_KEY }}
+          ALPACA_STAT_ARB_SECRET_KEY: ${{ secrets.ALPACA_STAT_ARB_SECRET_KEY }}
+          ALPACA_STAT_ARB_PAPER_URL: ${{ secrets.ALPACA_STAT_ARB_PAPER_URL }}
+          ALPACA_STAT_ARB_DATA_FEED: ${{ secrets.ALPACA_STAT_ARB_DATA_FEED }}
         run: |
           python scripts/restore_db_from_snapshot.py
 
@@ -60,6 +64,10 @@ jobs:
           ALPACA_LLM_SECRET_KEY: ${{ secrets.ALPACA_LLM_SECRET_KEY }}
           ALPACA_LLM_PAPER_URL: ${{ secrets.ALPACA_LLM_PAPER_URL }}
           ALPACA_LLM_DATA_FEED: ${{ secrets.ALPACA_LLM_DATA_FEED }}
+          ALPACA_STAT_ARB_API_KEY: ${{ secrets.ALPACA_STAT_ARB_API_KEY }}
+          ALPACA_STAT_ARB_SECRET_KEY: ${{ secrets.ALPACA_STAT_ARB_SECRET_KEY }}
+          ALPACA_STAT_ARB_PAPER_URL: ${{ secrets.ALPACA_STAT_ARB_PAPER_URL }}
+          ALPACA_STAT_ARB_DATA_FEED: ${{ secrets.ALPACA_STAT_ARB_DATA_FEED }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_ENABLED: ${{ secrets.LLM_ENABLED }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
@@ -67,6 +75,13 @@ jobs:
           LLM_MIN_CONVICTION: ${{ secrets.LLM_MIN_CONVICTION }}
           LLM_SKEPTIC_ENABLED: ${{ secrets.LLM_SKEPTIC_ENABLED }}
           LLM_SKEPTIC_VETO_ENABLED: ${{ secrets.LLM_SKEPTIC_VETO_ENABLED }}
+          STAT_ARB_LOOKBACK_DAYS: ${{ secrets.STAT_ARB_LOOKBACK_DAYS }}
+          STAT_ARB_SYMBOL_LIMIT: ${{ secrets.STAT_ARB_SYMBOL_LIMIT }}
+          STAT_ARB_MIN_CORRELATION: ${{ secrets.STAT_ARB_MIN_CORRELATION }}
+          STAT_ARB_ENTRY_Z: ${{ secrets.STAT_ARB_ENTRY_Z }}
+          STAT_ARB_EXIT_Z: ${{ secrets.STAT_ARB_EXIT_Z }}
+          STAT_ARB_MAX_PAIRS: ${{ secrets.STAT_ARB_MAX_PAIRS }}
+          STAT_ARB_PAIR_GROSS_PCT: ${{ secrets.STAT_ARB_PAIR_GROSS_PCT }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
         run: |
           python - <<'PY'
@@ -79,6 +94,10 @@ jobs:
               "ALPACA_LLM_SECRET_KEY",
               "ALPACA_LLM_PAPER_URL",
               "ALPACA_LLM_DATA_FEED",
+              "ALPACA_STAT_ARB_API_KEY",
+              "ALPACA_STAT_ARB_SECRET_KEY",
+              "ALPACA_STAT_ARB_PAPER_URL",
+              "ALPACA_STAT_ARB_DATA_FEED",
               "OPENAI_API_KEY",
               "LLM_ENABLED",
               "LLM_MODEL",
@@ -86,6 +105,13 @@ jobs:
               "LLM_MIN_CONVICTION",
               "LLM_SKEPTIC_ENABLED",
               "LLM_SKEPTIC_VETO_ENABLED",
+              "STAT_ARB_LOOKBACK_DAYS",
+              "STAT_ARB_SYMBOL_LIMIT",
+              "STAT_ARB_MIN_CORRELATION",
+              "STAT_ARB_ENTRY_Z",
+              "STAT_ARB_EXIT_Z",
+              "STAT_ARB_MAX_PAIRS",
+              "STAT_ARB_PAIR_GROSS_PCT",
               "API_TOKEN",
           ]
           missing = [name for name in required if not os.getenv(name, "").strip()]
@@ -106,6 +132,10 @@ jobs:
           ALPACA_LLM_SECRET_KEY: ${{ secrets.ALPACA_LLM_SECRET_KEY }}
           ALPACA_LLM_PAPER_URL: ${{ secrets.ALPACA_LLM_PAPER_URL }}
           ALPACA_LLM_DATA_FEED: ${{ secrets.ALPACA_LLM_DATA_FEED }}
+          ALPACA_STAT_ARB_API_KEY: ${{ secrets.ALPACA_STAT_ARB_API_KEY }}
+          ALPACA_STAT_ARB_SECRET_KEY: ${{ secrets.ALPACA_STAT_ARB_SECRET_KEY }}
+          ALPACA_STAT_ARB_PAPER_URL: ${{ secrets.ALPACA_STAT_ARB_PAPER_URL }}
+          ALPACA_STAT_ARB_DATA_FEED: ${{ secrets.ALPACA_STAT_ARB_DATA_FEED }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_ENABLED: ${{ secrets.LLM_ENABLED }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
@@ -113,6 +143,13 @@ jobs:
           LLM_MIN_CONVICTION: ${{ secrets.LLM_MIN_CONVICTION }}
           LLM_SKEPTIC_ENABLED: ${{ secrets.LLM_SKEPTIC_ENABLED }}
           LLM_SKEPTIC_VETO_ENABLED: ${{ secrets.LLM_SKEPTIC_VETO_ENABLED }}
+          STAT_ARB_LOOKBACK_DAYS: ${{ secrets.STAT_ARB_LOOKBACK_DAYS }}
+          STAT_ARB_SYMBOL_LIMIT: ${{ secrets.STAT_ARB_SYMBOL_LIMIT }}
+          STAT_ARB_MIN_CORRELATION: ${{ secrets.STAT_ARB_MIN_CORRELATION }}
+          STAT_ARB_ENTRY_Z: ${{ secrets.STAT_ARB_ENTRY_Z }}
+          STAT_ARB_EXIT_Z: ${{ secrets.STAT_ARB_EXIT_Z }}
+          STAT_ARB_MAX_PAIRS: ${{ secrets.STAT_ARB_MAX_PAIRS }}
+          STAT_ARB_PAIR_GROSS_PCT: ${{ secrets.STAT_ARB_PAIR_GROSS_PCT }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
           UNIVERSE_PATH: data/sp500.csv
           BROKER_BOT_DB: data/broker_bot.sqlite
@@ -129,6 +166,10 @@ jobs:
             echo "ALPACA_LLM_SECRET_KEY=${ALPACA_LLM_SECRET_KEY}"
             echo "ALPACA_LLM_PAPER_URL=${ALPACA_LLM_PAPER_URL}"
             echo "ALPACA_LLM_DATA_FEED=${ALPACA_LLM_DATA_FEED}"
+            echo "ALPACA_STAT_ARB_API_KEY=${ALPACA_STAT_ARB_API_KEY}"
+            echo "ALPACA_STAT_ARB_SECRET_KEY=${ALPACA_STAT_ARB_SECRET_KEY}"
+            echo "ALPACA_STAT_ARB_PAPER_URL=${ALPACA_STAT_ARB_PAPER_URL}"
+            echo "ALPACA_STAT_ARB_DATA_FEED=${ALPACA_STAT_ARB_DATA_FEED}"
             echo "OPENAI_API_KEY=${OPENAI_API_KEY}"
             echo "LLM_ENABLED=${LLM_ENABLED}"
             echo "LLM_MODEL=${LLM_MODEL}"
@@ -138,7 +179,7 @@ jobs:
             echo "MODEL_DIR=${MODEL_DIR}"
             echo "REPORTS_DIR=${REPORTS_DIR}"
             echo "LEARNED_POLICY_PATH=${LEARNED_POLICY_PATH}"
-            for name in MIN_SIGNAL_ABS_SCORE LLM_MIN_CONVICTION LLM_SKEPTIC_ENABLED LLM_SKEPTIC_VETO_ENABLED; do
+            for name in MIN_SIGNAL_ABS_SCORE LLM_MIN_CONVICTION LLM_SKEPTIC_ENABLED LLM_SKEPTIC_VETO_ENABLED STAT_ARB_LOOKBACK_DAYS STAT_ARB_SYMBOL_LIMIT STAT_ARB_MIN_CORRELATION STAT_ARB_ENTRY_Z STAT_ARB_EXIT_Z STAT_ARB_MAX_PAIRS STAT_ARB_PAIR_GROSS_PCT; do
               value="${!name}"
               if [ -n "$value" ]; then
                 echo "${name}=${value}"
@@ -150,6 +191,15 @@ jobs:
         id: llm_bot_config
         run: |
           if [ -n "${ALPACA_LLM_API_KEY}" ] && [ -n "${ALPACA_LLM_SECRET_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect whether Stat Arb bot credentials are configured
+        id: stat_arb_bot_config
+        run: |
+          if [ -n "${ALPACA_STAT_ARB_API_KEY}" ] && [ -n "${ALPACA_STAT_ARB_SECRET_KEY}" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
@@ -261,6 +311,31 @@ jobs:
         if: ${{ steps.llm_bot_config.outputs.enabled == 'true' }}
         run: |
           python -m broker_bot.cli champion-report-llm
+
+      - name: Rebalance Stat Arb paper portfolio
+        if: ${{ steps.stat_arb_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli rebalance-stat-arb
+
+      - name: Snapshot Stat Arb account
+        if: ${{ steps.stat_arb_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli snapshot-stat-arb
+
+      - name: Review Stat Arb decisions
+        if: ${{ steps.stat_arb_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli review-decisions-stat-arb
+
+      - name: Generate Stat Arb attribution report
+        if: ${{ steps.stat_arb_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli attribution-report-stat-arb
+
+      - name: Generate Stat Arb champion challenger report
+        if: ${{ steps.stat_arb_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli champion-report-stat-arb
 
       - name: Generate options scaffold report
         run: |

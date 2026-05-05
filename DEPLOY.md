@@ -14,7 +14,7 @@ The GitHub Actions workflow:
 
 1. restores prior bot state from `data/dashboard_snapshot.json`
 2. trains the model
-3. rebalances the Alpaca paper portfolio
+3. rebalances configured brokerage-service paper portfolios
 4. reviews prior decisions and updates learned weights
 5. generates advisor and strategy reports
 6. rebuilds `data/dashboard_snapshot.json`
@@ -34,7 +34,7 @@ The Streamlit app reads the committed snapshot and shows:
 You need:
 
 - a GitHub account
-- an Alpaca paper trading account
+- one or more brokerage-service paper trading accounts
 - an OpenAI API key if you want LLM features enabled
 
 ## Step 1: Push The Repo To GitHub
@@ -65,6 +65,8 @@ Add these secrets:
 - `ALPACA_SECRET_KEY`
 - `ALPACA_PAPER_URL`
 - `ALPACA_DATA_FEED`
+- `ALPACA_LLM_API_KEY` and `ALPACA_LLM_SECRET_KEY` if you want to run the LLM Bot in a separate account
+- `ALPACA_STAT_ARB_API_KEY` and `ALPACA_STAT_ARB_SECRET_KEY` if you want to run the Stat Arb Bot in a separate account
 - `OPENAI_API_KEY`
 - `LLM_ENABLED`
 - `LLM_MODEL`
@@ -146,7 +148,7 @@ After the first GitHub Actions run completes:
 
 For a first cloud deployment, keep things conservative:
 
-- use Alpaca paper trading only
+- use paper trading only
 - keep `LLM_ENABLED=0` initially if you want fewer moving parts
 - run the workflow only once per weekday until you’re comfortable
 - inspect the strategy report after each run
@@ -182,7 +184,7 @@ That means weekdays at `21:15 UTC`.
 Check these first:
 
 - missing GitHub secrets
-- wrong Alpaca paper URL or credentials
+- wrong paper URL or credentials
 - empty or outdated `data/sp500.csv`
 - Streamlit `DATA_URL` pointing to the wrong repo path
 - LLM enabled without a valid `OPENAI_API_KEY`

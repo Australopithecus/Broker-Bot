@@ -922,6 +922,7 @@ def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
                 "learning",
                 "attribution",
                 "champion_challenger",
+                "stat_arb_daily",
                 "analyst_daily",
                 "trader_daily",
                 "skeptic",
@@ -1016,7 +1017,7 @@ with control_col2:
         horizontal=True,
     )
 display_labels = [label for _, label in bot_names]
-display_options = ["Both models"] + display_labels
+display_options = ["All models"] + display_labels
 with control_col3:
     selected_display = st.radio("Show", display_options, horizontal=True)
 selected_window = WINDOW_OPTIONS[selected_window_key]
@@ -1032,7 +1033,7 @@ spy_series: list[pd.Series] = []
 trend_frames = {name: _trend_source_df(name, df) for name, df in comparison_frames.items()}
 global_latest = max((df.index.max() for df in trend_frames.values() if not df.empty), default=None)
 excluded_labels: list[str] = []
-selected_labels = set(display_labels if selected_display == "Both models" else [selected_display])
+selected_labels = set(display_labels if selected_display == "All models" else [selected_display])
 selected_bots = [(name, label) for name, label in bot_names if label in selected_labels]
 for name, label in bot_names:
     df = trend_frames.get(name, pd.DataFrame())
@@ -1070,9 +1071,9 @@ trend_col, holdings_col = st.columns([2.2, 1])
 
 with trend_col:
     if graph_mode == "Indexed performance":
-        st.caption("Indexed to 100 at the first visible point in the selected window. ML, LLM, and SPY trend data before April 23, 2026 is hidden.")
+        st.caption("Indexed to 100 at the first visible point in the selected window. Bot and SPY trend data before April 23, 2026 is hidden.")
     else:
-        st.caption("Actual account holding value in dollars. ML and LLM trend data before April 23, 2026 is hidden; SPY is omitted because it is a price, not an account value.")
+        st.caption("Actual account holding value in dollars. Bot trend data before April 23, 2026 is hidden; SPY is omitted because it is a price, not an account value.")
     if not trend_df.empty:
         try:
             import plotly.graph_objects as go

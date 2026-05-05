@@ -918,7 +918,7 @@ function setMetric(id, value) {
 const renderDisplaySelector = () => {
   const container = document.getElementById('displaySelector');
   if (!container) return;
-  const options = [{ value: 'both', label: 'Both models' }, ...availableBots.map(bot => ({ value: bot.name, label: bot.label }))];
+  const options = [{ value: 'both', label: 'All models' }, ...availableBots.map(bot => ({ value: bot.name, label: bot.label }))];
   if (currentDisplay !== 'both' && !availableBots.some(bot => bot.name === currentDisplay)) {
     currentDisplay = 'both';
   }
@@ -1573,7 +1573,7 @@ async function loadStrategy() {
     return;
   }
   container.innerHTML = '';
-  const featuredTypes = new Set(['model_eval', 'watchlist', 'skeptic', 'attribution', 'champion_challenger', 'options_scaffold']);
+  const featuredTypes = new Set(['model_eval', 'watchlist', 'skeptic', 'attribution', 'champion_challenger', 'stat_arb_daily', 'options_scaffold']);
   reports.filter(report => featuredTypes.has(report.report_type)).slice(0, 3).forEach(report => {
     const div = document.createElement('div');
     div.className = 'card';

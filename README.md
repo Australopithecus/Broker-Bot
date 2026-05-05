@@ -1,9 +1,10 @@
 # Broker Bot (Paper Trading)
 
-A Python-based paper-trading project for brokerage-service paper accounts with two named bots:
+A Python-based paper-trading project for brokerage-service paper accounts with three named bots:
 
 - `ML Bot`: the original machine-learning ensemble bot
 - `LLM Bot`: a second bot that uses a network of LLM roles for stock selection, analysis, trading, and coaching
+- `Stat Arb Bot`: a third bot that trades statistical pair dislocations using correlation, hedge-ratio spreads, and z-score mean reversion
 
 Each bot keeps its own paper-account history, reports, and dashboard sections so you can compare them side by side.
 
@@ -48,7 +49,15 @@ python3 scripts/setup_env.py
 - `Skeptic`: challenges the Trader before execution, reducing or vetoing weakly supported ideas
 - `Coach`: reviews mature outcomes and writes the next feedback report for the trader, avoiding behavior changes based on one-off results
 
-Both bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate brokerage paper accounts.
+`Stat Arb Bot` is a relationship-trading challenger:
+
+- Pair universe: filters liquid stocks with enough history, then builds same-sector pair candidates when sector data is available.
+- Relationship test: requires a minimum return correlation and estimates a hedge ratio from log prices.
+- Entry logic: enters only when the hedge-ratio spread is stretched beyond a configurable z-score threshold.
+- Trade construction: goes long the relatively cheap leg and short the relatively rich leg, aiming for mean reversion rather than broad market direction.
+- Review loop: writes pair-candidate reports and logs z-score/correlation components so future reports can evaluate which relationship setups worked.
+
+All bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate brokerage paper accounts.
 
 Reporting: markdown reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots. The report loop includes learning, post-trade attribution, and champion/challenger shadow comparisons.
 
@@ -94,6 +103,12 @@ Rebalance the separate LLM bot paper account:
 python3 -m broker_bot.cli rebalance-llm
 ```
 
+Rebalance the Stat Arb bot paper account:
+
+```bash
+python3 -m broker_bot.cli rebalance-stat-arb
+```
+
 Review mature past decisions, score what worked, and update learned component weights:
 
 ```bash
@@ -122,6 +137,15 @@ python3 -m broker_bot.cli attribution-report-llm
 python3 -m broker_bot.cli champion-report-llm
 ```
 
+Refresh the Stat Arb bot reporting loop:
+
+```bash
+python3 -m broker_bot.cli review-decisions-stat-arb
+python3 -m broker_bot.cli strategy-report-stat-arb
+python3 -m broker_bot.cli attribution-report-stat-arb
+python3 -m broker_bot.cli champion-report-stat-arb
+```
+
 Generate a paper-only options scaffold report that turns the strongest stock ideas into defined-risk vertical spread candidates:
 
 ```bash
@@ -138,6 +162,12 @@ Snapshot the LLM bot account:
 
 ```bash
 python3 -m broker_bot.cli snapshot-llm
+```
+
+Snapshot the Stat Arb bot account:
+
+```bash
+python3 -m broker_bot.cli snapshot-stat-arb
 ```
 
 Launch the desktop dashboard (Tkinter):
@@ -178,7 +208,7 @@ You can deploy the UI via Streamlit Community Cloud using `streamlit_app.py`. Th
      `GITHUB_REPOSITORY`, `GITHUB_WORKFLOW_ID`, `GITHUB_WORKFLOW_REF`, and `BROKER_BOT_GITHUB_TOKEN`
 
 The Streamlit app calls your bot API endpoints and shows:
-Equity vs SPY, positions, trades, analyst/trader/coach reports, strategy-report snapshots, and recent decision rationale for both bots in separate sections.
+Equity vs SPY, positions, trades, analyst/trader/coach reports, stat-arb pair reports, strategy-report snapshots, and recent decision rationale for all configured bots in separate sections.
 
 The optional dashboard run button triggers the same GitHub Actions workflow as the manual `Run workflow` button in GitHub. It requires a confirmation checkbox because the workflow can rebalance brokerage-service paper portfolios.
 
@@ -202,7 +232,7 @@ Workflow file: `.github/workflows/advisor_snapshot.yml`
 
 ### GitHub Actions (Market-Hours Caretaker)
 
-The lightweight caretaker workflow runs around regular US market hours and does not perform deep research or full rebalances. It restores the latest snapshot, checks both configured paper accounts, snapshots equity/positions, and attaches broker-side trailing-stop protection to unprotected whole-share positions when possible.
+The lightweight caretaker workflow runs around regular US market hours and does not perform deep research or full rebalances. It restores the latest snapshot, checks all configured paper accounts, snapshots equity/positions, and attaches broker-side trailing-stop protection to unprotected whole-share positions when possible.
 
 Workflow file: `.github/workflows/market_caretaker.yml`
 
@@ -218,6 +248,8 @@ Optional caretaker secrets:
 - `ALPACA_DATA_FEED` (optional)
 - `ALPACA_LLM_API_KEY` and `ALPACA_LLM_SECRET_KEY` for the second paper account used by the LLM bot
 - `ALPACA_LLM_PAPER_URL` and `ALPACA_LLM_DATA_FEED` (optional)
+- `ALPACA_STAT_ARB_API_KEY` and `ALPACA_STAT_ARB_SECRET_KEY` for the separate paper account used by the Stat Arb bot
+- `ALPACA_STAT_ARB_PAPER_URL` and `ALPACA_STAT_ARB_DATA_FEED` (optional)
 - `OPENAI_API_KEY` (if `LLM_ENABLED=1`)
 - `LLM_ENABLED` (`1` to enable LLM advisor)
 - `LLM_MODEL` (e.g. `gpt-5-mini`)
@@ -242,6 +274,11 @@ python3 -m broker_bot.cli snapshot-llm
 python3 -m broker_bot.cli review-decisions-llm
 python3 -m broker_bot.cli attribution-report-llm
 python3 -m broker_bot.cli champion-report-llm
+python3 -m broker_bot.cli rebalance-stat-arb
+python3 -m broker_bot.cli snapshot-stat-arb
+python3 -m broker_bot.cli review-decisions-stat-arb
+python3 -m broker_bot.cli attribution-report-stat-arb
+python3 -m broker_bot.cli champion-report-stat-arb
 python3 -m broker_bot.cli options-report
 python3 scripts/build_snapshot.py
 ```
@@ -251,6 +288,7 @@ Manual caretaker commands:
 ```bash
 python3 -m broker_bot.cli caretaker
 python3 -m broker_bot.cli caretaker-llm
+python3 -m broker_bot.cli caretaker-stat-arb
 python3 -m broker_bot.cli caretaker-all
 ```
 
@@ -277,6 +315,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - The base model is a Random Forest regressor on momentum/volatility features with market context.
 - The live signal stack can blend in brokerage-service snapshots, market movers, most-active names, recent brokerage-service news headlines, symbol memory, and optional LLM watchlist judgments.
 - The LLM bot keeps its own watchlist, analyst daily reports, Skeptic reviews, trader daily reports, and coach reports.
+- The Stat Arb bot keeps pair-candidate reports, selected dislocation logs, and post-trade attribution separate from the ML and LLM bots.
 - The backtest uses walk-forward retraining, weekly rebalancing, and transaction cost estimates for realism.
 - The backtest now better matches the live ensemble by simulating bounded overlay components offline from historical price/volume structure.
 - Advisor overrides are stored in `data/advisor_overrides.json` and applied at startup when enabled.
@@ -305,8 +344,10 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - `CARETAKER_DAILY_DRAWDOWN_LIMIT` can close positions if same-day account drawdown breaches a configured threshold; leave it at `0` to disable this kill switch.
 - Advanced broker order types are handled conservatively in this project: if a bracket order is rejected, the bot falls back to a simple market order, and trailing stops are only attached when the position size is compatible with whole-share handling.
 - `ALPACA_LLM_API_KEY`, `ALPACA_LLM_SECRET_KEY`, `ALPACA_LLM_PAPER_URL`, and `ALPACA_LLM_DATA_FEED` configure the second paper account used by the LLM bot.
+- `ALPACA_STAT_ARB_API_KEY`, `ALPACA_STAT_ARB_SECRET_KEY`, `ALPACA_STAT_ARB_PAPER_URL`, and `ALPACA_STAT_ARB_DATA_FEED` configure the separate paper account used by the Stat Arb bot.
+- `STAT_ARB_LOOKBACK_DAYS`, `STAT_ARB_SYMBOL_LIMIT`, `STAT_ARB_MIN_CORRELATION`, `STAT_ARB_ENTRY_Z`, `STAT_ARB_EXIT_Z`, `STAT_ARB_MAX_PAIRS`, and `STAT_ARB_PAIR_GROSS_PCT` control the statistical pair-selection and sizing rules.
 - The local dashboard and Streamlit snapshot now show broker-side protection summaries per position so you can see whether exits are resting with the brokerage service.
-- The dashboard is multi-bot aware: ML and LLM equity, positions, trades, decisions, and reports are stored separately and displayed separately.
+- The dashboard is multi-bot aware: configured bots' equity, positions, trades, decisions, and reports are stored separately and displayed separately.
 - `OPTIONS_MIN_DTE`, `OPTIONS_MAX_DTE`, `OPTIONS_IDEA_LIMIT`, and `OPTIONS_SPREAD_WIDTH_PCT` control the paper-only options scaffold report.
 - The current options scaffold intentionally stays conservative: it suggests bull call debit spreads for bullish ideas and bear put debit spreads for bearish ideas, using recent option contract close prices as rough planning inputs rather than live spread-aware execution logic.
 - `OPTIONS_MIN_REWARD_RISK` and `OPTIONS_MAX_DEBIT_PCT_OF_WIDTH` filter out weak vertical-spread structures before they appear in the scaffold report.

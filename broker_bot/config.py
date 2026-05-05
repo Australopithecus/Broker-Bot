@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
-from .bots import LLM_BOT_NAME, ML_BOT_NAME, normalize_bot_name
+from .bots import LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, normalize_bot_name
 
 load_dotenv()
 
@@ -30,6 +30,10 @@ class Config:
     llm_alpaca_secret_key: str
     llm_alpaca_paper_url: str
     llm_alpaca_data_feed: str
+    stat_arb_alpaca_api_key: str
+    stat_arb_alpaca_secret_key: str
+    stat_arb_alpaca_paper_url: str
+    stat_arb_alpaca_data_feed: str
     universe_path: str
     db_path: str
     model_dir: str
@@ -46,6 +50,13 @@ class Config:
     llm_min_conviction: float
     llm_skeptic_enabled: bool
     llm_skeptic_veto_enabled: bool
+    stat_arb_lookback_days: int
+    stat_arb_symbol_limit: int
+    stat_arb_min_correlation: float
+    stat_arb_entry_z: float
+    stat_arb_exit_z: float
+    stat_arb_max_pairs: int
+    stat_arb_pair_gross_pct: float
     max_position_pct: float
     gross_leverage: float
     bear_leverage: float
@@ -124,6 +135,10 @@ def load_config() -> Config:
     llm_secret_key = os.getenv("ALPACA_LLM_SECRET_KEY", "").strip()
     llm_paper_url = os.getenv("ALPACA_LLM_PAPER_URL", paper_url).strip() or paper_url
     llm_data_feed = os.getenv("ALPACA_LLM_DATA_FEED", data_feed).strip() or data_feed
+    stat_arb_api_key = os.getenv("ALPACA_STAT_ARB_API_KEY", "").strip()
+    stat_arb_secret_key = os.getenv("ALPACA_STAT_ARB_SECRET_KEY", "").strip()
+    stat_arb_paper_url = os.getenv("ALPACA_STAT_ARB_PAPER_URL", paper_url).strip() or paper_url
+    stat_arb_data_feed = os.getenv("ALPACA_STAT_ARB_DATA_FEED", data_feed).strip() or data_feed
     overrides_path = os.getenv("ADVISOR_OVERRIDES_PATH", "data/advisor_overrides.json").strip()
     learned_policy_path = os.getenv("LEARNED_POLICY_PATH", "data/learned_policy.json").strip()
     auto_apply_flag = os.getenv("ADVISOR_AUTO_APPLY", "1").strip().lower() in {"1", "true", "yes", "y"}
@@ -162,6 +177,10 @@ def load_config() -> Config:
         llm_alpaca_secret_key=llm_secret_key,
         llm_alpaca_paper_url=llm_paper_url,
         llm_alpaca_data_feed=llm_data_feed,
+        stat_arb_alpaca_api_key=stat_arb_api_key,
+        stat_arb_alpaca_secret_key=stat_arb_secret_key,
+        stat_arb_alpaca_paper_url=stat_arb_paper_url,
+        stat_arb_alpaca_data_feed=stat_arb_data_feed,
         universe_path=os.getenv("UNIVERSE_PATH", "data/sp500.csv"),
         db_path=os.getenv("BROKER_BOT_DB", "data/broker_bot.sqlite"),
         model_dir=os.getenv("MODEL_DIR", "data/models"),
@@ -178,6 +197,13 @@ def load_config() -> Config:
         llm_min_conviction=float(os.getenv("LLM_MIN_CONVICTION", "0.55")),
         llm_skeptic_enabled=os.getenv("LLM_SKEPTIC_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
         llm_skeptic_veto_enabled=os.getenv("LLM_SKEPTIC_VETO_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
+        stat_arb_lookback_days=int(os.getenv("STAT_ARB_LOOKBACK_DAYS", "180")),
+        stat_arb_symbol_limit=int(os.getenv("STAT_ARB_SYMBOL_LIMIT", "80")),
+        stat_arb_min_correlation=float(os.getenv("STAT_ARB_MIN_CORRELATION", "0.72")),
+        stat_arb_entry_z=float(os.getenv("STAT_ARB_ENTRY_Z", "1.25")),
+        stat_arb_exit_z=float(os.getenv("STAT_ARB_EXIT_Z", "0.35")),
+        stat_arb_max_pairs=int(os.getenv("STAT_ARB_MAX_PAIRS", "5")),
+        stat_arb_pair_gross_pct=float(os.getenv("STAT_ARB_PAIR_GROSS_PCT", "0.08")),
         max_position_pct=_advisor_override("max_position_pct", float(os.getenv("MAX_POSITION_PCT", "0.06"))),
         gross_leverage=_advisor_override("gross_leverage", float(os.getenv("GROSS_LEVERAGE", "1.5"))),
         bear_leverage=_advisor_override("bear_leverage", float(os.getenv("BEAR_LEVERAGE", "0.6"))),
@@ -246,6 +272,18 @@ def get_bot_account_config(config: Config, bot_name: str | None = None) -> Broke
             paper_url=config.llm_alpaca_paper_url,
             data_feed=config.llm_alpaca_data_feed,
         )
+    if normalized == STAT_ARB_BOT_NAME:
+        if not config.stat_arb_alpaca_api_key or not config.stat_arb_alpaca_secret_key:
+            raise RuntimeError(
+                "Missing ALPACA_STAT_ARB_API_KEY or ALPACA_STAT_ARB_SECRET_KEY in environment for the Stat Arb bot."
+            )
+        return BrokerAccountConfig(
+            bot_name=STAT_ARB_BOT_NAME,
+            api_key=config.stat_arb_alpaca_api_key,
+            secret_key=config.stat_arb_alpaca_secret_key,
+            paper_url=config.stat_arb_alpaca_paper_url,
+            data_feed=config.stat_arb_alpaca_data_feed,
+        )
     return BrokerAccountConfig(
         bot_name=ML_BOT_NAME,
         api_key=config.alpaca_api_key,
@@ -259,4 +297,6 @@ def configured_bot_names(config: Config) -> list[str]:
     bots = [ML_BOT_NAME]
     if config.llm_alpaca_api_key and config.llm_alpaca_secret_key:
         bots.append(LLM_BOT_NAME)
+    if config.stat_arb_alpaca_api_key and config.stat_arb_alpaca_secret_key:
+        bots.append(STAT_ARB_BOT_NAME)
     return bots

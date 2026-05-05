@@ -48,6 +48,10 @@ jobs:
           ALPACA_LLM_SECRET_KEY: ${{ secrets.ALPACA_LLM_SECRET_KEY }}
           ALPACA_LLM_PAPER_URL: ${{ secrets.ALPACA_LLM_PAPER_URL }}
           ALPACA_LLM_DATA_FEED: ${{ secrets.ALPACA_LLM_DATA_FEED }}
+          ALPACA_STAT_ARB_API_KEY: ${{ secrets.ALPACA_STAT_ARB_API_KEY }}
+          ALPACA_STAT_ARB_SECRET_KEY: ${{ secrets.ALPACA_STAT_ARB_SECRET_KEY }}
+          ALPACA_STAT_ARB_PAPER_URL: ${{ secrets.ALPACA_STAT_ARB_PAPER_URL }}
+          ALPACA_STAT_ARB_DATA_FEED: ${{ secrets.ALPACA_STAT_ARB_DATA_FEED }}
           CARETAKER_TRAILING_STOP_ENABLED: ${{ secrets.CARETAKER_TRAILING_STOP_ENABLED }}
           CARETAKER_TRAILING_STOP_PERCENT: ${{ secrets.CARETAKER_TRAILING_STOP_PERCENT }}
           CARETAKER_DAILY_DRAWDOWN_LIMIT: ${{ secrets.CARETAKER_DAILY_DRAWDOWN_LIMIT }}
@@ -62,6 +66,10 @@ jobs:
             echo "ALPACA_LLM_SECRET_KEY=${ALPACA_LLM_SECRET_KEY}"
             echo "ALPACA_LLM_PAPER_URL=${ALPACA_LLM_PAPER_URL}"
             echo "ALPACA_LLM_DATA_FEED=${ALPACA_LLM_DATA_FEED}"
+            echo "ALPACA_STAT_ARB_API_KEY=${ALPACA_STAT_ARB_API_KEY}"
+            echo "ALPACA_STAT_ARB_SECRET_KEY=${ALPACA_STAT_ARB_SECRET_KEY}"
+            echo "ALPACA_STAT_ARB_PAPER_URL=${ALPACA_STAT_ARB_PAPER_URL}"
+            echo "ALPACA_STAT_ARB_DATA_FEED=${ALPACA_STAT_ARB_DATA_FEED}"
             echo "UNIVERSE_PATH=data/sp500.csv"
             echo "BROKER_BOT_DB=data/broker_bot.sqlite"
             echo "MODEL_DIR=data/models"
@@ -125,6 +133,16 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Detect whether Stat Arb bot credentials are configured
+        if: ${{ steps.market_clock.outputs.run == 'true' }}
+        id: stat_arb_bot_config
+        run: |
+          if [ -n "${ALPACA_STAT_ARB_API_KEY}" ] && [ -n "${ALPACA_STAT_ARB_SECRET_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run ML caretaker
         if: ${{ steps.market_clock.outputs.run == 'true' }}
         run: |
@@ -134,6 +152,11 @@ jobs:
         if: ${{ steps.market_clock.outputs.run == 'true' && steps.llm_bot_config.outputs.enabled == 'true' }}
         run: |
           python -m broker_bot.cli caretaker-llm
+
+      - name: Run Stat Arb caretaker
+        if: ${{ steps.market_clock.outputs.run == 'true' && steps.stat_arb_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli caretaker-stat-arb
 
       - name: Build dashboard snapshot
         if: ${{ steps.market_clock.outputs.run == 'true' }}

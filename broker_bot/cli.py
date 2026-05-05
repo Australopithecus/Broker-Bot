@@ -19,6 +19,7 @@ from .logging_db import (
     log_equity,
     log_positions,
     log_signals,
+    log_strategy_report,
     log_trades,
 )
 from .learning import generate_attribution_report, generate_champion_challenger_report, generate_strategy_report, review_and_learn
@@ -30,9 +31,10 @@ from .universe import load_universe
 from .dashboard_tk import launch_dashboard
 from .dashboard_web import create_app
 from .advisor import generate_advisor_report, save_overrides
-from .bots import LLM_BOT_NAME, ML_BOT_NAME
+from .bots import LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME
 from .llm_bot import generate_llm_bot_status_report, generate_llm_coach_report, rebalance_llm_bot
 from .options import generate_options_scaffold_report
+from .stat_arb_bot import rebalance_stat_arb_bot
 
 
 def _load_symbols(config) -> list[str]:
@@ -93,6 +95,9 @@ def cmd_doctor(args: argparse.Namespace) -> None:
     print(f"ALPACA_LLM_API_KEY: {_credential_label(config.llm_alpaca_api_key)}")
     print(f"ALPACA_LLM_SECRET_KEY: {_credential_label(config.llm_alpaca_secret_key)}")
     print(f"ALPACA_LLM_DATA_FEED: {config.llm_alpaca_data_feed or config.alpaca_data_feed or 'iex'}")
+    print(f"ALPACA_STAT_ARB_API_KEY: {_credential_label(config.stat_arb_alpaca_api_key)}")
+    print(f"ALPACA_STAT_ARB_SECRET_KEY: {_credential_label(config.stat_arb_alpaca_secret_key)}")
+    print(f"ALPACA_STAT_ARB_DATA_FEED: {config.stat_arb_alpaca_data_feed or config.alpaca_data_feed or 'iex'}")
     print("")
 
     failures = 0
@@ -222,6 +227,10 @@ def cmd_caretaker_llm(args: argparse.Namespace) -> None:
     _cmd_caretaker_for_bot(LLM_BOT_NAME)
 
 
+def cmd_caretaker_stat_arb(args: argparse.Namespace) -> None:
+    _cmd_caretaker_for_bot(STAT_ARB_BOT_NAME)
+
+
 def cmd_caretaker_all(args: argparse.Namespace) -> None:
     config = load_config()
     for bot_name in configured_bot_names(config):
@@ -304,8 +313,79 @@ def cmd_rebalance_llm(args: argparse.Namespace) -> None:
     print(f"LLM rebalanced at {result.ts} with {len(result.orders)} orders.")
 
 
+def cmd_rebalance_stat_arb(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    review_summary = "Learning skipped."
+    try:
+        review_report = review_and_learn(config, bot_name=STAT_ARB_BOT_NAME)
+        review_summary = review_report.summary
+    except Exception as exc:
+        review_summary = f"Learning skipped: {exc}"
+    symbols = _load_symbols(config)
+    result = rebalance_stat_arb_bot(config, symbols)
+    if result.orders:
+        log_trades(config.db_path, result.orders, bot_name=STAT_ARB_BOT_NAME)
+    log_decision_run(
+        config.db_path,
+        result.ts,
+        float(result.decision_context.get("effective_leverage", 0.0)),
+        float(result.decision_context.get("spy_vol", 0.0)),
+        json.dumps(result.decision_context),
+        bot_name=STAT_ARB_BOT_NAME,
+    )
+    log_decision_logs(
+        config.db_path,
+        result.ts,
+        [
+            (
+                signal.symbol,
+                signal.side,
+                1 if signal.selected else 0,
+                float(signal.base_score if signal.base_score is not None else signal.score),
+                float(signal.score),
+                json.dumps(signal.components or {}, sort_keys=True),
+                signal.rationale or None,
+            )
+            for signal in result.signals
+        ],
+        bot_name=STAT_ARB_BOT_NAME,
+    )
+    log_signals(
+        config.db_path,
+        result.ts,
+        [(s.symbol, s.score, s.side) for s in result.signals],
+        bot_name=STAT_ARB_BOT_NAME,
+    )
+    report = result.report
+    log_strategy_report(
+        config.db_path,
+        report["ts"],
+        report["report_type"],
+        report["headline"],
+        report["summary"],
+        report["body"],
+        json.dumps(report.get("metrics", {})),
+        json.dumps(report.get("changes", {})),
+        bot_name=STAT_ARB_BOT_NAME,
+    )
+    ts_pos, positions = snapshot_positions(config, bot_name=STAT_ARB_BOT_NAME)
+    log_positions(config.db_path, ts_pos, positions, bot_name=STAT_ARB_BOT_NAME)
+    spy_value = fetch_latest_close(config, "SPY", bot_name=STAT_ARB_BOT_NAME)
+    ts_eq, equity, cash, port = snapshot_equity(config, bot_name=STAT_ARB_BOT_NAME)
+    log_equity(config.db_path, ts_eq, equity, cash, port, spy_value=spy_value, bot_name=STAT_ARB_BOT_NAME)
+    print(
+        f"STAT ARB rebalanced at {result.ts} with {len(result.orders)} orders. "
+        f"Learning summary: {review_summary}"
+    )
+
+
 def cmd_snapshot_llm(args: argparse.Namespace) -> None:
     _cmd_snapshot_for_bot(LLM_BOT_NAME)
+
+
+def cmd_snapshot_stat_arb(args: argparse.Namespace) -> None:
+    _cmd_snapshot_for_bot(STAT_ARB_BOT_NAME)
 
 
 def cmd_dashboard(args: argparse.Namespace) -> None:
@@ -366,6 +446,15 @@ def cmd_review_decisions_llm(args: argparse.Namespace) -> None:
     print(f"{report['headline']}: {report['summary']}")
 
 
+def cmd_review_decisions_stat_arb(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = review_and_learn(config, bot_name=STAT_ARB_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    if report.report_path:
+        print(f"Saved report to {report.report_path}")
+
+
 def cmd_strategy_report(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
@@ -378,6 +467,14 @@ def cmd_strategy_report_llm(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
     print(generate_llm_bot_status_report(config))
+
+
+def cmd_strategy_report_stat_arb(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_strategy_report(config, bot_name=STAT_ARB_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
 
 
 def cmd_attribution_report(args: argparse.Namespace) -> None:
@@ -396,6 +493,14 @@ def cmd_attribution_report_llm(args: argparse.Namespace) -> None:
     print(f"Saved report to {report.report_path}")
 
 
+def cmd_attribution_report_stat_arb(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_attribution_report(config, bot_name=STAT_ARB_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
 def cmd_champion_report(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
@@ -408,6 +513,14 @@ def cmd_champion_report_llm(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
     report = generate_champion_challenger_report(config, bot_name=LLM_BOT_NAME)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
+def cmd_champion_report_stat_arb(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_champion_challenger_report(config, bot_name=STAT_ARB_BOT_NAME)
     print(f"{report.headline}: {report.summary}")
     print(f"Saved report to {report.report_path}")
 
@@ -440,22 +553,29 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("backtest")
     subparsers.add_parser("rebalance")
     subparsers.add_parser("rebalance-llm")
+    subparsers.add_parser("rebalance-stat-arb")
     subparsers.add_parser("snapshot")
     subparsers.add_parser("snapshot-llm")
+    subparsers.add_parser("snapshot-stat-arb")
     subparsers.add_parser("caretaker")
     subparsers.add_parser("caretaker-llm")
+    subparsers.add_parser("caretaker-stat-arb")
     subparsers.add_parser("caretaker-all")
     subparsers.add_parser("dashboard")
     subparsers.add_parser("dashboard-web")
     subparsers.add_parser("advisor-report")
     subparsers.add_parser("review-decisions")
     subparsers.add_parser("review-decisions-llm")
+    subparsers.add_parser("review-decisions-stat-arb")
     subparsers.add_parser("strategy-report")
     subparsers.add_parser("strategy-report-llm")
+    subparsers.add_parser("strategy-report-stat-arb")
     subparsers.add_parser("attribution-report")
     subparsers.add_parser("attribution-report-llm")
+    subparsers.add_parser("attribution-report-stat-arb")
     subparsers.add_parser("champion-report")
     subparsers.add_parser("champion-report-llm")
+    subparsers.add_parser("champion-report-stat-arb")
     subparsers.add_parser("options-report")
     subparsers.add_parser("model-eval")
 
@@ -479,14 +599,20 @@ def main() -> None:
             cmd_rebalance(args)
         elif args.command == "rebalance-llm":
             cmd_rebalance_llm(args)
+        elif args.command == "rebalance-stat-arb":
+            cmd_rebalance_stat_arb(args)
         elif args.command == "snapshot":
             cmd_snapshot(args)
         elif args.command == "snapshot-llm":
             cmd_snapshot_llm(args)
+        elif args.command == "snapshot-stat-arb":
+            cmd_snapshot_stat_arb(args)
         elif args.command == "caretaker":
             cmd_caretaker(args)
         elif args.command == "caretaker-llm":
             cmd_caretaker_llm(args)
+        elif args.command == "caretaker-stat-arb":
+            cmd_caretaker_stat_arb(args)
         elif args.command == "caretaker-all":
             cmd_caretaker_all(args)
         elif args.command == "dashboard":
@@ -499,18 +625,26 @@ def main() -> None:
             cmd_review_decisions(args)
         elif args.command == "review-decisions-llm":
             cmd_review_decisions_llm(args)
+        elif args.command == "review-decisions-stat-arb":
+            cmd_review_decisions_stat_arb(args)
         elif args.command == "strategy-report":
             cmd_strategy_report(args)
         elif args.command == "strategy-report-llm":
             cmd_strategy_report_llm(args)
+        elif args.command == "strategy-report-stat-arb":
+            cmd_strategy_report_stat_arb(args)
         elif args.command == "attribution-report":
             cmd_attribution_report(args)
         elif args.command == "attribution-report-llm":
             cmd_attribution_report_llm(args)
+        elif args.command == "attribution-report-stat-arb":
+            cmd_attribution_report_stat_arb(args)
         elif args.command == "champion-report":
             cmd_champion_report(args)
         elif args.command == "champion-report-llm":
             cmd_champion_report_llm(args)
+        elif args.command == "champion-report-stat-arb":
+            cmd_champion_report_stat_arb(args)
         elif args.command == "options-report":
             cmd_options_report(args)
         elif args.command == "model-eval":

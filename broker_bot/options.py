@@ -221,7 +221,7 @@ def _report_body(ideas: list[VerticalSpreadIdea], generated_ts: str) -> str:
                 f"- Bot rationale: {idea.rationale or 'No additional rationale captured.'}",
                 "",
                 "Risk notes:",
-                "- This estimate uses Alpaca contract close prices, not live bid/ask spreads.",
+                "- This estimate uses brokerage-service contract close prices, not live bid/ask spreads.",
                 "- Actual fill quality can be materially worse around wide spreads or low liquidity.",
                 "- The scaffold filters out spreads with weak estimated reward/risk or excessive debit relative to width.",
                 "- Defined risk does not mean low risk; time decay and volatility compression still matter.",

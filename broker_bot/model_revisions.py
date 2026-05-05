@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .behavior_revisions import CURRENT_BEHAVIOR_REVISION
-from .bots import LLM_BOT_NAME, ML_BOT_NAME, bot_label, normalize_bot_name
+from .bots import LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label, normalize_bot_name
 
 
 def _latest_report(reports: list[dict[str, Any]], report_type: str) -> dict[str, Any] | None:
@@ -31,7 +31,7 @@ def model_revision(
             "name": "Learned Overlays",
             "status": "active",
             "introduced_at": "2026-05-01",
-            "behavior_revision": CURRENT_BEHAVIOR_REVISION,
+            "behavior_revision": "2.7.0",
             "summary": (
                 model_eval.get("summary")
                 if model_eval
@@ -44,6 +44,32 @@ def model_revision(
                 "base_total_return": metrics.get("base_model_portfolio_total_return"),
                 "learned_overlay_total_return": metrics.get("learned_overlays_portfolio_total_return"),
                 "learned_overlay_selected_count": metrics.get("learned_overlays_selected_count"),
+            },
+        }
+
+    if normalized == STAT_ARB_BOT_NAME:
+        stat_report = _latest_report(reports, "stat_arb_daily")
+        metrics = stat_report.get("metrics", {}) if stat_report else {}
+        return {
+            "id": "stat-arb-r1-pairs-mean-reversion",
+            "label": "R1",
+            "display_label": "Stat Arb Bot R1",
+            "name": "Pairs Mean Reversion",
+            "status": "active",
+            "introduced_at": "2026-05-04",
+            "behavior_revision": CURRENT_BEHAVIOR_REVISION,
+            "summary": (
+                stat_report.get("summary")
+                if stat_report
+                else "Explicit statistical pairs strategy using correlation, hedge-ratio spreads, and z-score mean reversion."
+            ),
+            "base_label": base_label,
+            "report_ts": stat_report.get("ts") if stat_report else None,
+            "metrics": {
+                "candidate_pair_count": metrics.get("candidate_pair_count"),
+                "selected_pair_count": metrics.get("selected_pair_count"),
+                "entry_z": metrics.get("entry_z"),
+                "min_correlation": metrics.get("min_correlation"),
             },
         }
 

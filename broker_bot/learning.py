@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .bots import LLM_BOT_NAME, ML_BOT_NAME, bot_label, normalize_bot_name
+from .bots import LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label, normalize_bot_name
 from .config import Config, load_config
 from .data import fetch_daily_bars
 from .llm_utils import call_json_llm
@@ -31,6 +31,14 @@ COMPONENT_TO_WEIGHT = {
     "memory_adjustment": "memory_weight",
     "llm_adjustment": "llm_weight",
 }
+
+STAT_ARB_COMPONENTS = (
+    "stat_arb_z_score",
+    "stat_arb_abs_z",
+    "stat_arb_correlation",
+    "stat_arb_hedge_beta",
+    "stat_arb_expected_reversion",
+)
 
 
 @dataclass
@@ -127,11 +135,11 @@ def _component_attribution_lines(component_metrics: dict[str, dict[str, float]])
         edge = float(stats.get("edge", 0.0))
         hit_rate = float(stats.get("hit_rate", 0.0))
         samples = int(float(stats.get("samples", 0.0)))
-        scale = float(stats.get("learned_scale", 1.0))
+        scale_text = f", learned scale={float(stats['learned_scale']):.2f}" if "learned_scale" in stats else ""
         verdict = "helping" if edge > 0.001 else ("hurting" if edge < -0.001 else "mixed")
         lines.append(
             f"- {readable}: {verdict}; edge={edge:+.2%}, hit rate={hit_rate:.1%}, "
-            f"samples={samples}, learned scale={scale:.2f}."
+            f"samples={samples}{scale_text}."
         )
     return lines
 
@@ -483,6 +491,8 @@ def _evaluate_pending_decisions(
 
 
 def _component_metrics(db_path: str, limit: int = 300, bot_name: str = "ml") -> dict[str, dict[str, float]]:
+    normalized_bot = normalize_bot_name(bot_name)
+    component_names = STAT_ARB_COMPONENTS if normalized_bot == STAT_ARB_BOT_NAME else tuple(COMPONENT_TO_WEIGHT)
     rows = read_recent_evaluated_decisions(db_path, limit=limit, bot_name=bot_name)
     metrics: dict[str, dict[str, float]] = {}
 
@@ -491,7 +501,7 @@ def _component_metrics(db_path: str, limit: int = 300, bot_name: str = "ml") -> 
         side_sign = 1.0 if side == "LONG" else (-1.0 if side == "SHORT" else 0.0)
         if side_sign == 0.0:
             continue
-        for component_name in COMPONENT_TO_WEIGHT:
+        for component_name in component_names:
             component_value = float(components.get(component_name, 0.0))
             if abs(component_value) < 1e-9:
                 continue
@@ -506,8 +516,12 @@ def _component_metrics(db_path: str, limit: int = 300, bot_name: str = "ml") -> 
                 },
             )
             bucket["samples"] += 1.0
-            aligned_adjustment = component_value * side_sign
-            directional_edge = signed_return if aligned_adjustment > 0 else -signed_return
+            if normalized_bot == STAT_ARB_BOT_NAME:
+                aligned_adjustment = abs(component_value)
+                directional_edge = signed_return
+            else:
+                aligned_adjustment = component_value * side_sign
+                directional_edge = signed_return if aligned_adjustment > 0 else -signed_return
             bucket["edge"] += directional_edge
             bucket["avg_abs_adjustment"] += abs(component_value)
             bucket["avg_aligned_adjustment"] += aligned_adjustment
@@ -524,9 +538,10 @@ def _component_metrics(db_path: str, limit: int = 300, bot_name: str = "ml") -> 
         else:
             bucket["hit_rate"] = 0.0
         del bucket["hits"]
-    learned_scales = derive_component_scales(metrics)
-    for component_name, bucket in metrics.items():
-        bucket["learned_scale"] = learned_scales.get(component_name, 1.0)
+    if normalized_bot == ML_BOT_NAME:
+        learned_scales = derive_component_scales(metrics)
+        for component_name, bucket in metrics.items():
+            bucket["learned_scale"] = learned_scales.get(component_name, 1.0)
     return metrics
 
 
@@ -657,6 +672,22 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
             "LLM Skeptic review can caution, reduce conviction, or veto weakly supported trades before execution.",
             "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.",
         ]
+    elif normalized_bot == STAT_ARB_BOT_NAME:
+        threshold = max(float(config.stat_arb_entry_z), 0.0)
+        threshold_label = "minimum absolute pair-spread z-score"
+        champion_description = (
+            "Champion: the current statistical pairs strategy using liquidity filters, correlation gates, "
+            "hedge-ratio spread z-scores, pair sizing, and normal execution/risk controls."
+        )
+        challenger_description = (
+            "Challenger: a stricter shadow version of the Stat Arb policy that counts only selected "
+            f"decisions whose absolute pair-spread z-score is at or above {threshold:.4f}."
+        )
+        implemented_changes = [
+            f"Stat Arb entry gate is active at {threshold:.4f} absolute z-score.",
+            f"Pair candidates must pass the minimum correlation gate of {config.stat_arb_min_correlation:.2f}.",
+            "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.",
+        ]
     else:
         threshold = max(float(config.min_signal_abs_score), 0.0)
         threshold_label = "minimum absolute signal score"
@@ -674,8 +705,13 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
             "Champion/challenger remains a shadow evaluation; it does not automatically promote a new policy.",
         ]
 
-    challenger = [row for row in evaluated if abs(float(row[4])) >= threshold]
-    excluded = [row for row in evaluated if abs(float(row[4])) < threshold]
+    def _challenger_score(row: tuple) -> float:
+        if normalized_bot == STAT_ARB_BOT_NAME:
+            return abs(float(_load_components(row[5]).get("stat_arb_abs_z", row[4])))
+        return abs(float(row[4]))
+
+    challenger = [row for row in evaluated if _challenger_score(row) >= threshold]
+    excluded = [row for row in evaluated if _challenger_score(row) < threshold]
     champion_metrics = _selected_rows_metrics(evaluated)
     challenger_metrics = _selected_rows_metrics(challenger)
     excluded_metrics = _selected_rows_metrics(excluded)
@@ -695,7 +731,7 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
             "",
             f"Generated at {datetime.now(timezone.utc).isoformat()}",
             "",
-            "Champion is the bot's current selected-decision policy. Challenger is a stricter shadow policy that only counts trades passing the current confidence threshold.",
+            "Champion is the bot's current selected-decision policy. Challenger is a stricter shadow policy that only counts trades passing the current threshold.",
             "",
             f"Threshold used: {threshold_label} = {threshold:.4f}",
             "",
@@ -747,7 +783,7 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
     report_path = _write_report_file(config, f"champion_challenger_{normalized_bot}", body)
     headline = f"{bot_label(normalized_bot)} Champion / Challenger"
     summary = (
-        f"Compared current policy with a stricter confidence-gated challenger. "
+        f"Compared current policy with a stricter threshold-gated challenger. "
         f"Champion avg {champion_metrics['avg_signed_return']:.2%}; "
         f"challenger avg {challenger_metrics['avg_signed_return']:.2%}."
     )
@@ -870,10 +906,12 @@ def review_and_learn(config: Config, bot_name: str = "ml") -> LearningReport:
     ) if recent_rows else 0.0
 
     component_metrics = _component_metrics(config.db_path, limit=300, bot_name=normalized_bot)
-    if not component_metrics:
+    if normalized_bot == ML_BOT_NAME and not component_metrics:
         component_metrics = _existing_component_metrics(config)
-    component_scales = derive_component_scales(component_metrics)
-    updated_weights, changed_weights = _propose_weight_updates(config, component_metrics)
+    component_scales = derive_component_scales(component_metrics) if normalized_bot == ML_BOT_NAME else {}
+    updated_weights, changed_weights = (
+        _propose_weight_updates(config, component_metrics) if normalized_bot == ML_BOT_NAME else ({}, {})
+    )
     outcome_breakdown = _outcome_breakdown(recent_rows)
     hold_metrics, hold_lines = _counterfactual_hold_scan(config, cutoff_ts, normalized_bot)
 
@@ -881,7 +919,8 @@ def review_and_learn(config: Config, bot_name: str = "ml") -> LearningReport:
         f"Evaluated {len(evaluated_rows)} mature decisions this run; "
         f"recent hit rate {hit_rate:.1%}, average signed return {avg_signed_return:.2%}."
     )
-    _write_learned_policy(config, updated_weights, component_metrics, summary)
+    if normalized_bot == ML_BOT_NAME:
+        _write_learned_policy(config, updated_weights, component_metrics, summary)
 
     ts = datetime.now(timezone.utc).isoformat()
     headline = f"{bot_label(normalized_bot)} Learning Update"
@@ -905,13 +944,18 @@ def review_and_learn(config: Config, bot_name: str = "ml") -> LearningReport:
             *_component_attribution_lines(component_metrics),
             "",
             "## Learned overlay scales",
-            json.dumps(component_scales, indent=2, sort_keys=True),
+            json.dumps(component_scales or {"status": "not used by this bot"}, indent=2, sort_keys=True),
             "",
             "## Counterfactual HOLD scan",
             *hold_lines,
             "",
             "## Weight changes",
-            json.dumps(changed_weights or {"status": "no bounded weight changes this run"}, indent=2, sort_keys=True),
+            json.dumps(
+                changed_weights
+                or {"status": "no bounded weight changes this run" if normalized_bot == ML_BOT_NAME else "not used by this bot"},
+                indent=2,
+                sort_keys=True,
+            ),
             "",
             "## Component metrics",
             json.dumps(component_metrics, indent=2, sort_keys=True),
