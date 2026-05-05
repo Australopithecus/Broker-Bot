@@ -17,20 +17,20 @@
       "samples": 14.0
     },
     "snapshot_adjustment": {
-      "avg_abs_adjustment": 0.00046526771215398927,
-      "avg_aligned_adjustment": 0.0003734697605823665,
-      "edge": 7.006001711028785e-05,
-      "hit_rate": 0.4,
-      "learned_scale": 0.924,
-      "samples": 135.0
+      "avg_abs_adjustment": 0.00047974432313068843,
+      "avg_aligned_adjustment": 0.00038367669939294363,
+      "edge": -0.00014437862389655168,
+      "hit_rate": 0.3875968992248062,
+      "learned_scale": 0.903,
+      "samples": 129.0
     },
     "technical_adjustment": {
-      "avg_abs_adjustment": 0.0017863268656716426,
-      "avg_aligned_adjustment": 0.001384065671641791,
-      "edge": 0.00197981114378137,
-      "hit_rate": 0.5149253731343284,
-      "learned_scale": 1.111,
-      "samples": 134.0
+      "avg_abs_adjustment": 0.0018268968750000006,
+      "avg_aligned_adjustment": 0.0014057796875,
+      "edge": 0.0018532167849543719,
+      "hit_rate": 0.5078125,
+      "learned_scale": 1.099,
+      "samples": 128.0
     }
   },
   "component_scales": {
@@ -38,11 +38,11 @@
     "memory_adjustment": 1.0,
     "news_adjustment": 1.0,
     "screener_adjustment": 0.895,
-    "snapshot_adjustment": 0.924,
-    "technical_adjustment": 1.111
+    "snapshot_adjustment": 0.903,
+    "technical_adjustment": 1.099
   },
-  "generated_at": "2026-05-05T13:59:53.451650+00:00",
-  "summary": "Evaluated 0 mature decisions this run; recent hit rate 53.3%, average signed return 0.08%.",
+  "generated_at": "2026-05-05T20:19:52.399317+00:00",
+  "summary": "Evaluated 0 mature decisions this run; recent hit rate 52.7%, average signed return 0.06%.",
   "weights": {
     "llm_weight": 0.8,
     "memory_weight": 0.8,
