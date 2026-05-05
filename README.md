@@ -59,7 +59,7 @@ python3 scripts/setup_env.py
 
 All bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate brokerage paper accounts.
 
-Reporting: markdown reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots. The report loop includes learning, post-trade attribution, and champion/challenger shadow comparisons.
+Reporting: markdown reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots. The report loop includes learning, post-trade attribution, champion/challenger shadow comparisons, and an all-model Summary Report that diagnoses performance, market context, and abnormal model behavior.
 
 ## Commands
 
@@ -126,6 +126,12 @@ Generate post-trade attribution and champion/challenger reports:
 ```bash
 python3 -m broker_bot.cli attribution-report
 python3 -m broker_bot.cli champion-report
+```
+
+Generate the all-model Summary Report:
+
+```bash
+python3 -m broker_bot.cli summary-report
 ```
 
 Refresh the LLM bot reporting/coaching loop:
@@ -208,7 +214,7 @@ You can deploy the UI via Streamlit Community Cloud using `streamlit_app.py`. Th
      `GITHUB_REPOSITORY`, `GITHUB_WORKFLOW_ID`, `GITHUB_WORKFLOW_REF`, and `BROKER_BOT_GITHUB_TOKEN`
 
 The Streamlit app calls your bot API endpoints and shows:
-Equity vs SPY, positions, trades, analyst/trader/coach reports, stat-arb pair reports, strategy-report snapshots, and recent decision rationale for all configured bots in separate sections.
+Equity vs SPY, positions, trades, all-model Summary Reports, analyst/trader/coach reports, stat-arb pair reports, strategy-report snapshots, and recent decision rationale for all configured bots in separate sections.
 
 The optional dashboard run button triggers the same GitHub Actions workflow as the manual `Run workflow` button in GitHub. It requires a confirmation checkbox because the workflow can rebalance brokerage-service paper portfolios.
 
@@ -225,6 +231,7 @@ This workflow runs on a schedule and performs the full paper-trading cloud loop:
 - rebalance the paper account
 - review past decisions and update learned weights
 - generate advisor and strategy reports
+- generate an all-model Summary Report after the daily bot runs complete
 - rebuild `data/dashboard_snapshot.json`
 - commit updated snapshot/report/policy files back to GitHub
 
@@ -280,6 +287,7 @@ python3 -m broker_bot.cli review-decisions-stat-arb
 python3 -m broker_bot.cli attribution-report-stat-arb
 python3 -m broker_bot.cli champion-report-stat-arb
 python3 -m broker_bot.cli options-report
+python3 -m broker_bot.cli summary-report
 python3 scripts/build_snapshot.py
 ```
 

@@ -169,6 +169,7 @@ def _render_sidebar_nav(
     for label, anchor_id in [
         ("System Health", "system-health"),
         ("Strategy Blueprint", "strategy-blueprint"),
+        ("Summary Report", "summary-report"),
         ("Trend Graph", "trend-graph"),
         ("Current Holdings", "current-holdings"),
         ("Risk Cockpit", "risk-cockpit"),
@@ -600,6 +601,18 @@ def _sorted_reports_by_type(reports: list[dict], report_type: str) -> list[dict]
     return sorted(filtered, key=lambda report: str(report.get("ts") or ""), reverse=True)
 
 
+def _global_reports_by_type(bots_payload: dict[str, dict], report_type: str) -> list[dict]:
+    rows: list[dict] = []
+    for bot_name, payload in bots_payload.items():
+        for report in payload.get("strategy_reports", []) or []:
+            if report.get("report_type") != report_type:
+                continue
+            copied = dict(report)
+            copied["model_label"] = payload.get("label", bot_name.upper())
+            rows.append(copied)
+    return sorted(rows, key=lambda report: str(report.get("ts") or ""), reverse=True)
+
+
 def _report_metric(report: dict, name: str):
     metrics = report.get("metrics") if isinstance(report.get("metrics"), dict) else {}
     return metrics.get(name)
@@ -694,6 +707,60 @@ def _render_strategy_blueprint(blueprint: dict) -> None:
             changes = entry.get("changes") if isinstance(entry.get("changes"), list) else []
             for item in changes:
                 st.markdown(f"- {item}")
+
+
+def _render_summary_report(bots_payload: dict[str, dict]) -> None:
+    st.subheader("Summary Report")
+    reports = _global_reports_by_type(bots_payload, "summary")
+    if not reports:
+        st.caption(
+            "No all-model Summary Report has been generated yet. "
+            "The scheduled cloud run creates one after the daily model runs complete."
+        )
+        return
+
+    selected_idx = st.selectbox(
+        "Historical summary reports",
+        list(range(len(reports))),
+        format_func=lambda idx: f"{reports[idx].get('ts', 'unknown time')} • {reports[idx].get('summary', '')[:90]}",
+    )
+    report = reports[int(selected_idx)]
+    metrics = report.get("metrics") if isinstance(report.get("metrics"), dict) else {}
+    changes = report.get("changes") if isinstance(report.get("changes"), dict) else {}
+    issues = changes.get("issues") if isinstance(changes.get("issues"), list) else []
+    recommendations = changes.get("recommendations") if isinstance(changes.get("recommendations"), list) else []
+
+    cols = st.columns(4)
+    cols[0].metric("Models Reviewed", _fmt_metric_num(metrics.get("model_count")))
+    cols[1].metric("Issues Flagged", _fmt_metric_num(metrics.get("issue_count")))
+    cols[2].metric("Market 7D", _fmt_metric_pct(metrics.get("market_7d_return")))
+    cols[3].metric("Market 28D", _fmt_metric_pct(metrics.get("market_28d_return")))
+
+    st.markdown(f"**{report.get('headline', 'All-Model Summary Report')}**")
+    st.write(report.get("summary", ""))
+
+    if issues or recommendations:
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.markdown("**Detected issues**")
+            for item in issues[:5]:
+                st.markdown(f"- {item}")
+            if not issues:
+                st.caption("No abnormal behavior was detected in this report.")
+        with col_b:
+            st.markdown("**Suggested corrections**")
+            for item in recommendations[:5]:
+                st.markdown(f"- {item}")
+            if not recommendations:
+                st.caption("No immediate correction was suggested.")
+
+    with st.expander("Read full selected Summary Report", expanded=True):
+        takeaways = extract_key_takeaways(report.get("body"), limit=6)
+        if takeaways:
+            st.markdown("**Key takeaways**")
+            for item in takeaways:
+                st.markdown(f"- {item}")
+        st.markdown(report.get("body", ""))
 
 
 def _render_cloud_run_controls() -> None:
@@ -945,6 +1012,7 @@ def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
                 continue
             latest_by_type = _latest_reports_by_type(reports)
             report_types = [
+                "summary",
                 "strategy",
                 "model_eval",
                 "watchlist",
@@ -963,7 +1031,7 @@ def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
                 report = latest_by_type.get(report_type)
                 if not report:
                     continue
-                with st.expander(f"{report.get('headline', report_type)} • {report.get('ts', '')}", expanded=report_type in {"strategy", "analyst_daily", "trader_daily", "coach"}):
+                with st.expander(f"{report.get('headline', report_type)} • {report.get('ts', '')}", expanded=report_type in {"strategy", "summary", "analyst_daily", "trader_daily", "coach"}):
                     st.write(report.get("summary", ""))
                     takeaways = extract_key_takeaways(report.get("body"), limit=5)
                     if takeaways:
@@ -1028,6 +1096,8 @@ _anchor("system-health")
 _render_system_health(snapshot_meta, bots_payload)
 _anchor("strategy-blueprint")
 _render_strategy_blueprint(strategy_blueprint)
+_anchor("summary-report")
+_render_summary_report(bots_payload)
 
 _anchor("trend-graph")
 st.subheader("Trend Graph")

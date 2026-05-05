@@ -343,6 +343,10 @@ jobs:
         run: |
           python -m broker_bot.cli options-report
 
+      - name: Generate all-model summary report
+        run: |
+          python -m broker_bot.cli summary-report
+
       - name: Build dashboard snapshot
         run: |
           python scripts/build_snapshot.py

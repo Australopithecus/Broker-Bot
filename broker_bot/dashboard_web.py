@@ -1573,7 +1573,7 @@ async function loadStrategy() {
     return;
   }
   container.innerHTML = '';
-  const featuredTypes = new Set(['model_eval', 'watchlist', 'skeptic', 'attribution', 'champion_challenger', 'stat_arb_daily', 'options_scaffold']);
+  const featuredTypes = new Set(['summary', 'model_eval', 'watchlist', 'skeptic', 'attribution', 'champion_challenger', 'stat_arb_daily', 'options_scaffold']);
   reports.filter(report => featuredTypes.has(report.report_type)).slice(0, 3).forEach(report => {
     const div = document.createElement('div');
     div.className = 'card';

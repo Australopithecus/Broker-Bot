@@ -16,7 +16,7 @@ The GitHub Actions workflow:
 2. trains the model
 3. rebalances configured brokerage-service paper portfolios
 4. reviews prior decisions and updates learned weights
-5. generates advisor and strategy reports
+5. generates advisor, strategy, and all-model Summary Reports
 6. rebuilds `data/dashboard_snapshot.json`
 7. commits the updated snapshot, reports, and learned policy back to GitHub
 
@@ -27,6 +27,7 @@ The Streamlit app reads the committed snapshot and shows:
 - recent trades
 - advisor reports
 - strategy reports
+- all-model Summary Reports
 - recent decision rationale
 
 ## Before You Start
