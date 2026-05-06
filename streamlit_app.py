@@ -619,6 +619,75 @@ def _report_metric(report: dict, name: str):
     return metrics.get(name)
 
 
+def _report_ts(report: dict):
+    parsed = pd.to_datetime(report.get("ts"), errors="coerce", utc=True)
+    return None if pd.isna(parsed) else parsed
+
+
+def _matching_supervisor_report(summary_reports: list[dict], selected_summary_idx: int, supervisor_reports: list[dict]) -> dict | None:
+    if not supervisor_reports or selected_summary_idx >= len(summary_reports):
+        return None
+    selected_ts = _report_ts(summary_reports[selected_summary_idx])
+    newer_summary_ts = _report_ts(summary_reports[selected_summary_idx - 1]) if selected_summary_idx > 0 else None
+    if selected_ts is None:
+        return supervisor_reports[0]
+
+    candidates = []
+    for report in supervisor_reports:
+        supervisor_ts = _report_ts(report)
+        if supervisor_ts is None or supervisor_ts < selected_ts:
+            continue
+        if newer_summary_ts is not None and supervisor_ts >= newer_summary_ts:
+            continue
+        candidates.append((supervisor_ts, report))
+    if candidates:
+        return sorted(candidates, key=lambda item: item[0])[0][1]
+    return None
+
+
+def _render_supervisor_changes(report: dict | None, *, compact: bool = False) -> None:
+    if not report:
+        st.caption("No Supervisor follow-up has been recorded for this Summary Report yet.")
+        return
+    metrics = report.get("metrics") if isinstance(report.get("metrics"), dict) else {}
+    changes = report.get("changes") if isinstance(report.get("changes"), dict) else {}
+    applied = changes.get("applied_changes") if isinstance(changes.get("applied_changes"), list) else []
+    skipped = changes.get("skipped_changes") if isinstance(changes.get("skipped_changes"), list) else []
+
+    if compact:
+        st.caption(
+            f"Supervisor follow-up at {report.get('ts', 'unknown time')}: "
+            f"{int(float(metrics.get('applied_change_count') or 0))} applied, "
+            f"{int(float(metrics.get('skipped_change_count') or 0))} deferred."
+        )
+    else:
+        cols = st.columns(3)
+        cols[0].metric("Supervisor Applied", f"{int(float(metrics.get('applied_change_count') or 0))}")
+        cols[1].metric("Supervisor Deferred", f"{int(float(metrics.get('skipped_change_count') or 0))}")
+        cols[2].metric("Candidates", f"{int(float(metrics.get('candidate_change_count') or 0))}")
+        st.write(report.get("summary", ""))
+
+    if applied:
+        st.markdown("**Supervisor changes implemented**")
+        for item in applied:
+            old_value = float(item.get("old_value") or 0.0)
+            new_value = float(item.get("new_value") or 0.0)
+            st.markdown(
+                f"- {str(item.get('bot_name', '')).upper()} `{item.get('field')}` "
+                f"{old_value:.6f} -> {new_value:.6f}: {item.get('reason', '')}"
+            )
+    else:
+        st.caption("Supervisor did not apply a bounded policy change for this run.")
+
+    if skipped:
+        with st.expander("Supervisor deferred candidate changes", expanded=False):
+            for item in skipped[:8]:
+                st.markdown(
+                    f"- {str(item.get('bot_name', '')).upper()} `{item.get('field')}` "
+                    f"{item.get('direction', 'hold')} skipped: {item.get('skip_reason') or item.get('reason', '')}"
+                )
+
+
 def _render_system_health(snapshot_meta: dict, bots_payload: dict[str, dict]) -> None:
     st.subheader("System Health")
     health = snapshot_meta.get("health", {}) if isinstance(snapshot_meta, dict) else {}
@@ -713,6 +782,7 @@ def _render_strategy_blueprint(blueprint: dict) -> None:
 def _render_summary_report(bots_payload: dict[str, dict]) -> None:
     st.subheader("Summary Report")
     reports = _global_reports_by_type(bots_payload, "summary")
+    supervisor_reports = _global_reports_by_type(bots_payload, "supervisor")
     if not reports:
         st.caption(
             "No all-model Summary Report has been generated yet. "
@@ -730,6 +800,7 @@ def _render_summary_report(bots_payload: dict[str, dict]) -> None:
     changes = report.get("changes") if isinstance(report.get("changes"), dict) else {}
     issues = changes.get("issues") if isinstance(changes.get("issues"), list) else []
     recommendations = changes.get("recommendations") if isinstance(changes.get("recommendations"), list) else []
+    supervisor_report = _matching_supervisor_report(reports, int(selected_idx), supervisor_reports)
 
     cols = st.columns(4)
     cols[0].metric("Models Reviewed", _fmt_metric_num(metrics.get("model_count")))
@@ -755,6 +826,9 @@ def _render_summary_report(bots_payload: dict[str, dict]) -> None:
             if not recommendations:
                 st.caption("No immediate correction was suggested.")
 
+    st.markdown("**Supervisor follow-up**")
+    _render_supervisor_changes(supervisor_report)
+
     with st.expander("Read full selected Summary Report", expanded=True):
         takeaways = extract_key_takeaways(report.get("body"), limit=6)
         if takeaways:
@@ -778,8 +852,6 @@ def _render_supervisor_panel(bots_payload: dict[str, dict]) -> None:
     latest = reports[0]
     metrics = latest.get("metrics") if isinstance(latest.get("metrics"), dict) else {}
     changes = latest.get("changes") if isinstance(latest.get("changes"), dict) else {}
-    applied = changes.get("applied_changes") if isinstance(changes.get("applied_changes"), list) else []
-    skipped = changes.get("skipped_changes") if isinstance(changes.get("skipped_changes"), list) else []
     monitoring = changes.get("monitoring") if isinstance(changes.get("monitoring"), list) else []
 
     cols = st.columns(4)
@@ -787,27 +859,7 @@ def _render_supervisor_panel(bots_payload: dict[str, dict]) -> None:
     cols[1].metric("Candidates", f"{int(float(metrics.get('candidate_change_count') or 0))}")
     cols[2].metric("Applied", f"{int(float(metrics.get('applied_change_count') or 0))}")
     cols[3].metric("Deferred", f"{int(float(metrics.get('skipped_change_count') or 0))}")
-    st.write(latest.get("summary", ""))
-
-    if applied:
-        st.markdown("**Applied changes**")
-        for item in applied:
-            old_value = float(item.get("old_value") or 0.0)
-            new_value = float(item.get("new_value") or 0.0)
-            st.markdown(
-                f"- {item.get('bot_name', '').upper()} `{item.get('field')}` "
-                f"{old_value:.6f} -> {new_value:.6f}: {item.get('reason', '')}"
-            )
-    else:
-        st.caption("No bounded policy changes were applied in the latest Supervisor run.")
-
-    if skipped:
-        with st.expander("Deferred candidate changes", expanded=False):
-            for item in skipped[:8]:
-                st.markdown(
-                    f"- {item.get('bot_name', '').upper()} `{item.get('field')}` "
-                    f"{item.get('direction', 'hold')} skipped: {item.get('skip_reason') or item.get('reason', '')}"
-                )
+    _render_supervisor_changes(latest, compact=True)
 
     if monitoring:
         with st.expander("Monitored evidence by model", expanded=False):
