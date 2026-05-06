@@ -59,7 +59,7 @@ python3 scripts/setup_env.py
 
 All bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate brokerage paper accounts.
 
-Reporting: markdown reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots. The report loop includes learning, post-trade attribution, champion/challenger shadow comparisons, and an all-model Summary Report that diagnoses performance, market context, and abnormal model behavior.
+Reporting: markdown reports are written to `data/reports/` and also stored in the SQLite database for downstream dashboards/snapshots. The report loop includes learning, post-trade attribution, champion/challenger shadow comparisons, an all-model Summary Report that diagnoses performance, market context, and abnormal model behavior, and a Supervisor report that can apply bounded policy changes after repeated evidence.
 
 ## Commands
 
@@ -132,6 +132,12 @@ Generate the all-model Summary Report:
 
 ```bash
 python3 -m broker_bot.cli summary-report
+```
+
+Generate the Supervisor policy report, which consolidates Summary/Coach/Attribution/Champion evidence and applies only bounded policy changes:
+
+```bash
+python3 -m broker_bot.cli supervisor-report
 ```
 
 Refresh the LLM bot reporting/coaching loop:
@@ -218,7 +224,7 @@ Equity vs SPY, positions, trades, all-model Summary Reports, analyst/trader/coac
 
 The optional dashboard run button triggers the same GitHub Actions workflow as the manual `Run workflow` button in GitHub. It requires a confirmation checkbox because the workflow can rebalance brokerage-service paper portfolios.
 
-The dashboard also includes a Champion/Challenger lab. It explains the current live policy, the stricter shadow policy being tested, recent outcomes, implemented safety changes, and historical report entries so you can inspect how the strategy comparison changes over time.
+The dashboard also includes a Supervisor panel and a Champion/Challenger lab. The Supervisor explains any bounded policy changes made from repeated Summary/Coach evidence. The Champion/Challenger lab explains the current live policy, the stricter shadow policy being tested, recent outcomes, implemented safety changes, and historical report entries so you can inspect how the strategy comparison changes over time.
 
 The Strategy Blueprint panel explains how each bot works, which strategy layers are active, the current bot-behavior revision number, and the bot changelog. When model behavior changes, add a new entry to `broker_bot/behavior_revisions.py`; dashboard-only changes should not change the bot behavior revision.
 
@@ -232,6 +238,7 @@ This workflow runs on a schedule and performs the full paper-trading cloud loop:
 - review past decisions and update learned weights
 - generate advisor and strategy reports
 - generate an all-model Summary Report after the daily bot runs complete
+- generate a Supervisor policy report that may apply bounded policy changes for the next run
 - rebuild `data/dashboard_snapshot.json`
 - commit updated snapshot/report/policy files back to GitHub
 
@@ -288,6 +295,7 @@ python3 -m broker_bot.cli attribution-report-stat-arb
 python3 -m broker_bot.cli champion-report-stat-arb
 python3 -m broker_bot.cli options-report
 python3 -m broker_bot.cli summary-report
+python3 -m broker_bot.cli supervisor-report
 python3 scripts/build_snapshot.py
 ```
 
@@ -329,6 +337,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - Advisor overrides are stored in `data/advisor_overrides.json` and applied at startup when enabled.
 - Learned ensemble weights and component reliability scales are stored in `data/learned_policy.json` and are intentionally kept bounded.
 - Champion/challenger reports compare stricter gates against recent outcomes. When enough evaluated evidence supports a change, they write bounded threshold updates to `data/champion_challenger_policy.json`.
+- Supervisor reports consolidate repeated Summary/Coach/Attribution/Champion findings before applying bounded policy changes to the same policy file. This prevents the Coach, Summary Report, and Champion/Challenger system from becoming competing adaptation loops.
 - Reports are written to `data/reports/`.
 - The dashboard APIs/UI now expose recent selected decisions, component contributions, and later outcomes.
 - Optional sector exposure critiques use `data/sector_map.csv` (set via `SECTOR_MAP_PATH`).

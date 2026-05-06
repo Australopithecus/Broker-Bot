@@ -170,6 +170,7 @@ def _render_sidebar_nav(
         ("System Health", "system-health"),
         ("Strategy Blueprint", "strategy-blueprint"),
         ("Summary Report", "summary-report"),
+        ("Supervisor", "supervisor"),
         ("Trend Graph", "trend-graph"),
         ("Current Holdings", "current-holdings"),
         ("Risk Cockpit", "risk-cockpit"),
@@ -763,6 +764,76 @@ def _render_summary_report(bots_payload: dict[str, dict]) -> None:
         st.markdown(report.get("body", ""))
 
 
+def _render_supervisor_panel(bots_payload: dict[str, dict]) -> None:
+    st.subheader("Supervisor")
+    st.caption(
+        "The Supervisor consolidates Summary, Coach, attribution, and Champion/Challenger evidence into bounded policy changes. "
+        "It changes policy JSON only, not source code."
+    )
+    reports = _global_reports_by_type(bots_payload, "supervisor")
+    if not reports:
+        st.caption("No Supervisor report yet. The next daily cloud run will generate this after the Summary Report.")
+        return
+
+    latest = reports[0]
+    metrics = latest.get("metrics") if isinstance(latest.get("metrics"), dict) else {}
+    changes = latest.get("changes") if isinstance(latest.get("changes"), dict) else {}
+    applied = changes.get("applied_changes") if isinstance(changes.get("applied_changes"), list) else []
+    skipped = changes.get("skipped_changes") if isinstance(changes.get("skipped_changes"), list) else []
+    monitoring = changes.get("monitoring") if isinstance(changes.get("monitoring"), list) else []
+
+    cols = st.columns(4)
+    cols[0].metric("Summary Reports", f"{int(float(metrics.get('summary_report_count') or 0))}")
+    cols[1].metric("Candidates", f"{int(float(metrics.get('candidate_change_count') or 0))}")
+    cols[2].metric("Applied", f"{int(float(metrics.get('applied_change_count') or 0))}")
+    cols[3].metric("Deferred", f"{int(float(metrics.get('skipped_change_count') or 0))}")
+    st.write(latest.get("summary", ""))
+
+    if applied:
+        st.markdown("**Applied changes**")
+        for item in applied:
+            old_value = float(item.get("old_value") or 0.0)
+            new_value = float(item.get("new_value") or 0.0)
+            st.markdown(
+                f"- {item.get('bot_name', '').upper()} `{item.get('field')}` "
+                f"{old_value:.6f} -> {new_value:.6f}: {item.get('reason', '')}"
+            )
+    else:
+        st.caption("No bounded policy changes were applied in the latest Supervisor run.")
+
+    if skipped:
+        with st.expander("Deferred candidate changes", expanded=False):
+            for item in skipped[:8]:
+                st.markdown(
+                    f"- {item.get('bot_name', '').upper()} `{item.get('field')}` "
+                    f"{item.get('direction', 'hold')} skipped: {item.get('skip_reason') or item.get('reason', '')}"
+                )
+
+    if monitoring:
+        with st.expander("Monitored evidence by model", expanded=False):
+            rows = []
+            for row in monitoring:
+                tag_counts = row.get("tag_counts") if isinstance(row.get("tag_counts"), dict) else {}
+                rows.append(
+                    {
+                        "Model": row.get("label") or str(row.get("bot_name", "")).upper(),
+                        "Status": row.get("status", ""),
+                        "Tags": ", ".join(f"{key}={value}" for key, value in sorted(tag_counts.items())) or "none",
+                        "Supporting Notes": " ".join(row.get("supporting_report_notes", []) or []),
+                    }
+                )
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+    selected_idx = st.selectbox(
+        "Historical Supervisor reports",
+        list(range(len(reports))),
+        format_func=lambda idx: f"{reports[idx].get('ts', 'unknown time')} • {reports[idx].get('summary', '')[:90]}",
+    )
+    selected_report = reports[int(selected_idx)]
+    with st.expander("Read selected Supervisor report", expanded=False):
+        st.markdown(selected_report.get("body", ""))
+
+
 def _render_cloud_run_controls() -> None:
     repo = _github_repo_from_data_url()
     actions_url = _github_actions_url(repo)
@@ -1013,6 +1084,7 @@ def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
             latest_by_type = _latest_reports_by_type(reports)
             report_types = [
                 "summary",
+                "supervisor",
                 "strategy",
                 "model_eval",
                 "watchlist",
@@ -1031,7 +1103,7 @@ def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
                 report = latest_by_type.get(report_type)
                 if not report:
                     continue
-                with st.expander(f"{report.get('headline', report_type)} • {report.get('ts', '')}", expanded=report_type in {"strategy", "summary", "analyst_daily", "trader_daily", "coach"}):
+                with st.expander(f"{report.get('headline', report_type)} • {report.get('ts', '')}", expanded=report_type in {"strategy", "summary", "supervisor", "analyst_daily", "trader_daily", "coach"}):
                     st.write(report.get("summary", ""))
                     takeaways = extract_key_takeaways(report.get("body"), limit=5)
                     if takeaways:
@@ -1098,6 +1170,8 @@ _anchor("strategy-blueprint")
 _render_strategy_blueprint(strategy_blueprint)
 _anchor("summary-report")
 _render_summary_report(bots_payload)
+_anchor("supervisor")
+_render_supervisor_panel(bots_payload)
 
 _anchor("trend-graph")
 st.subheader("Trend Graph")

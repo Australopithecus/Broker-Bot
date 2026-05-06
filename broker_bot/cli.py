@@ -36,6 +36,7 @@ from .llm_bot import generate_llm_bot_status_report, generate_llm_coach_report, 
 from .options import generate_options_scaffold_report
 from .stat_arb_bot import rebalance_stat_arb_bot
 from .summary_report import generate_summary_report
+from .supervisor import generate_supervisor_report
 
 
 def _load_symbols(config) -> list[str]:
@@ -543,6 +544,14 @@ def cmd_summary_report(args: argparse.Namespace) -> None:
     print(f"Saved report to {report.report_path}")
 
 
+def cmd_supervisor_report(args: argparse.Namespace) -> None:
+    config = load_config()
+    init_db(config.db_path)
+    report = generate_supervisor_report(config)
+    print(f"{report.headline}: {report.summary}")
+    print(f"Saved report to {report.report_path}")
+
+
 def cmd_model_eval(args: argparse.Namespace) -> None:
     config = load_config()
     init_db(config.db_path)
@@ -587,6 +596,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("champion-report-stat-arb")
     subparsers.add_parser("options-report")
     subparsers.add_parser("summary-report")
+    subparsers.add_parser("supervisor-report")
     subparsers.add_parser("model-eval")
 
     return parser
@@ -659,6 +669,8 @@ def main() -> None:
             cmd_options_report(args)
         elif args.command == "summary-report":
             cmd_summary_report(args)
+        elif args.command == "supervisor-report":
+            cmd_supervisor_report(args)
         elif args.command == "model-eval":
             cmd_model_eval(args)
     except RuntimeError as exc:

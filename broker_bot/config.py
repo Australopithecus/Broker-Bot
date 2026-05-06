@@ -212,6 +212,17 @@ def load_config() -> Config:
             value = default
         return _clip_float(value, low, high)
 
+    def _champion_bool_override(bot_name: str, name: str, default: bool) -> bool:
+        raw_policy = champion_policy.get(normalize_bot_name(bot_name), {})
+        if name not in raw_policy:
+            return default
+        try:
+            return float(raw_policy[name]) >= 0.5
+        except Exception:
+            return default
+
+    llm_skeptic_veto_default = os.getenv("LLM_SKEPTIC_VETO_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"}
+
     return Config(
         alpaca_api_key=api_key,
         alpaca_secret_key=secret_key,
@@ -253,7 +264,11 @@ def load_config() -> Config:
             0.95,
         ),
         llm_skeptic_enabled=os.getenv("LLM_SKEPTIC_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
-        llm_skeptic_veto_enabled=os.getenv("LLM_SKEPTIC_VETO_ENABLED", "1").strip().lower() in {"1", "true", "yes", "y"},
+        llm_skeptic_veto_enabled=_champion_bool_override(
+            LLM_BOT_NAME,
+            "llm_skeptic_veto_enabled",
+            llm_skeptic_veto_default,
+        ),
         stat_arb_lookback_days=int(os.getenv("STAT_ARB_LOOKBACK_DAYS", "180")),
         stat_arb_symbol_limit=int(os.getenv("STAT_ARB_SYMBOL_LIMIT", "80")),
         stat_arb_min_correlation=float(os.getenv("STAT_ARB_MIN_CORRELATION", "0.72")),

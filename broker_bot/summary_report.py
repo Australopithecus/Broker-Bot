@@ -368,6 +368,7 @@ def generate_summary_report(config: Config) -> SummaryReport:
     positives: list[str] = []
     issues: list[str] = []
     recommendations: list[str] = []
+    model_diagnostics: dict[str, dict[str, Any]] = {}
     equity_frames = [equity_frame(payload.get("equity", [])) for payload in bots_payload.values()]
     anchor = max((frame.index.max() for frame in equity_frames if not frame.empty), default=None)
     for bot_name, payload in bots_payload.items():
@@ -385,6 +386,23 @@ def generate_summary_report(config: Config) -> SummaryReport:
                 **metrics,
             }
         )
+        model_diagnostics[bot_name] = {
+            "bot_name": bot_name,
+            "label": payload.get("label") or bot_label(bot_name),
+            "positives": bot_positives,
+            "issues": bot_issues,
+            "recommendations": bot_recs,
+            "recent_counts": counts,
+            "metrics": {
+                "latest_equity": metrics.get("latest_equity"),
+                "window_return": metrics.get("window_return"),
+                "window_alpha": metrics.get("window_alpha"),
+                "win_rate": metrics.get("win_rate"),
+                "avg_trade_alpha": metrics.get("avg_trade_alpha"),
+                "gross_exposure_pct": metrics.get("gross_exposure_pct"),
+                "evaluated_decision_count": metrics.get("evaluated_decision_count"),
+            },
+        }
 
     rows.sort(key=lambda row: row.get("window_return") if row.get("window_return") is not None else -999, reverse=True)
     payload = {
@@ -424,6 +442,7 @@ def generate_summary_report(config: Config) -> SummaryReport:
     changes = {
         "recommendations": recommendations[:12],
         "issues": issues[:12],
+        "model_diagnostics": model_diagnostics,
         "schedule": "daily_after_market_close",
     }
     log_strategy_report(

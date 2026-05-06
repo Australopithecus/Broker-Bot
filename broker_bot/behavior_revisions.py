@@ -4,10 +4,21 @@ from copy import deepcopy
 from typing import Any
 
 
-CURRENT_BEHAVIOR_REVISION = "2.8.1"
-CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-05"
+CURRENT_BEHAVIOR_REVISION = "2.9.0"
+CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-06"
 
 BEHAVIOR_REVISION_HISTORY: list[dict[str, Any]] = [
+    {
+        "revision": "2.9.0",
+        "date": "2026-05-06",
+        "title": "Supervisor-controlled policy adaptation",
+        "models": ["ML Bot", "LLM Bot", "Stat Arb Bot"],
+        "changes": [
+            "Added a Supervisor layer that consolidates Summary, Coach, attribution, and Champion/Challenger evidence before changing runtime policy.",
+            "Required repeated findings, cooldown periods, and per-run change limits before policy changes can be applied.",
+            "Allowed the Supervisor to make bounded changes to ML confidence, LLM conviction/Skeptic veto authority, and Stat Arb entry z-score through the existing champion/challenger policy file.",
+        ],
+    },
     {
         "revision": "2.8.1",
         "date": "2026-05-05",

@@ -347,6 +347,10 @@ jobs:
         run: |
           python -m broker_bot.cli summary-report
 
+      - name: Generate supervisor policy report
+        run: |
+          python -m broker_bot.cli supervisor-report
+
       - name: Build dashboard snapshot
         run: |
           python scripts/build_snapshot.py
