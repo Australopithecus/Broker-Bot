@@ -1,12 +1,51 @@
 {
   "bots": {
+    "llm": {
+      "last_reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
+      "llm_min_conviction": 0.6,
+      "updated_at": "2026-05-07T22:17:20.801487+00:00",
+      "updated_by": "supervisor"
+    },
     "ml": {
       "last_reason": "Trades excluded by the challenger outperformed the champion, so the threshold was relaxed.",
       "min_signal_abs_score": 0.00125,
       "updated_at": "2026-05-05T02:13:24.234794+00:00",
       "updated_by": "champion_challenger"
+    },
+    "stat_arb": {
+      "last_reason": "Repeated Summary Reports indicate Stat Arb is finding setups but the entry gate may be too strict.",
+      "stat_arb_entry_z": 1.1,
+      "updated_at": "2026-05-07T22:17:20.801487+00:00",
+      "updated_by": "supervisor"
     }
   },
-  "generated_at": "2026-05-05T02:13:24.234806+00:00",
-  "summary": "Conservative threshold overrides promoted by champion/challenger reports."
+  "generated_at": "2026-05-07T22:17:20.801487+00:00",
+  "summary": "Conservative threshold and authority overrides promoted by champion/challenger and Supervisor reports.",
+  "supervisor": {
+    "applied_change_count": 2,
+    "generated_at": "2026-05-07T22:17:20.801487+00:00",
+    "skipped_change_count": 1
+  },
+  "supervisor_history": [
+    {
+      "applied": true,
+      "bot_name": "llm",
+      "direction": "tighten",
+      "field": "llm_min_conviction",
+      "new_value": 0.6,
+      "old_value": 0.55,
+      "reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
+      "ts": "2026-05-07T22:17:20.801487+00:00"
+    },
+    {
+      "applied": true,
+      "bot_name": "stat_arb",
+      "direction": "relax",
+      "field": "stat_arb_entry_z",
+      "new_value": 1.1,
+      "old_value": 1.25,
+      "reason": "Repeated Summary Reports indicate Stat Arb is finding setups but the entry gate may be too strict.",
+      "ts": "2026-05-07T22:17:20.801487+00:00"
+    }
+  ]
 }
