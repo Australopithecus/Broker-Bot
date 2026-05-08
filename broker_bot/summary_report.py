@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 
-from .bots import BOT_LABELS, LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label
+from .bots import AI_LAB_BOT_NAME, BOT_LABELS, LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label
 from .config import Config, configured_bot_names
 from .dashboard_metrics import WINDOW_OPTIONS, bot_performance_metrics, equity_frame, filter_frame_to_window, pct_change
 from .llm_utils import call_json_llm
@@ -282,6 +282,21 @@ def _diagnose_bot(
             recommendations.append(
                 f"Let champion/challenger evaluate `STAT_ARB_ENTRY_Z` near {stat_context.get('entry_z', config.stat_arb_entry_z)} before relaxing it manually."
             )
+
+    if bot_name == AI_LAB_BOT_NAME:
+        selected_longs = int(context.get("selected_long_count", 0) or 0)
+        selected_shorts = int(context.get("selected_short_count", 0) or 0)
+        candidate_count = int(context.get("candidate_count", 0) or 0)
+        exploration_count = int(context.get("exploration_count", 0) or 0)
+        policy_changes = context.get("ai_lab_policy_changes")
+        if isinstance(policy_changes, list) and any("->" in str(item) for item in policy_changes):
+            positives.append(f"{label} updated its adaptive policy from mature outcome evidence in the latest run.")
+        if candidate_count >= 25 and selected_longs + selected_shorts == 0:
+            issues.append(f"{label} scored {candidate_count} liquid candidates but selected no trades.")
+            recommendations.append("Let Supervisor/champion-challenger relax `AI_LAB_MIN_ABS_SCORE` if this repeats during a moving benchmark.")
+        if exploration_count > 2:
+            issues.append(f"{label} used {exploration_count} controlled-exploration slots, which is above the intended conservative range.")
+            recommendations.append("Reduce `AI_LAB_EXPLORATION_RATE` if exploration starts driving more trades than the main adaptive sleeves.")
 
     return positives, issues, recommendations
 

@@ -4,10 +4,22 @@ from copy import deepcopy
 from typing import Any
 
 
-CURRENT_BEHAVIOR_REVISION = "2.9.0"
-CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-06"
+CURRENT_BEHAVIOR_REVISION = "3.0.0"
+CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-08"
 
 BEHAVIOR_REVISION_HISTORY: list[dict[str, Any]] = [
+    {
+        "revision": "3.0.0",
+        "date": "2026-05-08",
+        "title": "AI Lab adaptive model",
+        "models": ["AI Lab Bot"],
+        "changes": [
+            "Added a fourth paper-trading model designed as an adaptive sleeve ensemble rather than a fixed ML model, pure LLM trader, or pair-trading system.",
+            "Blended trend, reversal, breakout, volume-confirmation, low-volatility, and market-regime alignment sleeves into a single composite score.",
+            "Added an AI Lab policy file that can update sleeve weights and entry thresholds from mature decision outcomes while staying bounded and auditable.",
+            "Added a conservative controlled-exploration budget for near-threshold paper trades so the new model can learn from borderline setups.",
+        ],
+    },
     {
         "revision": "2.9.0",
         "date": "2026-05-06",

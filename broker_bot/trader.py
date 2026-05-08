@@ -17,6 +17,7 @@ from alpaca.trading.requests import (
 from alpaca.trading.enums import OrderClass, OrderSide, TimeInForce
 from alpaca.common.exceptions import APIError
 
+from .bots import AI_LAB_BOT_NAME
 from .config import Config, get_bot_account_config
 from .data import fetch_daily_bars
 from .features import build_features
@@ -583,7 +584,9 @@ def execute_signals(
         leverage *= max(config.max_drawdown / dd, 0.1)
 
     leverage = max(config.min_leverage, min(leverage, config.gross_leverage))
-    signals, confidence_gated = _apply_confidence_gate(signals, config.min_signal_abs_score)
+    default_confidence_gate = config.ai_lab_min_abs_score if bot_name == AI_LAB_BOT_NAME else config.min_signal_abs_score
+    confidence_gate = float(decision_context.get("confidence_gate_override", default_confidence_gate))
+    signals, confidence_gated = _apply_confidence_gate(signals, confidence_gate)
 
     weights = _target_weights(
         signals,
@@ -619,7 +622,7 @@ def execute_signals(
     decision_context["selected_weights"] = {symbol: float(weight) for symbol, weight in weights.items()}
     decision_context["shorting_enabled"] = bool(shorting_enabled)
     decision_context["portfolio_risk"] = risk_summary
-    decision_context["min_signal_abs_score"] = float(config.min_signal_abs_score)
+    decision_context["min_signal_abs_score"] = float(confidence_gate)
     decision_context["confidence_gated_count"] = len(confidence_gated)
     decision_context["confidence_gated"] = confidence_gated
 

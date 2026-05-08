@@ -1,10 +1,11 @@
 # Broker Bot (Paper Trading)
 
-A Python-based paper-trading project for brokerage-service paper accounts with three named bots:
+A Python-based paper-trading project for brokerage-service paper accounts with four named bots:
 
 - `ML Bot`: the original machine-learning ensemble bot
 - `LLM Bot`: a second bot that uses a network of LLM roles for stock selection, analysis, trading, and coaching
 - `Stat Arb Bot`: a third bot that trades statistical pair dislocations using correlation, hedge-ratio spreads, and z-score mean reversion
+- `AI Lab Bot`: a fourth AI-designed challenger that self-updates an adaptive sleeve policy from its own trade outcomes
 
 Each bot keeps its own paper-account history, reports, and dashboard sections so you can compare them side by side.
 
@@ -56,6 +57,13 @@ python3 scripts/setup_env.py
 - Entry logic: enters only when the hedge-ratio spread is stretched beyond a configurable z-score threshold.
 - Trade construction: goes long the relatively cheap leg and short the relatively rich leg, aiming for mean reversion rather than broad market direction.
 - Review loop: writes pair-candidate reports and logs z-score/correlation components so future reports can evaluate which relationship setups worked.
+
+`AI Lab Bot` is the open-ended AI-designed challenger:
+
+- Design: blends trend, short-term reversal, breakout, volume confirmation, low-volatility preference, and market-regime alignment sleeves.
+- Self-updating policy: mature trade outcomes update sleeve weights and the entry threshold in `data/ai_lab_policy.json` within strict bounds.
+- Controlled exploration: can allocate a small number of paper-only near-threshold trades so it learns from borderline ideas, not only its strongest signals.
+- Supervisor integration: the all-model Summary/Supervisor loop and Champion/Challenger reports can tighten or relax the AI Lab entry gate when repeated evidence supports a change.
 
 All bots use the same downstream execution/risk controls once they produce trade ideas, but they can run against separate brokerage paper accounts.
 
@@ -109,6 +117,12 @@ Rebalance the Stat Arb bot paper account:
 python3 -m broker_bot.cli rebalance-stat-arb
 ```
 
+Rebalance the AI Lab bot paper account:
+
+```bash
+python3 -m broker_bot.cli rebalance-ai-lab
+```
+
 Review mature past decisions, score what worked, and update learned component weights:
 
 ```bash
@@ -158,6 +172,15 @@ python3 -m broker_bot.cli attribution-report-stat-arb
 python3 -m broker_bot.cli champion-report-stat-arb
 ```
 
+Refresh the AI Lab bot reporting loop:
+
+```bash
+python3 -m broker_bot.cli review-decisions-ai-lab
+python3 -m broker_bot.cli strategy-report-ai-lab
+python3 -m broker_bot.cli attribution-report-ai-lab
+python3 -m broker_bot.cli champion-report-ai-lab
+```
+
 Generate a paper-only options scaffold report that turns the strongest stock ideas into defined-risk vertical spread candidates:
 
 ```bash
@@ -180,6 +203,12 @@ Snapshot the Stat Arb bot account:
 
 ```bash
 python3 -m broker_bot.cli snapshot-stat-arb
+```
+
+Snapshot the AI Lab bot account:
+
+```bash
+python3 -m broker_bot.cli snapshot-ai-lab
 ```
 
 Launch the desktop dashboard (Tkinter):
@@ -220,7 +249,7 @@ You can deploy the UI via Streamlit Community Cloud using `streamlit_app.py`. Th
      `GITHUB_REPOSITORY`, `GITHUB_WORKFLOW_ID`, `GITHUB_WORKFLOW_REF`, and `BROKER_BOT_GITHUB_TOKEN`
 
 The Streamlit app calls your bot API endpoints and shows:
-Equity vs SPY, positions, trades, all-model Summary Reports, analyst/trader/coach reports, stat-arb pair reports, strategy-report snapshots, and recent decision rationale for all configured bots in separate sections.
+Equity vs SPY, positions, trades, all-model Summary Reports, analyst/trader/coach reports, stat-arb pair reports, AI Lab policy reports, strategy-report snapshots, and recent decision rationale for all configured bots in separate sections.
 
 The optional dashboard run button triggers the same GitHub Actions workflow as the manual `Run workflow` button in GitHub. It requires a confirmation checkbox because the workflow can rebalance brokerage-service paper portfolios.
 
@@ -264,6 +293,8 @@ Optional caretaker secrets:
 - `ALPACA_LLM_PAPER_URL` and `ALPACA_LLM_DATA_FEED` (optional)
 - `ALPACA_STAT_ARB_API_KEY` and `ALPACA_STAT_ARB_SECRET_KEY` for the separate paper account used by the Stat Arb bot
 - `ALPACA_STAT_ARB_PAPER_URL` and `ALPACA_STAT_ARB_DATA_FEED` (optional)
+- `ALPACA_AI_LAB_API_KEY` and `ALPACA_AI_LAB_SECRET_KEY` for the separate paper account used by the AI Lab bot
+- `ALPACA_AI_LAB_PAPER_URL` and `ALPACA_AI_LAB_DATA_FEED` (optional)
 - `OPENAI_API_KEY` (if `LLM_ENABLED=1`)
 - `LLM_ENABLED` (`1` to enable LLM advisor)
 - `LLM_MODEL` (e.g. `gpt-5-mini`)
@@ -293,6 +324,11 @@ python3 -m broker_bot.cli snapshot-stat-arb
 python3 -m broker_bot.cli review-decisions-stat-arb
 python3 -m broker_bot.cli attribution-report-stat-arb
 python3 -m broker_bot.cli champion-report-stat-arb
+python3 -m broker_bot.cli rebalance-ai-lab
+python3 -m broker_bot.cli snapshot-ai-lab
+python3 -m broker_bot.cli review-decisions-ai-lab
+python3 -m broker_bot.cli attribution-report-ai-lab
+python3 -m broker_bot.cli champion-report-ai-lab
 python3 -m broker_bot.cli options-report
 python3 -m broker_bot.cli summary-report
 python3 -m broker_bot.cli supervisor-report
@@ -305,6 +341,7 @@ Manual caretaker commands:
 python3 -m broker_bot.cli caretaker
 python3 -m broker_bot.cli caretaker-llm
 python3 -m broker_bot.cli caretaker-stat-arb
+python3 -m broker_bot.cli caretaker-ai-lab
 python3 -m broker_bot.cli caretaker-all
 ```
 
@@ -332,12 +369,14 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - The live signal stack can blend in brokerage-service snapshots, market movers, most-active names, recent brokerage-service news headlines, symbol memory, and optional LLM watchlist judgments.
 - The LLM bot keeps its own watchlist, analyst daily reports, Skeptic reviews, trader daily reports, and coach reports.
 - The Stat Arb bot keeps pair-candidate reports, selected dislocation logs, and post-trade attribution separate from the ML and LLM bots.
+- The AI Lab bot keeps an adaptive sleeve-policy file, daily design reports, controlled-exploration notes, and post-trade attribution separate from the other bots.
 - The backtest uses walk-forward retraining, weekly rebalancing, and transaction cost estimates for realism.
 - The backtest now better matches the live ensemble by simulating bounded overlay components offline from historical price/volume structure.
 - Advisor overrides are stored in `data/advisor_overrides.json` and applied at startup when enabled.
 - Learned ensemble weights and component reliability scales are stored in `data/learned_policy.json` and are intentionally kept bounded.
 - Champion/challenger reports compare stricter gates against recent outcomes. When enough evaluated evidence supports a change, they write bounded threshold updates to `data/champion_challenger_policy.json`.
 - Supervisor reports consolidate repeated Summary/Coach/Attribution/Champion findings before applying bounded policy changes to the same policy file. This prevents the Coach, Summary Report, and Champion/Challenger system from becoming competing adaptation loops.
+- AI Lab policy updates are stored in `data/ai_lab_policy.json`; the Supervisor can also tune the AI Lab entry threshold through the champion/challenger policy file.
 - Reports are written to `data/reports/`.
 - The dashboard APIs/UI now expose recent selected decisions, component contributions, and later outcomes.
 - Optional sector exposure critiques use `data/sector_map.csv` (set via `SECTOR_MAP_PATH`).
@@ -364,6 +403,8 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - `ALPACA_LLM_API_KEY`, `ALPACA_LLM_SECRET_KEY`, `ALPACA_LLM_PAPER_URL`, and `ALPACA_LLM_DATA_FEED` configure the second paper account used by the LLM bot.
 - `ALPACA_STAT_ARB_API_KEY`, `ALPACA_STAT_ARB_SECRET_KEY`, `ALPACA_STAT_ARB_PAPER_URL`, and `ALPACA_STAT_ARB_DATA_FEED` configure the separate paper account used by the Stat Arb bot.
 - `STAT_ARB_LOOKBACK_DAYS`, `STAT_ARB_SYMBOL_LIMIT`, `STAT_ARB_MIN_CORRELATION`, `STAT_ARB_ENTRY_Z`, `STAT_ARB_EXIT_Z`, `STAT_ARB_MAX_PAIRS`, and `STAT_ARB_PAIR_GROSS_PCT` control the statistical pair-selection and sizing rules.
+- `ALPACA_AI_LAB_API_KEY`, `ALPACA_AI_LAB_SECRET_KEY`, `ALPACA_AI_LAB_PAPER_URL`, and `ALPACA_AI_LAB_DATA_FEED` configure the separate paper account used by the AI Lab bot.
+- `AI_LAB_POLICY_PATH`, `AI_LAB_LOOKBACK_DAYS`, `AI_LAB_SYMBOL_LIMIT`, `AI_LAB_MAX_LONG_POSITIONS`, `AI_LAB_MAX_SHORT_POSITIONS`, `AI_LAB_MIN_ABS_SCORE`, and `AI_LAB_EXPLORATION_RATE` control the AI-designed adaptive sleeve model.
 - The local dashboard and Streamlit snapshot now show broker-side protection summaries per position so you can see whether exits are resting with the brokerage service.
 - The dashboard is multi-bot aware: configured bots' equity, positions, trades, decisions, and reports are stored separately and displayed separately.
 - `OPTIONS_MIN_DTE`, `OPTIONS_MAX_DTE`, `OPTIONS_IDEA_LIMIT`, and `OPTIONS_SPREAD_WIDTH_PCT` control the paper-only options scaffold report.

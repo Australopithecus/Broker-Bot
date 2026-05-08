@@ -52,6 +52,10 @@ jobs:
           ALPACA_STAT_ARB_SECRET_KEY: ${{ secrets.ALPACA_STAT_ARB_SECRET_KEY }}
           ALPACA_STAT_ARB_PAPER_URL: ${{ secrets.ALPACA_STAT_ARB_PAPER_URL }}
           ALPACA_STAT_ARB_DATA_FEED: ${{ secrets.ALPACA_STAT_ARB_DATA_FEED }}
+          ALPACA_AI_LAB_API_KEY: ${{ secrets.ALPACA_AI_LAB_API_KEY }}
+          ALPACA_AI_LAB_SECRET_KEY: ${{ secrets.ALPACA_AI_LAB_SECRET_KEY }}
+          ALPACA_AI_LAB_PAPER_URL: ${{ secrets.ALPACA_AI_LAB_PAPER_URL }}
+          ALPACA_AI_LAB_DATA_FEED: ${{ secrets.ALPACA_AI_LAB_DATA_FEED }}
           CARETAKER_TRAILING_STOP_ENABLED: ${{ secrets.CARETAKER_TRAILING_STOP_ENABLED }}
           CARETAKER_TRAILING_STOP_PERCENT: ${{ secrets.CARETAKER_TRAILING_STOP_PERCENT }}
           CARETAKER_DAILY_DRAWDOWN_LIMIT: ${{ secrets.CARETAKER_DAILY_DRAWDOWN_LIMIT }}
@@ -70,12 +74,17 @@ jobs:
             echo "ALPACA_STAT_ARB_SECRET_KEY=${ALPACA_STAT_ARB_SECRET_KEY}"
             echo "ALPACA_STAT_ARB_PAPER_URL=${ALPACA_STAT_ARB_PAPER_URL}"
             echo "ALPACA_STAT_ARB_DATA_FEED=${ALPACA_STAT_ARB_DATA_FEED}"
+            echo "ALPACA_AI_LAB_API_KEY=${ALPACA_AI_LAB_API_KEY}"
+            echo "ALPACA_AI_LAB_SECRET_KEY=${ALPACA_AI_LAB_SECRET_KEY}"
+            echo "ALPACA_AI_LAB_PAPER_URL=${ALPACA_AI_LAB_PAPER_URL}"
+            echo "ALPACA_AI_LAB_DATA_FEED=${ALPACA_AI_LAB_DATA_FEED}"
             echo "UNIVERSE_PATH=data/sp500.csv"
             echo "BROKER_BOT_DB=data/broker_bot.sqlite"
             echo "MODEL_DIR=data/models"
             echo "REPORTS_DIR=data/reports"
             echo "LEARNED_POLICY_PATH=data/learned_policy.json"
             echo "CHAMPION_POLICY_PATH=data/champion_challenger_policy.json"
+            echo "AI_LAB_POLICY_PATH=data/ai_lab_policy.json"
           } >> "$GITHUB_ENV"
 
           if [ -n "${CARETAKER_TRAILING_STOP_ENABLED}" ]; then
@@ -144,6 +153,16 @@ jobs:
             echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Detect whether AI Lab bot credentials are configured
+        if: ${{ steps.market_clock.outputs.run == 'true' }}
+        id: ai_lab_bot_config
+        run: |
+          if [ -n "${ALPACA_AI_LAB_API_KEY}" ] && [ -n "${ALPACA_AI_LAB_SECRET_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run ML caretaker
         if: ${{ steps.market_clock.outputs.run == 'true' }}
         run: |
@@ -158,6 +177,11 @@ jobs:
         if: ${{ steps.market_clock.outputs.run == 'true' && steps.stat_arb_bot_config.outputs.enabled == 'true' }}
         run: |
           python -m broker_bot.cli caretaker-stat-arb
+
+      - name: Run AI Lab caretaker
+        if: ${{ steps.market_clock.outputs.run == 'true' && steps.ai_lab_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli caretaker-ai-lab
 
       - name: Build dashboard snapshot
         if: ${{ steps.market_clock.outputs.run == 'true' }}

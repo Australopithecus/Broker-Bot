@@ -51,6 +51,10 @@ jobs:
           ALPACA_STAT_ARB_SECRET_KEY: ${{ secrets.ALPACA_STAT_ARB_SECRET_KEY }}
           ALPACA_STAT_ARB_PAPER_URL: ${{ secrets.ALPACA_STAT_ARB_PAPER_URL }}
           ALPACA_STAT_ARB_DATA_FEED: ${{ secrets.ALPACA_STAT_ARB_DATA_FEED }}
+          ALPACA_AI_LAB_API_KEY: ${{ secrets.ALPACA_AI_LAB_API_KEY }}
+          ALPACA_AI_LAB_SECRET_KEY: ${{ secrets.ALPACA_AI_LAB_SECRET_KEY }}
+          ALPACA_AI_LAB_PAPER_URL: ${{ secrets.ALPACA_AI_LAB_PAPER_URL }}
+          ALPACA_AI_LAB_DATA_FEED: ${{ secrets.ALPACA_AI_LAB_DATA_FEED }}
         run: |
           python scripts/restore_db_from_snapshot.py
 
@@ -68,6 +72,10 @@ jobs:
           ALPACA_STAT_ARB_SECRET_KEY: ${{ secrets.ALPACA_STAT_ARB_SECRET_KEY }}
           ALPACA_STAT_ARB_PAPER_URL: ${{ secrets.ALPACA_STAT_ARB_PAPER_URL }}
           ALPACA_STAT_ARB_DATA_FEED: ${{ secrets.ALPACA_STAT_ARB_DATA_FEED }}
+          ALPACA_AI_LAB_API_KEY: ${{ secrets.ALPACA_AI_LAB_API_KEY }}
+          ALPACA_AI_LAB_SECRET_KEY: ${{ secrets.ALPACA_AI_LAB_SECRET_KEY }}
+          ALPACA_AI_LAB_PAPER_URL: ${{ secrets.ALPACA_AI_LAB_PAPER_URL }}
+          ALPACA_AI_LAB_DATA_FEED: ${{ secrets.ALPACA_AI_LAB_DATA_FEED }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_ENABLED: ${{ secrets.LLM_ENABLED }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
@@ -82,6 +90,12 @@ jobs:
           STAT_ARB_EXIT_Z: ${{ secrets.STAT_ARB_EXIT_Z }}
           STAT_ARB_MAX_PAIRS: ${{ secrets.STAT_ARB_MAX_PAIRS }}
           STAT_ARB_PAIR_GROSS_PCT: ${{ secrets.STAT_ARB_PAIR_GROSS_PCT }}
+          AI_LAB_LOOKBACK_DAYS: ${{ secrets.AI_LAB_LOOKBACK_DAYS }}
+          AI_LAB_SYMBOL_LIMIT: ${{ secrets.AI_LAB_SYMBOL_LIMIT }}
+          AI_LAB_MAX_LONG_POSITIONS: ${{ secrets.AI_LAB_MAX_LONG_POSITIONS }}
+          AI_LAB_MAX_SHORT_POSITIONS: ${{ secrets.AI_LAB_MAX_SHORT_POSITIONS }}
+          AI_LAB_MIN_ABS_SCORE: ${{ secrets.AI_LAB_MIN_ABS_SCORE }}
+          AI_LAB_EXPLORATION_RATE: ${{ secrets.AI_LAB_EXPLORATION_RATE }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
         run: |
           python - <<'PY'
@@ -98,6 +112,10 @@ jobs:
               "ALPACA_STAT_ARB_SECRET_KEY",
               "ALPACA_STAT_ARB_PAPER_URL",
               "ALPACA_STAT_ARB_DATA_FEED",
+              "ALPACA_AI_LAB_API_KEY",
+              "ALPACA_AI_LAB_SECRET_KEY",
+              "ALPACA_AI_LAB_PAPER_URL",
+              "ALPACA_AI_LAB_DATA_FEED",
               "OPENAI_API_KEY",
               "LLM_ENABLED",
               "LLM_MODEL",
@@ -112,6 +130,12 @@ jobs:
               "STAT_ARB_EXIT_Z",
               "STAT_ARB_MAX_PAIRS",
               "STAT_ARB_PAIR_GROSS_PCT",
+              "AI_LAB_LOOKBACK_DAYS",
+              "AI_LAB_SYMBOL_LIMIT",
+              "AI_LAB_MAX_LONG_POSITIONS",
+              "AI_LAB_MAX_SHORT_POSITIONS",
+              "AI_LAB_MIN_ABS_SCORE",
+              "AI_LAB_EXPLORATION_RATE",
               "API_TOKEN",
           ]
           missing = [name for name in required if not os.getenv(name, "").strip()]
@@ -136,6 +160,10 @@ jobs:
           ALPACA_STAT_ARB_SECRET_KEY: ${{ secrets.ALPACA_STAT_ARB_SECRET_KEY }}
           ALPACA_STAT_ARB_PAPER_URL: ${{ secrets.ALPACA_STAT_ARB_PAPER_URL }}
           ALPACA_STAT_ARB_DATA_FEED: ${{ secrets.ALPACA_STAT_ARB_DATA_FEED }}
+          ALPACA_AI_LAB_API_KEY: ${{ secrets.ALPACA_AI_LAB_API_KEY }}
+          ALPACA_AI_LAB_SECRET_KEY: ${{ secrets.ALPACA_AI_LAB_SECRET_KEY }}
+          ALPACA_AI_LAB_PAPER_URL: ${{ secrets.ALPACA_AI_LAB_PAPER_URL }}
+          ALPACA_AI_LAB_DATA_FEED: ${{ secrets.ALPACA_AI_LAB_DATA_FEED }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           LLM_ENABLED: ${{ secrets.LLM_ENABLED }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
@@ -150,6 +178,12 @@ jobs:
           STAT_ARB_EXIT_Z: ${{ secrets.STAT_ARB_EXIT_Z }}
           STAT_ARB_MAX_PAIRS: ${{ secrets.STAT_ARB_MAX_PAIRS }}
           STAT_ARB_PAIR_GROSS_PCT: ${{ secrets.STAT_ARB_PAIR_GROSS_PCT }}
+          AI_LAB_LOOKBACK_DAYS: ${{ secrets.AI_LAB_LOOKBACK_DAYS }}
+          AI_LAB_SYMBOL_LIMIT: ${{ secrets.AI_LAB_SYMBOL_LIMIT }}
+          AI_LAB_MAX_LONG_POSITIONS: ${{ secrets.AI_LAB_MAX_LONG_POSITIONS }}
+          AI_LAB_MAX_SHORT_POSITIONS: ${{ secrets.AI_LAB_MAX_SHORT_POSITIONS }}
+          AI_LAB_MIN_ABS_SCORE: ${{ secrets.AI_LAB_MIN_ABS_SCORE }}
+          AI_LAB_EXPLORATION_RATE: ${{ secrets.AI_LAB_EXPLORATION_RATE }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
           UNIVERSE_PATH: data/sp500.csv
           BROKER_BOT_DB: data/broker_bot.sqlite
@@ -157,6 +191,7 @@ jobs:
           REPORTS_DIR: data/reports
           LEARNED_POLICY_PATH: data/learned_policy.json
           CHAMPION_POLICY_PATH: data/champion_challenger_policy.json
+          AI_LAB_POLICY_PATH: data/ai_lab_policy.json
         run: |
           {
             echo "ALPACA_API_KEY=${ALPACA_API_KEY}"
@@ -171,6 +206,10 @@ jobs:
             echo "ALPACA_STAT_ARB_SECRET_KEY=${ALPACA_STAT_ARB_SECRET_KEY}"
             echo "ALPACA_STAT_ARB_PAPER_URL=${ALPACA_STAT_ARB_PAPER_URL}"
             echo "ALPACA_STAT_ARB_DATA_FEED=${ALPACA_STAT_ARB_DATA_FEED}"
+            echo "ALPACA_AI_LAB_API_KEY=${ALPACA_AI_LAB_API_KEY}"
+            echo "ALPACA_AI_LAB_SECRET_KEY=${ALPACA_AI_LAB_SECRET_KEY}"
+            echo "ALPACA_AI_LAB_PAPER_URL=${ALPACA_AI_LAB_PAPER_URL}"
+            echo "ALPACA_AI_LAB_DATA_FEED=${ALPACA_AI_LAB_DATA_FEED}"
             echo "OPENAI_API_KEY=${OPENAI_API_KEY}"
             echo "LLM_ENABLED=${LLM_ENABLED}"
             echo "LLM_MODEL=${LLM_MODEL}"
@@ -181,7 +220,8 @@ jobs:
             echo "REPORTS_DIR=${REPORTS_DIR}"
             echo "LEARNED_POLICY_PATH=${LEARNED_POLICY_PATH}"
             echo "CHAMPION_POLICY_PATH=${CHAMPION_POLICY_PATH}"
-            for name in MIN_SIGNAL_ABS_SCORE LLM_MIN_CONVICTION LLM_SKEPTIC_ENABLED LLM_SKEPTIC_VETO_ENABLED STAT_ARB_LOOKBACK_DAYS STAT_ARB_SYMBOL_LIMIT STAT_ARB_MIN_CORRELATION STAT_ARB_ENTRY_Z STAT_ARB_EXIT_Z STAT_ARB_MAX_PAIRS STAT_ARB_PAIR_GROSS_PCT; do
+            echo "AI_LAB_POLICY_PATH=${AI_LAB_POLICY_PATH}"
+            for name in MIN_SIGNAL_ABS_SCORE LLM_MIN_CONVICTION LLM_SKEPTIC_ENABLED LLM_SKEPTIC_VETO_ENABLED STAT_ARB_LOOKBACK_DAYS STAT_ARB_SYMBOL_LIMIT STAT_ARB_MIN_CORRELATION STAT_ARB_ENTRY_Z STAT_ARB_EXIT_Z STAT_ARB_MAX_PAIRS STAT_ARB_PAIR_GROSS_PCT AI_LAB_LOOKBACK_DAYS AI_LAB_SYMBOL_LIMIT AI_LAB_MAX_LONG_POSITIONS AI_LAB_MAX_SHORT_POSITIONS AI_LAB_MIN_ABS_SCORE AI_LAB_EXPLORATION_RATE; do
               value="${!name}"
               if [ -n "$value" ]; then
                 echo "${name}=${value}"
@@ -202,6 +242,15 @@ jobs:
         id: stat_arb_bot_config
         run: |
           if [ -n "${ALPACA_STAT_ARB_API_KEY}" ] && [ -n "${ALPACA_STAT_ARB_SECRET_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect whether AI Lab bot credentials are configured
+        id: ai_lab_bot_config
+        run: |
+          if [ -n "${ALPACA_AI_LAB_API_KEY}" ] && [ -n "${ALPACA_AI_LAB_SECRET_KEY}" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
@@ -339,6 +388,31 @@ jobs:
         run: |
           python -m broker_bot.cli champion-report-stat-arb
 
+      - name: Rebalance AI Lab paper portfolio
+        if: ${{ steps.ai_lab_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli rebalance-ai-lab
+
+      - name: Snapshot AI Lab account
+        if: ${{ steps.ai_lab_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli snapshot-ai-lab
+
+      - name: Review AI Lab decisions
+        if: ${{ steps.ai_lab_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli review-decisions-ai-lab
+
+      - name: Generate AI Lab attribution report
+        if: ${{ steps.ai_lab_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli attribution-report-ai-lab
+
+      - name: Generate AI Lab champion challenger report
+        if: ${{ steps.ai_lab_bot_config.outputs.enabled == 'true' }}
+        run: |
+          python -m broker_bot.cli champion-report-ai-lab
+
       - name: Generate options scaffold report
         run: |
           python -m broker_bot.cli options-report
@@ -365,6 +439,9 @@ jobs:
           git add data/dashboard_snapshot.json data/learned_policy.json data/reports
           if [ -f data/champion_challenger_policy.json ]; then
             git add data/champion_challenger_policy.json
+          fi
+          if [ -f data/ai_lab_policy.json ]; then
+            git add data/ai_lab_policy.json
           fi
           if git diff --cached --quiet; then
             echo "No bot output changes to commit."

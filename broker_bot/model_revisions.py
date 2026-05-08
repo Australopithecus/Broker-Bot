@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .behavior_revisions import CURRENT_BEHAVIOR_REVISION
-from .bots import LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label, normalize_bot_name
+from .bots import AI_LAB_BOT_NAME, LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label, normalize_bot_name
 
 
 def _latest_report(reports: list[dict[str, Any]], report_type: str) -> dict[str, Any] | None:
@@ -70,6 +70,34 @@ def model_revision(
                 "selected_pair_count": metrics.get("selected_pair_count"),
                 "entry_z": metrics.get("entry_z"),
                 "min_correlation": metrics.get("min_correlation"),
+            },
+        }
+
+    if normalized == AI_LAB_BOT_NAME:
+        ai_report = _latest_report(reports, "ai_lab_daily")
+        metrics = ai_report.get("metrics", {}) if ai_report else {}
+        return {
+            "id": "ai-lab-r1-adaptive-sleeves",
+            "label": "R1",
+            "display_label": "AI Lab Bot R1",
+            "name": "Adaptive Sleeve Ensemble",
+            "status": "active",
+            "introduced_at": "2026-05-08",
+            "behavior_revision": CURRENT_BEHAVIOR_REVISION,
+            "summary": (
+                ai_report.get("summary")
+                if ai_report
+                else "AI-designed and AI-updated adaptive sleeve ensemble with self-adjusting policy weights."
+            ),
+            "base_label": base_label,
+            "report_ts": ai_report.get("ts") if ai_report else None,
+            "metrics": {
+                "selected_long_count": metrics.get("selected_long_count"),
+                "selected_short_count": metrics.get("selected_short_count"),
+                "threshold": metrics.get("threshold"),
+                "exploration_count": metrics.get("exploration_count"),
+                "policy_sample_count": metrics.get("policy_sample_count"),
+                "recent_avg_signed_return": metrics.get("recent_avg_signed_return"),
             },
         }
 

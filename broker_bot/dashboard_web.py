@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .bot_blueprint import get_strategy_blueprint
-from .bots import ML_BOT_NAME, bot_label, normalize_bot_name
+from .bots import BOT_LABELS, ML_BOT_NAME, bot_label, normalize_bot_name
 from .config import Config, configured_bot_names
 from .dashboard_metrics import WINDOW_OPTIONS, agreement_summary, comparison_table, freshness_status
 from .logging_db import (
@@ -60,7 +60,7 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
     @app.get("/api/bots")
     def bots(request: Request) -> JSONResponse:
         _check_token(request)
-        discovered = set(known_bots)
+        discovered = set(BOT_LABELS) | set(known_bots)
         try:
             discovered.update(read_available_bot_names(db_path))
         except Exception:
@@ -1573,7 +1573,7 @@ async function loadStrategy() {
     return;
   }
   container.innerHTML = '';
-  const featuredTypes = new Set(['summary', 'supervisor', 'model_eval', 'watchlist', 'skeptic', 'attribution', 'champion_challenger', 'stat_arb_daily', 'options_scaffold']);
+  const featuredTypes = new Set(['summary', 'supervisor', 'model_eval', 'watchlist', 'skeptic', 'attribution', 'champion_challenger', 'stat_arb_daily', 'ai_lab_daily', 'options_scaffold']);
   reports.filter(report => featuredTypes.has(report.report_type)).slice(0, 3).forEach(report => {
     const div = document.createElement('div');
     div.className = 'card';

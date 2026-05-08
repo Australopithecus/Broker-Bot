@@ -16,7 +16,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
     "revision": CURRENT_BEHAVIOR_REVISION,
     "revision_date": CURRENT_BEHAVIOR_REVISION_DATE,
     "summary": (
-        "Broker Bot is a paper-trading research system with three competing models: an ML ensemble model, an LLM decision-network model, and a statistical arbitrage model. "
+        "Broker Bot is a paper-trading research system with four competing models: an ML ensemble model, an LLM decision-network model, a statistical arbitrage model, and an AI-designed adaptive model. "
         "Each model can use separate brokerage paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports."
     ),
     "models": [
@@ -63,15 +63,31 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
                 "Writes pair-candidate reports and logs z-score/correlation components for later outcome review.",
             ],
         },
+        {
+            "name": "AI Lab Bot R1",
+            "role": "Autonomous design challenger",
+            "description": (
+                "The AI Lab Bot is the open-ended experimental model: it uses an AI-designed adaptive sleeve ensemble and updates its own policy weights from outcomes."
+            ),
+            "strategies": [
+                "Scores stocks with trend, short-term reversal, breakout, volume-confirmation, low-volatility, and market-regime alignment sleeves.",
+                "Blends those sleeves into a composite long/short score using weights stored in `data/ai_lab_policy.json`.",
+                "Updates sleeve weights and its minimum entry score from mature decision outcomes, with bounded changes and an audit trail.",
+                "Uses a small controlled-exploration budget for near-threshold paper trades so the model can learn from borderline setups.",
+                "Uses the same downstream execution, risk, sector/correlation, drawdown, and broker-side protection controls as the other bots.",
+                "Reports the current policy, selected ideas, and self-updates after every rebalance.",
+            ],
+        },
     ],
     "shared_layers": [
-        "Separate brokerage paper credentials allow ML, LLM, and Stat Arb bot equity curves to be compared cleanly.",
+        "Separate brokerage paper credentials allow ML, LLM, Stat Arb, and AI Lab bot equity curves to be compared cleanly.",
         "Rebalance runs can submit paper orders, while snapshot and caretaker runs update dashboard data and protection status.",
         "Caretaker runs can attach broker-side trailing stops to compatible whole-share positions and can enforce an optional daily drawdown kill switch.",
         "Learning reports evaluate mature decisions, calculate signed returns, compare against SPY, and update bounded learned-policy weights.",
         "Model evaluation reports score walk-forward out-of-sample folds before a model revision is trusted on the dashboard.",
         "Champion/Challenger reports compare the current live policy against stricter shadow policies and can write bounded threshold adjustments when enough evaluated evidence supports the change.",
         "Supervisor reports consolidate Summary, Coach, attribution, and Champion/Challenger evidence before applying any cross-model policy adaptation.",
+        "AI Lab policy reports expose self-updated sleeve weights so the experimental model can evolve without changing source code.",
         "Options reports are currently planning-only scaffolds for defined-risk vertical spread ideas; they are not live options execution.",
     ],
     "current_safety_posture": [

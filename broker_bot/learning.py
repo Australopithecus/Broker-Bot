@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .bots import LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label, normalize_bot_name
+from .bots import AI_LAB_BOT_NAME, LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label, normalize_bot_name
 from .config import Config, load_config
 from .data import fetch_daily_bars
 from .llm_utils import call_json_llm
@@ -658,17 +658,19 @@ def _threshold_policy_spec(bot_name: str) -> dict[str, float | str]:
         return {"field": "llm_min_conviction", "step": 0.05, "low": 0.1, "high": 0.95}
     if normalized == STAT_ARB_BOT_NAME:
         return {"field": "stat_arb_entry_z", "step": 0.15, "low": 0.5, "high": 3.5}
+    if normalized == AI_LAB_BOT_NAME:
+        return {"field": "ai_lab_min_abs_score", "step": 0.00075, "low": 0.0, "high": 0.05}
     return {"field": "min_signal_abs_score", "step": 0.00025, "low": 0.0, "high": 0.05}
 
 
 def _adjust_threshold_value(field: str, current: float, direction: str, step: float, low: float, high: float) -> float:
     if direction == "tighten":
-        if field == "min_signal_abs_score":
+        if field in {"min_signal_abs_score", "ai_lab_min_abs_score"}:
             proposed = max(current * 1.15, current + step)
         else:
             proposed = current + step
     elif direction == "relax":
-        if field == "min_signal_abs_score":
+        if field in {"min_signal_abs_score", "ai_lab_min_abs_score"}:
             proposed = min(current * 0.85, max(current - step, low))
         else:
             proposed = current - step
@@ -790,6 +792,22 @@ def generate_champion_challenger_report(config: Config, bot_name: str = "ml") ->
         implemented_changes = [
             f"Stat Arb entry gate is active at {threshold:.4f} absolute z-score.",
             f"Pair candidates must pass the minimum correlation gate of {config.stat_arb_min_correlation:.2f}.",
+            "Champion/challenger can promote bounded threshold changes only after enough evaluated evidence supports the challenger.",
+        ]
+    elif normalized_bot == AI_LAB_BOT_NAME:
+        threshold = max(float(config.ai_lab_min_abs_score), 0.0)
+        threshold_label = "minimum absolute AI Lab composite score"
+        champion_description = (
+            "Champion: the current AI Lab adaptive sleeve ensemble using trend, reversal, breakout, "
+            "volume-confirmation, low-volatility, and market-alignment sleeves plus its self-updated policy file."
+        )
+        challenger_description = (
+            "Challenger: a stricter shadow version of the AI Lab policy that counts only selected "
+            f"decisions whose absolute composite score is at or above {threshold:.4f}."
+        )
+        implemented_changes = [
+            f"AI Lab composite gate is active at {threshold:.4f}.",
+            "AI Lab self-updates sleeve weights from mature decision outcomes in its own policy file.",
             "Champion/challenger can promote bounded threshold changes only after enough evaluated evidence supports the challenger.",
         ]
     else:

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from .bots import LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label, normalize_bot_name
+from .bots import AI_LAB_BOT_NAME, LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label, normalize_bot_name
 from .config import Config, configured_bot_names
 from .logging_db import log_strategy_report, read_latest_strategy_reports
 
@@ -37,6 +37,12 @@ PARAMETER_SPECS: dict[str, dict[str, float | str]] = {
         "step": 0.15,
         "low": 0.5,
         "high": 3.5,
+    },
+    AI_LAB_BOT_NAME: {
+        "field": "ai_lab_min_abs_score",
+        "step": 0.00075,
+        "low": 0.0,
+        "high": 0.05,
     },
 }
 
@@ -102,6 +108,8 @@ def _current_value(config: Config, policy: dict, bot_name: str, field: str) -> f
         return 1.0 if config.llm_skeptic_veto_enabled else 0.0
     if field == "stat_arb_entry_z":
         return float(config.stat_arb_entry_z)
+    if field == "ai_lab_min_abs_score":
+        return float(config.ai_lab_min_abs_score)
     raise ValueError(f"Unsupported supervisor policy field: {field}")
 
 
@@ -111,12 +119,12 @@ def _adjust_numeric_value(bot_name: str, field: str, current: float, direction: 
     low = float(spec["low"])
     high = float(spec["high"])
     if direction == "tighten":
-        if field == "min_signal_abs_score":
+        if field in {"min_signal_abs_score", "ai_lab_min_abs_score"}:
             proposed = max(current * 1.15, current + step)
         else:
             proposed = current + step
     elif direction == "relax":
-        if field == "min_signal_abs_score":
+        if field in {"min_signal_abs_score", "ai_lab_min_abs_score"}:
             proposed = min(current * 0.85, max(current - step, low))
         else:
             proposed = current - step
@@ -349,6 +357,25 @@ def _candidate_actions(config: Config, evidence: dict[str, dict[str, Any]]) -> l
                         "field": "stat_arb_entry_z",
                         "direction": "tighten",
                         "reason": "Repeated Summary Reports indicate weak Stat Arb trade quality or benchmark lag.",
+                    }
+                )
+        if bot_name == AI_LAB_BOT_NAME:
+            if repeated("weak_trade_quality"):
+                candidates.append(
+                    {
+                        "bot_name": bot_name,
+                        "field": "ai_lab_min_abs_score",
+                        "direction": "tighten",
+                        "reason": "Repeated Summary Reports indicate weak AI Lab trade quality or benchmark lag.",
+                    }
+                )
+            elif repeated("undertrading"):
+                candidates.append(
+                    {
+                        "bot_name": bot_name,
+                        "field": "ai_lab_min_abs_score",
+                        "direction": "relax",
+                        "reason": "Repeated Summary Reports indicate AI Lab under-trading during a moving market.",
                     }
                 )
     return candidates

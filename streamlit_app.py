@@ -1144,6 +1144,7 @@ def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
                 "attribution",
                 "champion_challenger",
                 "stat_arb_daily",
+                "ai_lab_daily",
                 "analyst_daily",
                 "trader_daily",
                 "skeptic",

@@ -69,6 +69,8 @@ Add these secrets:
 - `ALPACA_DATA_FEED`
 - `ALPACA_LLM_API_KEY` and `ALPACA_LLM_SECRET_KEY` if you want to run the LLM Bot in a separate account
 - `ALPACA_STAT_ARB_API_KEY` and `ALPACA_STAT_ARB_SECRET_KEY` if you want to run the Stat Arb Bot in a separate account
+- `ALPACA_AI_LAB_API_KEY` and `ALPACA_AI_LAB_SECRET_KEY` if you want to run the AI Lab Bot in a separate account
+- `ALPACA_AI_LAB_PAPER_URL` and `ALPACA_AI_LAB_DATA_FEED` if the AI Lab Bot should use non-default account settings
 - `OPENAI_API_KEY`
 - `LLM_ENABLED`
 - `LLM_MODEL`
@@ -142,6 +144,7 @@ After the first GitHub Actions run completes:
 2. confirm these files exist and were updated:
    - `data/dashboard_snapshot.json`
    - `data/learned_policy.json`
+   - `data/ai_lab_policy.json` if the AI Lab Bot is enabled
    - `data/reports/...`
 3. open the Streamlit app
 4. confirm the dashboard loads data
@@ -198,4 +201,5 @@ Once this free setup is working well, the best next upgrades are:
 - add earnings-aware controls
 - add sector/risk caps
 - add champion-vs-challenger model comparison
+- compare the AI Lab Bot against the other models after it has enough evaluated decisions
 - add alerts for drawdown spikes or zero-trade days
