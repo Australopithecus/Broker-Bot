@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-05-08T16:43:43.362269+00:00",
+  "learning": {
+    "component_edges": {},
+    "last_update": null,
+    "sample_count": 0
+  },
+  "min_abs_score": 0.006,
+  "sleeve_weights": {
+    "ai_breakout": 0.75,
+    "ai_low_volatility": 0.25,
+    "ai_market_alignment": 0.65,
+    "ai_reversal": 0.45,
+    "ai_trend": 1.0,
+    "ai_volume_confirmation": 0.35
+  },
+  "summary": "Initial AI Lab Bot policy."
+}
