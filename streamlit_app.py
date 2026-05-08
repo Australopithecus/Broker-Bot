@@ -8,7 +8,7 @@ import requests
 import streamlit as st
 
 from broker_bot.bot_blueprint import get_strategy_blueprint
-from broker_bot.bots import BOT_LABELS
+from broker_bot.bots import ACTIVE_BOT_LABELS, BOT_LABELS
 from broker_bot.dashboard_metrics import (
     WINDOW_OPTIONS,
     agreement_summary,
@@ -293,9 +293,10 @@ def fetch(path: str):
         bot_payload = bots.get(requested_bot, {})
 
         if route == "/api/blueprint":
-            return data.get("strategy_blueprint") or get_strategy_blueprint()
+            return get_strategy_blueprint()
         if route == "/api/bots":
-            bot_names = list(dict.fromkeys([*BOT_LABELS.keys(), *bots.keys()]))
+            active_snapshot_bots = [name for name in bots.keys() if name in ACTIVE_BOT_LABELS]
+            bot_names = list(dict.fromkeys([*ACTIVE_BOT_LABELS.keys(), *active_snapshot_bots]))
             bot_rows = []
             for name in bot_names:
                 revised = _with_revision(name, bots.get(name, {}))
@@ -1143,7 +1144,6 @@ def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
                 "learning",
                 "attribution",
                 "champion_challenger",
-                "stat_arb_daily",
                 "ai_lab_daily",
                 "analyst_daily",
                 "trader_daily",

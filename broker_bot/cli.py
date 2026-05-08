@@ -98,9 +98,6 @@ def cmd_doctor(args: argparse.Namespace) -> None:
     print(f"ALPACA_LLM_API_KEY: {_credential_label(config.llm_alpaca_api_key)}")
     print(f"ALPACA_LLM_SECRET_KEY: {_credential_label(config.llm_alpaca_secret_key)}")
     print(f"ALPACA_LLM_DATA_FEED: {config.llm_alpaca_data_feed or config.alpaca_data_feed or 'iex'}")
-    print(f"ALPACA_STAT_ARB_API_KEY: {_credential_label(config.stat_arb_alpaca_api_key)}")
-    print(f"ALPACA_STAT_ARB_SECRET_KEY: {_credential_label(config.stat_arb_alpaca_secret_key)}")
-    print(f"ALPACA_STAT_ARB_DATA_FEED: {config.stat_arb_alpaca_data_feed or config.alpaca_data_feed or 'iex'}")
     print(f"ALPACA_AI_LAB_API_KEY: {_credential_label(config.ai_lab_alpaca_api_key)}")
     print(f"ALPACA_AI_LAB_SECRET_KEY: {_credential_label(config.ai_lab_alpaca_secret_key)}")
     print(f"ALPACA_AI_LAB_DATA_FEED: {config.ai_lab_alpaca_data_feed or config.alpaca_data_feed or 'iex'}")
@@ -683,15 +680,12 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("backtest")
     subparsers.add_parser("rebalance")
     subparsers.add_parser("rebalance-llm")
-    subparsers.add_parser("rebalance-stat-arb")
     subparsers.add_parser("rebalance-ai-lab")
     subparsers.add_parser("snapshot")
     subparsers.add_parser("snapshot-llm")
-    subparsers.add_parser("snapshot-stat-arb")
     subparsers.add_parser("snapshot-ai-lab")
     subparsers.add_parser("caretaker")
     subparsers.add_parser("caretaker-llm")
-    subparsers.add_parser("caretaker-stat-arb")
     subparsers.add_parser("caretaker-ai-lab")
     subparsers.add_parser("caretaker-all")
     subparsers.add_parser("dashboard")
@@ -699,19 +693,15 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("advisor-report")
     subparsers.add_parser("review-decisions")
     subparsers.add_parser("review-decisions-llm")
-    subparsers.add_parser("review-decisions-stat-arb")
     subparsers.add_parser("review-decisions-ai-lab")
     subparsers.add_parser("strategy-report")
     subparsers.add_parser("strategy-report-llm")
-    subparsers.add_parser("strategy-report-stat-arb")
     subparsers.add_parser("strategy-report-ai-lab")
     subparsers.add_parser("attribution-report")
     subparsers.add_parser("attribution-report-llm")
-    subparsers.add_parser("attribution-report-stat-arb")
     subparsers.add_parser("attribution-report-ai-lab")
     subparsers.add_parser("champion-report")
     subparsers.add_parser("champion-report-llm")
-    subparsers.add_parser("champion-report-stat-arb")
     subparsers.add_parser("champion-report-ai-lab")
     subparsers.add_parser("options-report")
     subparsers.add_parser("summary-report")
@@ -738,24 +728,18 @@ def main() -> None:
             cmd_rebalance(args)
         elif args.command == "rebalance-llm":
             cmd_rebalance_llm(args)
-        elif args.command == "rebalance-stat-arb":
-            cmd_rebalance_stat_arb(args)
         elif args.command == "rebalance-ai-lab":
             cmd_rebalance_ai_lab(args)
         elif args.command == "snapshot":
             cmd_snapshot(args)
         elif args.command == "snapshot-llm":
             cmd_snapshot_llm(args)
-        elif args.command == "snapshot-stat-arb":
-            cmd_snapshot_stat_arb(args)
         elif args.command == "snapshot-ai-lab":
             cmd_snapshot_ai_lab(args)
         elif args.command == "caretaker":
             cmd_caretaker(args)
         elif args.command == "caretaker-llm":
             cmd_caretaker_llm(args)
-        elif args.command == "caretaker-stat-arb":
-            cmd_caretaker_stat_arb(args)
         elif args.command == "caretaker-ai-lab":
             cmd_caretaker_ai_lab(args)
         elif args.command == "caretaker-all":
@@ -770,32 +754,24 @@ def main() -> None:
             cmd_review_decisions(args)
         elif args.command == "review-decisions-llm":
             cmd_review_decisions_llm(args)
-        elif args.command == "review-decisions-stat-arb":
-            cmd_review_decisions_stat_arb(args)
         elif args.command == "review-decisions-ai-lab":
             cmd_review_decisions_ai_lab(args)
         elif args.command == "strategy-report":
             cmd_strategy_report(args)
         elif args.command == "strategy-report-llm":
             cmd_strategy_report_llm(args)
-        elif args.command == "strategy-report-stat-arb":
-            cmd_strategy_report_stat_arb(args)
         elif args.command == "strategy-report-ai-lab":
             cmd_strategy_report_ai_lab(args)
         elif args.command == "attribution-report":
             cmd_attribution_report(args)
         elif args.command == "attribution-report-llm":
             cmd_attribution_report_llm(args)
-        elif args.command == "attribution-report-stat-arb":
-            cmd_attribution_report_stat_arb(args)
         elif args.command == "attribution-report-ai-lab":
             cmd_attribution_report_ai_lab(args)
         elif args.command == "champion-report":
             cmd_champion_report(args)
         elif args.command == "champion-report-llm":
             cmd_champion_report_llm(args)
-        elif args.command == "champion-report-stat-arb":
-            cmd_champion_report_stat_arb(args)
         elif args.command == "champion-report-ai-lab":
             cmd_champion_report_ai_lab(args)
         elif args.command == "options-report":

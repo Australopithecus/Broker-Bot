@@ -4,10 +4,21 @@ from copy import deepcopy
 from typing import Any
 
 
-CURRENT_BEHAVIOR_REVISION = "3.0.0"
+CURRENT_BEHAVIOR_REVISION = "3.1.0"
 CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-08"
 
 BEHAVIOR_REVISION_HISTORY: list[dict[str, Any]] = [
+    {
+        "revision": "3.1.0",
+        "date": "2026-05-08",
+        "title": "Three-account active roster",
+        "models": ["ML Bot", "LLM Bot", "AI Lab Bot"],
+        "changes": [
+            "Promoted AI Lab Bot into the third active paper-account slot.",
+            "Moved Stat Arb Bot out of the scheduled/dashboard active roster so the system fits a three-paper-account limit.",
+            "Updated Summary, Supervisor, Champion/Challenger, snapshot, and dashboard discovery to compare only the active ML, LLM, and AI Lab models by default.",
+        ],
+    },
     {
         "revision": "3.0.0",
         "date": "2026-05-08",

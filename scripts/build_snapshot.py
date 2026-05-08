@@ -17,7 +17,7 @@ from alpaca.trading.client import TradingClient
 
 from broker_bot.bot_blueprint import get_strategy_blueprint
 from broker_bot.config import configured_bot_names, get_bot_account_config, load_config
-from broker_bot.bots import bot_label
+from broker_bot.bots import ACTIVE_BOT_LABELS, bot_label
 from broker_bot.dashboard_metrics import agreement_summary, comparison_table, freshness_status
 from broker_bot.model_revisions import apply_model_revision
 from broker_bot.logging_db import (
@@ -76,7 +76,10 @@ def _check_bot_auth(config, bot_name: str) -> dict:
 def main() -> None:
     config = load_config()
     init_db(config.db_path)
-    bot_names = sorted(set(read_available_bot_names(config.db_path)) | set(configured_bot_names(config)))
+    bot_names = sorted(
+        {name for name in read_available_bot_names(config.db_path) if name in ACTIVE_BOT_LABELS}
+        | {name for name in configured_bot_names(config) if name in ACTIVE_BOT_LABELS}
+    )
 
     bots_payload: dict[str, dict] = {}
     for bot_name in bot_names:

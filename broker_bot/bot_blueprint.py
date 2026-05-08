@@ -16,7 +16,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
     "revision": CURRENT_BEHAVIOR_REVISION,
     "revision_date": CURRENT_BEHAVIOR_REVISION_DATE,
     "summary": (
-        "Broker Bot is a paper-trading research system with four competing models: an ML ensemble model, an LLM decision-network model, a statistical arbitrage model, and an AI-designed adaptive model. "
+        "Broker Bot is a paper-trading research system with three active competing models: an ML ensemble model, an LLM decision-network model, and an AI-designed adaptive model. "
         "Each model can use separate brokerage paper accounts, shared risk controls, broker-side protection where possible, and post-trade learning reports."
     ),
     "models": [
@@ -50,20 +50,6 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
             ],
         },
         {
-            "name": "Stat Arb Bot R1",
-            "role": "Relationship-trading challenger",
-            "description": (
-                "The Stat Arb Bot searches for highly correlated stock pairs whose hedge-ratio spread is unusually stretched, then trades mean reversion."
-            ),
-            "strategies": [
-                "Filters the universe for liquid stocks with enough price history.",
-                "Builds same-sector or fallback cross-sector pair candidates and requires a minimum return correlation.",
-                "Estimates a hedge ratio from log prices, converts the pair spread into a z-score, and enters only when the spread is stretched.",
-                "Trades long the relatively cheap leg and short the relatively rich leg, aiming for relationship normalization rather than directional market prediction.",
-                "Writes pair-candidate reports and logs z-score/correlation components for later outcome review.",
-            ],
-        },
-        {
             "name": "AI Lab Bot R1",
             "role": "Autonomous design challenger",
             "description": (
@@ -80,7 +66,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
         },
     ],
     "shared_layers": [
-        "Separate brokerage paper credentials allow ML, LLM, Stat Arb, and AI Lab bot equity curves to be compared cleanly.",
+        "Separate brokerage paper credentials allow ML, LLM, and AI Lab bot equity curves to be compared cleanly within the three-account paper limit.",
         "Rebalance runs can submit paper orders, while snapshot and caretaker runs update dashboard data and protection status.",
         "Caretaker runs can attach broker-side trailing stops to compatible whole-share positions and can enforce an optional daily drawdown kill switch.",
         "Learning reports evaluate mature decisions, calculate signed returns, compare against SPY, and update bounded learned-policy weights.",

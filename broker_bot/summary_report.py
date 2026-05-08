@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 
-from .bots import AI_LAB_BOT_NAME, BOT_LABELS, LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label
+from .bots import ACTIVE_BOT_LABELS, AI_LAB_BOT_NAME, LLM_BOT_NAME, ML_BOT_NAME, STAT_ARB_BOT_NAME, bot_label
 from .config import Config, configured_bot_names
 from .dashboard_metrics import WINDOW_OPTIONS, bot_performance_metrics, equity_frame, filter_frame_to_window, pct_change
 from .llm_utils import call_json_llm
@@ -370,9 +370,9 @@ def _build_body(
 
 
 def generate_summary_report(config: Config) -> SummaryReport:
-    discovered = set(BOT_LABELS) | set(configured_bot_names(config))
+    discovered = set(ACTIVE_BOT_LABELS) | {name for name in configured_bot_names(config) if name in ACTIVE_BOT_LABELS}
     try:
-        discovered.update(read_available_bot_names(config.db_path))
+        discovered.update(name for name in read_available_bot_names(config.db_path) if name in ACTIVE_BOT_LABELS)
     except Exception:
         pass
     bot_names = sorted(discovered)

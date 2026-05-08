@@ -68,7 +68,6 @@ Add these secrets:
 - `ALPACA_PAPER_URL`
 - `ALPACA_DATA_FEED`
 - `ALPACA_LLM_API_KEY` and `ALPACA_LLM_SECRET_KEY` if you want to run the LLM Bot in a separate account
-- `ALPACA_STAT_ARB_API_KEY` and `ALPACA_STAT_ARB_SECRET_KEY` if you want to run the Stat Arb Bot in a separate account
 - `ALPACA_AI_LAB_API_KEY` and `ALPACA_AI_LAB_SECRET_KEY` if you want to run the AI Lab Bot in a separate account
 - `ALPACA_AI_LAB_PAPER_URL` and `ALPACA_AI_LAB_DATA_FEED` if the AI Lab Bot should use non-default account settings
 - `OPENAI_API_KEY`

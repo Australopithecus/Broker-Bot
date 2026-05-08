@@ -420,8 +420,6 @@ def configured_bot_names(config: Config) -> list[str]:
     bots = [ML_BOT_NAME]
     if config.llm_alpaca_api_key and config.llm_alpaca_secret_key:
         bots.append(LLM_BOT_NAME)
-    if config.stat_arb_alpaca_api_key and config.stat_arb_alpaca_secret_key:
-        bots.append(STAT_ARB_BOT_NAME)
     if config.ai_lab_alpaca_api_key and config.ai_lab_alpaca_secret_key:
         bots.append(AI_LAB_BOT_NAME)
     return bots
