@@ -1,9 +1,9 @@
 {
   "bots": {
     "llm": {
-      "last_reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
-      "llm_min_conviction": 0.6,
-      "updated_at": "2026-05-07T22:17:20.801487+00:00",
+      "last_reason": "Repeated Summary Reports indicate LLM under-trading during a moving market.",
+      "llm_min_conviction": 0.55,
+      "updated_at": "2026-05-11T13:23:54.529484+00:00",
       "updated_by": "supervisor"
     },
     "ml": {
@@ -19,12 +19,12 @@
       "updated_by": "supervisor"
     }
   },
-  "generated_at": "2026-05-08T13:40:08.964781+00:00",
+  "generated_at": "2026-05-11T13:23:54.529484+00:00",
   "summary": "Conservative threshold and authority overrides promoted by champion/challenger and Supervisor reports.",
   "supervisor": {
     "applied_change_count": 1,
-    "generated_at": "2026-05-08T13:40:08.964781+00:00",
-    "skipped_change_count": 2
+    "generated_at": "2026-05-11T13:23:54.529484+00:00",
+    "skipped_change_count": 1
   },
   "supervisor_history": [
     {
@@ -56,6 +56,16 @@
       "old_value": 0.00125,
       "reason": "Repeated Summary Reports indicate weak ML trade quality or benchmark lag.",
       "ts": "2026-05-08T13:40:08.964781+00:00"
+    },
+    {
+      "applied": true,
+      "bot_name": "llm",
+      "direction": "relax",
+      "field": "llm_min_conviction",
+      "new_value": 0.55,
+      "old_value": 0.6,
+      "reason": "Repeated Summary Reports indicate LLM under-trading during a moving market.",
+      "ts": "2026-05-11T13:23:54.529484+00:00"
     }
   ]
 }
