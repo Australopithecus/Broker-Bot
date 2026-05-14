@@ -1,15 +1,15 @@
 {
   "bots": {
     "llm": {
-      "last_reason": "Repeated Summary Reports indicate LLM under-trading during a moving market.",
-      "llm_min_conviction": 0.55,
-      "updated_at": "2026-05-11T13:23:54.529484+00:00",
+      "last_reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
+      "llm_min_conviction": 0.6,
+      "updated_at": "2026-05-14T22:20:15.643445+00:00",
       "updated_by": "supervisor"
     },
     "ml": {
       "last_reason": "Repeated Summary Reports indicate weak ML trade quality or benchmark lag.",
-      "min_signal_abs_score": 0.00175,
-      "updated_at": "2026-05-11T22:19:01.830136+00:00",
+      "min_signal_abs_score": 0.002012,
+      "updated_at": "2026-05-14T22:20:15.643445+00:00",
       "updated_by": "supervisor"
     },
     "stat_arb": {
@@ -19,12 +19,12 @@
       "updated_by": "supervisor"
     }
   },
-  "generated_at": "2026-05-11T22:19:01.830136+00:00",
+  "generated_at": "2026-05-14T22:20:15.643445+00:00",
   "summary": "Conservative threshold and authority overrides promoted by champion/challenger and Supervisor reports.",
   "supervisor": {
-    "applied_change_count": 1,
-    "generated_at": "2026-05-11T22:19:01.830136+00:00",
-    "skipped_change_count": 1
+    "applied_change_count": 2,
+    "generated_at": "2026-05-14T22:20:15.643445+00:00",
+    "skipped_change_count": 0
   },
   "supervisor_history": [
     {
@@ -76,6 +76,26 @@
       "old_value": 0.0015,
       "reason": "Repeated Summary Reports indicate weak ML trade quality or benchmark lag.",
       "ts": "2026-05-11T22:19:01.830136+00:00"
+    },
+    {
+      "applied": true,
+      "bot_name": "ml",
+      "direction": "tighten",
+      "field": "min_signal_abs_score",
+      "new_value": 0.002012,
+      "old_value": 0.00175,
+      "reason": "Repeated Summary Reports indicate weak ML trade quality or benchmark lag.",
+      "ts": "2026-05-14T22:20:15.643445+00:00"
+    },
+    {
+      "applied": true,
+      "bot_name": "llm",
+      "direction": "tighten",
+      "field": "llm_min_conviction",
+      "new_value": 0.6,
+      "old_value": 0.55,
+      "reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
+      "ts": "2026-05-14T22:20:15.643445+00:00"
     }
   ]
 }
