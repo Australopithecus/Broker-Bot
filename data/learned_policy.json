@@ -1,48 +1,48 @@
 {
   "component_metrics": {
     "memory_adjustment": {
-      "avg_abs_adjustment": 0.00032772138019097023,
-      "avg_aligned_adjustment": 0.00019546746887843437,
-      "edge": -0.002443230035394615,
-      "hit_rate": 0.38461538461538464,
-      "learned_scale": 0.786,
+      "avg_abs_adjustment": 0.00031849983749758054,
+      "avg_aligned_adjustment": 0.00018513509600911042,
+      "edge": -0.0028041439708937155,
+      "hit_rate": 0.3706293706293706,
+      "learned_scale": 0.756,
       "samples": 143.0
     },
     "screener_adjustment": {
-      "avg_abs_adjustment": 0.0008128736000000001,
-      "avg_aligned_adjustment": 0.0007628655999999998,
-      "edge": 0.013367644583434328,
-      "hit_rate": 0.8666666666666667,
-      "learned_scale": 1.188,
-      "samples": 15.0
+      "avg_abs_adjustment": 0.000844319,
+      "avg_aligned_adjustment": 0.0007974364999999997,
+      "edge": 0.011410701788915276,
+      "hit_rate": 0.8125,
+      "learned_scale": 1.2,
+      "samples": 16.0
     },
     "snapshot_adjustment": {
-      "avg_abs_adjustment": 0.0002555231804214271,
-      "avg_aligned_adjustment": 0.00018366387916408477,
-      "edge": 0.00038576505411322306,
+      "avg_abs_adjustment": 0.00024623275027048575,
+      "avg_aligned_adjustment": 0.00017510099979177408,
+      "edge": 0.00015602103420336426,
       "hit_rate": 0.5034965034965035,
-      "learned_scale": 1.022,
+      "learned_scale": 1.011,
       "samples": 143.0
     },
     "technical_adjustment": {
-      "avg_abs_adjustment": 0.002761593006993007,
-      "avg_aligned_adjustment": 0.0024524356643356652,
-      "edge": 0.0021168975315416162,
-      "hit_rate": 0.5314685314685315,
-      "learned_scale": 1.131,
+      "avg_abs_adjustment": 0.002771966433566433,
+      "avg_aligned_adjustment": 0.0024628090909090913,
+      "edge": 0.0014944743772498398,
+      "hit_rate": 0.5034965034965035,
+      "learned_scale": 1.078,
       "samples": 143.0
     }
   },
   "component_scales": {
     "llm_adjustment": 1.0,
-    "memory_adjustment": 0.786,
+    "memory_adjustment": 0.756,
     "news_adjustment": 1.0,
-    "screener_adjustment": 1.188,
-    "snapshot_adjustment": 1.022,
-    "technical_adjustment": 1.131
+    "screener_adjustment": 1.2,
+    "snapshot_adjustment": 1.011,
+    "technical_adjustment": 1.078
   },
-  "generated_at": "2026-05-20T22:44:21.419752+00:00",
-  "summary": "Evaluated 0 mature decisions this run; recent hit rate 47.6%, average signed return -0.05%.",
+  "generated_at": "2026-05-21T22:41:49.824016+00:00",
+  "summary": "Evaluated 0 mature decisions this run; recent hit rate 44.8%, average signed return -0.11%.",
   "weights": {
     "llm_weight": 0.8,
     "memory_weight": 0.25,
