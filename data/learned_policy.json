@@ -1,12 +1,12 @@
 {
   "component_metrics": {
     "memory_adjustment": {
-      "avg_abs_adjustment": 0.00031705177874307664,
-      "avg_aligned_adjustment": 0.00018082922136556794,
-      "edge": -0.002767488754098186,
-      "hit_rate": 0.37142857142857144,
-      "learned_scale": 0.759,
-      "samples": 140.0
+      "avg_abs_adjustment": 0.0003176318753040312,
+      "avg_aligned_adjustment": 0.00017943507796452959,
+      "edge": -0.0026120335420322586,
+      "hit_rate": 0.3695652173913043,
+      "learned_scale": 0.765,
+      "samples": 138.0
     },
     "screener_adjustment": {
       "avg_abs_adjustment": 0.000844319,
@@ -17,32 +17,32 @@
       "samples": 16.0
     },
     "snapshot_adjustment": {
-      "avg_abs_adjustment": 0.0002462958570944681,
-      "avg_aligned_adjustment": 0.0001774029827909254,
-      "edge": 0.00026523246393295175,
-      "hit_rate": 0.5071428571428571,
-      "learned_scale": 1.019,
-      "samples": 140.0
+      "avg_abs_adjustment": 0.00024168858012422375,
+      "avg_aligned_adjustment": 0.00017179725836700648,
+      "edge": 0.0004646401574196201,
+      "hit_rate": 0.5072463768115942,
+      "learned_scale": 1.029,
+      "samples": 138.0
     },
     "technical_adjustment": {
-      "avg_abs_adjustment": 0.0027647057142857136,
-      "avg_aligned_adjustment": 0.0024489235714285715,
-      "edge": 0.0016232428443627314,
-      "hit_rate": 0.5071428571428571,
-      "learned_scale": 1.087,
-      "samples": 140.0
+      "avg_abs_adjustment": 0.0027766398550724634,
+      "avg_aligned_adjustment": 0.0024642449275362323,
+      "edge": 0.0014490185873923256,
+      "hit_rate": 0.5,
+      "learned_scale": 1.072,
+      "samples": 138.0
     }
   },
   "component_scales": {
     "llm_adjustment": 1.0,
-    "memory_adjustment": 0.759,
+    "memory_adjustment": 0.765,
     "news_adjustment": 1.0,
     "screener_adjustment": 1.2,
-    "snapshot_adjustment": 1.019,
-    "technical_adjustment": 1.087
+    "snapshot_adjustment": 1.029,
+    "technical_adjustment": 1.072
   },
-  "generated_at": "2026-05-22T14:30:04.482821+00:00",
-  "summary": "Evaluated 0 mature decisions this run; recent hit rate 45.0%, average signed return -0.10%.",
+  "generated_at": "2026-05-22T15:05:37.152274+00:00",
+  "summary": "Evaluated 0 mature decisions this run; recent hit rate 44.9%, average signed return -0.08%.",
   "weights": {
     "llm_weight": 0.8,
     "memory_weight": 0.25,
