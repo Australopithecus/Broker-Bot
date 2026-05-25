@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T15:45:04.524867+00:00",
+  "generated_at": "2026-05-25T17:26:43.870285+00:00",
   "strategy_blueprint": {
     "title": "Strategy Blueprint",
     "revision": "3.1.0",
@@ -233,10 +233,10 @@
     ]
   },
   "health": {
-    "generated_at": "2026-05-25T15:45:04.524867+00:00",
+    "generated_at": "2026-05-25T17:26:43.870285+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.5533333333333334e-05,
+      "age_minutes": 2.6416666666666667e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -299,7 +299,7 @@
           "evaluated_decision_count": 131,
           "win_rate": 0.4580152671755725,
           "avg_trade_alpha": -0.0016020238073228374,
-          "latest_snapshot_ts": "2026-05-25T15:44:56.034586+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:36.909048+00:00"
         },
         {
           "bot": "llm",
@@ -331,7 +331,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-05-25T15:44:59.174635+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:39.774955+00:00"
         },
         {
           "bot": "ai_lab",
@@ -363,7 +363,7 @@
           "evaluated_decision_count": 104,
           "win_rate": 0.4230769230769231,
           "avg_trade_alpha": -0.0012294732454630197,
-          "latest_snapshot_ts": "2026-05-25T15:45:02.106642+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:42.022966+00:00"
         }
       ],
       "7d": [
@@ -379,9 +379,9 @@
           "behavior_revision": "3.1.0",
           "revision_report_ts": null,
           "latest_equity": 100039.26,
-          "window_return": 0.0015804744426890505,
-          "spy_window_return": 0.008889189554863952,
-          "window_alpha": -0.007308715112174902,
+          "window_return": 0.00024936429103350477,
+          "spy_window_return": 0.01192867223971339,
+          "window_alpha": -0.011679307948679885,
           "max_drawdown": 0.00019748344527069437,
           "trade_count": 94,
           "position_count": 2,
@@ -397,7 +397,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-05-25T15:44:59.174635+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:39.774955+00:00"
         },
         {
           "bot": "ml",
@@ -411,9 +411,9 @@
           "behavior_revision": "3.1.0",
           "revision_report_ts": null,
           "latest_equity": 103713.48,
-          "window_return": -4.6182798845495476e-05,
-          "spy_window_return": 0.008889189554863952,
-          "window_alpha": -0.008935372353709448,
+          "window_return": -0.0006418379479147251,
+          "spy_window_return": 0.01192867223971339,
+          "window_alpha": -0.012570510187628114,
           "max_drawdown": 0.004641993568717434,
           "trade_count": 266,
           "position_count": 3,
@@ -429,7 +429,7 @@
           "evaluated_decision_count": 131,
           "win_rate": 0.4580152671755725,
           "avg_trade_alpha": -0.0016020238073228374,
-          "latest_snapshot_ts": "2026-05-25T15:44:56.034586+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:36.909048+00:00"
         },
         {
           "bot": "ai_lab",
@@ -443,10 +443,10 @@
           "behavior_revision": "3.1.0",
           "revision_report_ts": "2026-05-22T22:17:03.747830+00:00",
           "latest_equity": 99857.93,
-          "window_return": -0.003347329277773148,
-          "spy_window_return": 0.008889189554863952,
-          "window_alpha": -0.0122365188326371,
-          "max_drawdown": 0.004489820727551483,
+          "window_return": -0.003067134627163237,
+          "spy_window_return": 0.01192867223971339,
+          "window_alpha": -0.014995806866876626,
+          "max_drawdown": 0.004209947272080038,
           "trade_count": 104,
           "position_count": 9,
           "gross_exposure": 47536.961577,
@@ -461,7 +461,7 @@
           "evaluated_decision_count": 104,
           "win_rate": 0.4230769230769231,
           "avg_trade_alpha": -0.0012294732454630197,
-          "latest_snapshot_ts": "2026-05-25T15:45:02.106642+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:42.022966+00:00"
         }
       ],
       "14d": [
@@ -477,9 +477,9 @@
           "behavior_revision": "3.1.0",
           "revision_report_ts": null,
           "latest_equity": 103713.48,
-          "window_return": 0.004346405086348648,
-          "spy_window_return": 0.011023130948829785,
-          "window_alpha": -0.0066767258624811365,
+          "window_return": 0.0031865653538012406,
+          "spy_window_return": 0.007948201516646547,
+          "window_alpha": -0.004761636162845306,
           "max_drawdown": 0.006085575353707956,
           "trade_count": 266,
           "position_count": 3,
@@ -495,7 +495,7 @@
           "evaluated_decision_count": 131,
           "win_rate": 0.4580152671755725,
           "avg_trade_alpha": -0.0016020238073228374,
-          "latest_snapshot_ts": "2026-05-25T15:44:56.034586+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:36.909048+00:00"
         },
         {
           "bot": "llm",
@@ -510,8 +510,8 @@
           "revision_report_ts": null,
           "latest_equity": 100039.26,
           "window_return": -0.0005456877083794831,
-          "spy_window_return": 0.011023130948829785,
-          "window_alpha": -0.011568818657209268,
+          "spy_window_return": 0.007948201516646547,
+          "window_alpha": -0.00849388922502603,
           "max_drawdown": 0.0035523733971540576,
           "trade_count": 94,
           "position_count": 2,
@@ -527,7 +527,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-05-25T15:44:59.174635+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:39.774955+00:00"
         },
         {
           "bot": "ai_lab",
@@ -541,9 +541,9 @@
           "behavior_revision": "3.1.0",
           "revision_report_ts": "2026-05-22T22:17:03.747830+00:00",
           "latest_equity": 99857.93,
-          "window_return": -0.0016752728054346688,
-          "spy_window_return": 0.011023130948829785,
-          "window_alpha": -0.012698403754264453,
+          "window_return": -0.0027848902701106404,
+          "spy_window_return": 0.007948201516646547,
+          "window_alpha": -0.010733091786757187,
           "max_drawdown": 0.01091397838266544,
           "trade_count": 104,
           "position_count": 9,
@@ -559,7 +559,7 @@
           "evaluated_decision_count": 104,
           "win_rate": 0.4230769230769231,
           "avg_trade_alpha": -0.0012294732454630197,
-          "latest_snapshot_ts": "2026-05-25T15:45:02.106642+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:42.022966+00:00"
         }
       ],
       "28d": [
@@ -593,7 +593,7 @@
           "evaluated_decision_count": 131,
           "win_rate": 0.4580152671755725,
           "avg_trade_alpha": -0.0016020238073228374,
-          "latest_snapshot_ts": "2026-05-25T15:44:56.034586+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:36.909048+00:00"
         },
         {
           "bot": "llm",
@@ -625,7 +625,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-05-25T15:44:59.174635+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:39.774955+00:00"
         },
         {
           "bot": "ai_lab",
@@ -657,7 +657,7 @@
           "evaluated_decision_count": 104,
           "win_rate": 0.4230769230769231,
           "avg_trade_alpha": -0.0012294732454630197,
-          "latest_snapshot_ts": "2026-05-25T15:45:02.106642+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:42.022966+00:00"
         }
       ],
       "90d": [
@@ -691,7 +691,7 @@
           "evaluated_decision_count": 131,
           "win_rate": 0.4580152671755725,
           "avg_trade_alpha": -0.0016020238073228374,
-          "latest_snapshot_ts": "2026-05-25T15:44:56.034586+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:36.909048+00:00"
         },
         {
           "bot": "llm",
@@ -723,7 +723,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-05-25T15:44:59.174635+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:39.774955+00:00"
         },
         {
           "bot": "ai_lab",
@@ -755,7 +755,7 @@
           "evaluated_decision_count": 104,
           "win_rate": 0.4230769230769231,
           "avg_trade_alpha": -0.0012294732454630197,
-          "latest_snapshot_ts": "2026-05-25T15:45:02.106642+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:42.022966+00:00"
         }
       ],
       "180d": [
@@ -789,7 +789,7 @@
           "evaluated_decision_count": 131,
           "win_rate": 0.4580152671755725,
           "avg_trade_alpha": -0.0016020238073228374,
-          "latest_snapshot_ts": "2026-05-25T15:44:56.034586+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:36.909048+00:00"
         },
         {
           "bot": "llm",
@@ -821,7 +821,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-05-25T15:44:59.174635+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:39.774955+00:00"
         },
         {
           "bot": "ai_lab",
@@ -853,7 +853,7 @@
           "evaluated_decision_count": 104,
           "win_rate": 0.4230769230769231,
           "avg_trade_alpha": -0.0012294732454630197,
-          "latest_snapshot_ts": "2026-05-25T15:45:02.106642+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:42.022966+00:00"
         }
       ],
       "360d": [
@@ -887,7 +887,7 @@
           "evaluated_decision_count": 131,
           "win_rate": 0.4580152671755725,
           "avg_trade_alpha": -0.0016020238073228374,
-          "latest_snapshot_ts": "2026-05-25T15:44:56.034586+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:36.909048+00:00"
         },
         {
           "bot": "llm",
@@ -919,7 +919,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-05-25T15:44:59.174635+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:39.774955+00:00"
         },
         {
           "bot": "ai_lab",
@@ -951,7 +951,7 @@
           "evaluated_decision_count": 104,
           "win_rate": 0.4230769230769231,
           "avg_trade_alpha": -0.0012294732454630197,
-          "latest_snapshot_ts": "2026-05-25T15:45:02.106642+00:00"
+          "latest_snapshot_ts": "2026-05-25T17:26:42.022966+00:00"
         }
       ]
     },
@@ -1429,6 +1429,13 @@
         },
         {
           "ts": "2026-05-25T15:45:02.106642+00:00",
+          "equity": 99857.93,
+          "cash": 93725.17,
+          "portfolio_value": 99857.93,
+          "spy_value": 745.67
+        },
+        {
+          "ts": "2026-05-25T17:26:42.022966+00:00",
           "equity": 99857.93,
           "cash": 93725.17,
           "portfolio_value": 99857.93,
@@ -8678,6 +8685,13 @@
           "cash": 100039.26,
           "portfolio_value": 100039.26,
           "spy_value": 745.67
+        },
+        {
+          "ts": "2026-05-25T17:26:39.774955+00:00",
+          "equity": 100039.26,
+          "cash": 100039.26,
+          "portfolio_value": 100039.26,
+          "spy_value": 745.67
         }
       ],
       "trades": [
@@ -14571,6 +14585,13 @@
         },
         {
           "ts": "2026-05-25T15:44:56.034586+00:00",
+          "equity": 103713.48,
+          "cash": 85066.75,
+          "portfolio_value": 103713.48,
+          "spy_value": 745.67
+        },
+        {
+          "ts": "2026-05-25T17:26:36.909048+00:00",
           "equity": 103713.48,
           "cash": 85066.75,
           "portfolio_value": 103713.48,
