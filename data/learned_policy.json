@@ -1,48 +1,48 @@
 {
   "component_metrics": {
     "memory_adjustment": {
-      "avg_abs_adjustment": 0.00031372197223051396,
-      "avg_aligned_adjustment": 0.00017245413495013456,
-      "edge": -0.0025360568492704106,
-      "hit_rate": 0.37037037037037035,
-      "learned_scale": 0.769,
-      "samples": 135.0
+      "avg_abs_adjustment": 0.0003040512858816128,
+      "avg_aligned_adjustment": 0.00015855191119835168,
+      "edge": -0.0022672465890918353,
+      "hit_rate": 0.391304347826087,
+      "learned_scale": 0.8,
+      "samples": 138.0
     },
     "screener_adjustment": {
-      "avg_abs_adjustment": 0.0008922536,
-      "avg_aligned_adjustment": 0.0008589522666666664,
-      "edge": 0.010922639138397312,
-      "hit_rate": 0.8,
-      "learned_scale": 1.188,
-      "samples": 15.0
+      "avg_abs_adjustment": 0.00091964775,
+      "avg_aligned_adjustment": 0.0008884277499999998,
+      "edge": 0.009063845336367407,
+      "hit_rate": 0.75,
+      "learned_scale": 1.2,
+      "samples": 16.0
     },
     "snapshot_adjustment": {
-      "avg_abs_adjustment": 0.0002416570320382827,
-      "avg_aligned_adjustment": 0.00017277219709996714,
-      "edge": 0.0007143346596025894,
-      "hit_rate": 0.5185185185185185,
-      "learned_scale": 1.051,
-      "samples": 135.0
+      "avg_abs_adjustment": 0.0002290272630168306,
+      "avg_aligned_adjustment": 0.00015808023404841835,
+      "edge": 0.0009427419299720476,
+      "hit_rate": 0.5289855072463768,
+      "learned_scale": 1.07,
+      "samples": 138.0
     },
     "technical_adjustment": {
-      "avg_abs_adjustment": 0.0027972322222222217,
-      "avg_aligned_adjustment": 0.0024778951851851853,
-      "edge": 0.0016152408830302758,
-      "hit_rate": 0.5037037037037037,
-      "learned_scale": 1.084,
-      "samples": 135.0
+      "avg_abs_adjustment": 0.002736816423357663,
+      "avg_aligned_adjustment": 0.0024458799270072992,
+      "edge": 0.0015077127135760516,
+      "hit_rate": 0.5036496350364964,
+      "learned_scale": 1.078,
+      "samples": 137.0
     }
   },
   "component_scales": {
     "llm_adjustment": 1.0,
-    "memory_adjustment": 0.769,
+    "memory_adjustment": 0.8,
     "news_adjustment": 1.0,
-    "screener_adjustment": 1.188,
-    "snapshot_adjustment": 1.051,
-    "technical_adjustment": 1.084
+    "screener_adjustment": 1.2,
+    "snapshot_adjustment": 1.07,
+    "technical_adjustment": 1.078
   },
-  "generated_at": "2026-05-22T22:16:43.690688+00:00",
-  "summary": "Evaluated 0 mature decisions this run; recent hit rate 45.2%, average signed return -0.07%.",
+  "generated_at": "2026-05-25T22:17:31.688812+00:00",
+  "summary": "Evaluated 0 mature decisions this run; recent hit rate 44.9%, average signed return -0.07%.",
   "weights": {
     "llm_weight": 0.8,
     "memory_weight": 0.25,
