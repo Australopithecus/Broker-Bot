@@ -8,14 +8,14 @@
     },
     "llm": {
       "last_reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
-      "llm_min_conviction": 0.7,
-      "updated_at": "2026-05-26T22:40:31.351506+00:00",
+      "llm_min_conviction": 0.75,
+      "updated_at": "2026-05-29T22:43:35.169843+00:00",
       "updated_by": "supervisor"
     },
     "ml": {
       "last_reason": "Repeated Summary Reports indicate weak ML trade quality or benchmark lag.",
-      "min_signal_abs_score": 0.002314,
-      "updated_at": "2026-05-26T22:40:31.351506+00:00",
+      "min_signal_abs_score": 0.002661,
+      "updated_at": "2026-05-29T22:43:35.169843+00:00",
       "updated_by": "supervisor"
     },
     "stat_arb": {
@@ -25,12 +25,12 @@
       "updated_by": "supervisor"
     }
   },
-  "generated_at": "2026-05-26T22:40:31.351506+00:00",
+  "generated_at": "2026-05-29T22:43:35.169843+00:00",
   "summary": "Conservative threshold and authority overrides promoted by champion/challenger and Supervisor reports.",
   "supervisor": {
     "applied_change_count": 2,
-    "generated_at": "2026-05-26T22:40:31.351506+00:00",
-    "skipped_change_count": 1
+    "generated_at": "2026-05-29T22:43:35.169843+00:00",
+    "skipped_change_count": 0
   },
   "supervisor_history": [
     {
@@ -132,6 +132,26 @@
       "old_value": 0.65,
       "reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
       "ts": "2026-05-26T22:40:31.351506+00:00"
+    },
+    {
+      "applied": true,
+      "bot_name": "ml",
+      "direction": "tighten",
+      "field": "min_signal_abs_score",
+      "new_value": 0.002661,
+      "old_value": 0.002314,
+      "reason": "Repeated Summary Reports indicate weak ML trade quality or benchmark lag.",
+      "ts": "2026-05-29T22:43:35.169843+00:00"
+    },
+    {
+      "applied": true,
+      "bot_name": "llm",
+      "direction": "tighten",
+      "field": "llm_min_conviction",
+      "new_value": 0.75,
+      "old_value": 0.7,
+      "reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
+      "ts": "2026-05-29T22:43:35.169843+00:00"
     }
   ]
 }

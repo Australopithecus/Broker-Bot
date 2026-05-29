@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-05-28T22:46:10.819897+00:00",
+  "generated_at": "2026-05-29T22:43:15.940079+00:00",
   "learning": {
-    "avg_signed_return": 0.0008726066514883644,
+    "avg_signed_return": 0.0004178563793382234,
     "component_edges": {
-      "ai_breakout": -7.571051313895326e-06,
-      "ai_low_volatility": 2.69671554618294e-06,
-      "ai_market_alignment": -8.372206717688747e-06,
-      "ai_reversal": -5.619176042328537e-06,
-      "ai_trend": -1.2880318027213461e-05,
-      "ai_volume_confirmation": 2.6581870422451813e-06
+      "ai_breakout": -1.1326298272646578e-05,
+      "ai_low_volatility": 4.309050217814929e-06,
+      "ai_market_alignment": -1.017278890507399e-05,
+      "ai_reversal": -4.454729443897811e-06,
+      "ai_trend": -1.5650444469344604e-05,
+      "ai_volume_confirmation": 1.4245318403613385e-06
     },
-    "last_update": "2026-05-28T22:46:10.819905+00:00",
-    "sample_count": 140
+    "last_update": "2026-05-29T22:43:15.940086+00:00",
+    "sample_count": 131
   },
   "min_abs_score": 0.006,
   "sleeve_weights": {
@@ -19,7 +19,7 @@
     "ai_low_volatility": 0.25,
     "ai_market_alignment": 0.65,
     "ai_reversal": 0.45,
-    "ai_trend": 1.0,
+    "ai_trend": 0.92,
     "ai_volume_confirmation": 0.35
   },
   "summary": "AI Lab Bot policy updated from mature decision outcomes."
