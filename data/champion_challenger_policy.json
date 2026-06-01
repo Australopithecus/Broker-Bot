@@ -1,22 +1,22 @@
 {
   "bots": {
     "ai_lab": {
-      "ai_lab_min_abs_score": 0.004985,
-      "last_reason": "Trades excluded by the challenger outperformed the champion, so the threshold was relaxed.",
-      "updated_at": "2026-05-26T22:40:23.812254+00:00",
-      "updated_by": "champion_challenger"
+      "ai_lab_min_abs_score": 0.005735,
+      "last_reason": "Repeated Summary Reports indicate weak AI Lab trade quality or benchmark lag.",
+      "updated_at": "2026-06-01T23:10:20.920390+00:00",
+      "updated_by": "supervisor"
     },
     "llm": {
       "last_reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
-      "llm_min_conviction": 0.75,
-      "updated_at": "2026-05-29T22:43:35.169843+00:00",
+      "llm_min_conviction": 0.8,
+      "updated_at": "2026-06-01T23:10:20.920390+00:00",
       "updated_by": "supervisor"
     },
     "ml": {
-      "last_reason": "Repeated Summary Reports indicate weak ML trade quality or benchmark lag.",
-      "min_signal_abs_score": 0.002661,
-      "updated_at": "2026-05-29T22:43:35.169843+00:00",
-      "updated_by": "supervisor"
+      "last_reason": "Challenger outperformed the current champion with enough samples, so the threshold was tightened.",
+      "min_signal_abs_score": 0.00306,
+      "updated_at": "2026-06-01T23:09:53.574406+00:00",
+      "updated_by": "champion_challenger"
     },
     "stat_arb": {
       "last_reason": "Repeated Summary Reports indicate Stat Arb is finding setups but the entry gate may be too strict.",
@@ -25,12 +25,12 @@
       "updated_by": "supervisor"
     }
   },
-  "generated_at": "2026-05-29T22:43:35.169843+00:00",
+  "generated_at": "2026-06-01T23:10:20.920390+00:00",
   "summary": "Conservative threshold and authority overrides promoted by champion/challenger and Supervisor reports.",
   "supervisor": {
     "applied_change_count": 2,
-    "generated_at": "2026-05-29T22:43:35.169843+00:00",
-    "skipped_change_count": 0
+    "generated_at": "2026-06-01T23:10:20.920390+00:00",
+    "skipped_change_count": 1
   },
   "supervisor_history": [
     {
@@ -152,6 +152,26 @@
       "old_value": 0.7,
       "reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
       "ts": "2026-05-29T22:43:35.169843+00:00"
+    },
+    {
+      "applied": true,
+      "bot_name": "llm",
+      "direction": "tighten",
+      "field": "llm_min_conviction",
+      "new_value": 0.8,
+      "old_value": 0.75,
+      "reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
+      "ts": "2026-06-01T23:10:20.920390+00:00"
+    },
+    {
+      "applied": true,
+      "bot_name": "ai_lab",
+      "direction": "tighten",
+      "field": "ai_lab_min_abs_score",
+      "new_value": 0.005735,
+      "old_value": 0.004985,
+      "reason": "Repeated Summary Reports indicate weak AI Lab trade quality or benchmark lag.",
+      "ts": "2026-06-01T23:10:20.920390+00:00"
     }
   ]
 }
