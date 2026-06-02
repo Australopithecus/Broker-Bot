@@ -1,10 +1,10 @@
 {
   "bots": {
     "ai_lab": {
-      "ai_lab_min_abs_score": 0.005735,
-      "last_reason": "Repeated Summary Reports indicate weak AI Lab trade quality or benchmark lag.",
-      "updated_at": "2026-06-01T23:10:20.920390+00:00",
-      "updated_by": "supervisor"
+      "ai_lab_min_abs_score": 0.004875,
+      "last_reason": "Trades excluded by the challenger outperformed the champion, so the threshold was relaxed.",
+      "updated_at": "2026-06-02T23:09:24.230521+00:00",
+      "updated_by": "champion_challenger"
     },
     "llm": {
       "last_reason": "Repeated Summary Reports indicate weak LLM trade quality or benchmark lag.",
@@ -14,8 +14,8 @@
     },
     "ml": {
       "last_reason": "Challenger outperformed the current champion with enough samples, so the threshold was tightened.",
-      "min_signal_abs_score": 0.00306,
-      "updated_at": "2026-06-01T23:09:53.574406+00:00",
+      "min_signal_abs_score": 0.003519,
+      "updated_at": "2026-06-02T23:09:04.691859+00:00",
       "updated_by": "champion_challenger"
     },
     "stat_arb": {
@@ -25,8 +25,8 @@
       "updated_by": "supervisor"
     }
   },
-  "generated_at": "2026-06-01T23:10:20.920390+00:00",
-  "summary": "Conservative threshold and authority overrides promoted by champion/challenger and Supervisor reports.",
+  "generated_at": "2026-06-02T23:09:24.230535+00:00",
+  "summary": "Conservative threshold overrides promoted by champion/challenger reports.",
   "supervisor": {
     "applied_change_count": 2,
     "generated_at": "2026-06-01T23:10:20.920390+00:00",
