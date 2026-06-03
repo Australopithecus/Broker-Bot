@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-06-02T23:09:16.525305+00:00",
+  "generated_at": "2026-06-03T23:14:56.854335+00:00",
   "learning": {
-    "avg_signed_return": -0.0005777424127930502,
+    "avg_signed_return": -0.0012604625797088815,
     "component_edges": {
-      "ai_breakout": -1.3271211484056237e-05,
-      "ai_low_volatility": 6.154661332237621e-06,
-      "ai_market_alignment": -1.4670056168594361e-05,
-      "ai_reversal": 9.114938952400025e-07,
-      "ai_trend": -2.24112211499844e-05,
-      "ai_volume_confirmation": 1.0859070686837007e-06
+      "ai_breakout": -1.9535404266671617e-05,
+      "ai_low_volatility": 6.692999342759555e-06,
+      "ai_market_alignment": -1.7177014716464133e-05,
+      "ai_reversal": 3.7362719784236955e-06,
+      "ai_trend": -2.5644611149236633e-05,
+      "ai_volume_confirmation": -2.8134373347182514e-07
     },
-    "last_update": "2026-06-02T23:09:16.525312+00:00",
+    "last_update": "2026-06-03T23:14:56.854341+00:00",
     "sample_count": 142
   },
   "min_abs_score": 0.006,
   "sleeve_weights": {
-    "ai_breakout": 0.99,
+    "ai_breakout": 0.91,
     "ai_low_volatility": 0.25,
-    "ai_market_alignment": 0.65,
+    "ai_market_alignment": 0.57,
     "ai_reversal": 0.45,
-    "ai_trend": 0.76,
+    "ai_trend": 0.68,
     "ai_volume_confirmation": 0.35
   },
   "summary": "AI Lab Bot policy updated from mature decision outcomes."
