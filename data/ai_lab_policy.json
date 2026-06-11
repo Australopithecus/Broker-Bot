@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-06-11T14:48:27.689018+00:00",
+  "generated_at": "2026-06-11T22:59:10.341177+00:00",
   "learning": {
-    "avg_signed_return": -0.0008640693561101506,
+    "avg_signed_return": -0.0003967966264037045,
     "component_edges": {
-      "ai_breakout": -5.08393164038666e-06,
-      "ai_low_volatility": 6.118793839320963e-06,
-      "ai_market_alignment": -8.362045005576027e-06,
-      "ai_reversal": 4.3551664063432583e-07,
-      "ai_trend": -1.2754133044110417e-05,
-      "ai_volume_confirmation": 1.0527341585682839e-06
+      "ai_breakout": -6.03821005094124e-06,
+      "ai_low_volatility": 5.7855151794253436e-06,
+      "ai_market_alignment": -7.945637114385201e-06,
+      "ai_reversal": 9.969334290239951e-07,
+      "ai_trend": -1.3492109462560143e-05,
+      "ai_volume_confirmation": 3.98151064696794e-08
     },
-    "last_update": "2026-06-11T14:48:27.689026+00:00",
-    "sample_count": 138
+    "last_update": "2026-06-11T22:59:10.341185+00:00",
+    "sample_count": 139
   },
   "min_abs_score": 0.006,
   "sleeve_weights": {
