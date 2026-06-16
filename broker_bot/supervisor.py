@@ -209,9 +209,23 @@ def _diagnostic_text(diagnostic: dict[str, Any]) -> str:
 def _diagnostic_tags(diagnostic: dict[str, Any], supporting_text: str = "") -> set[str]:
     text = f"{_diagnostic_text(diagnostic)} {supporting_text}"
     tags: set[str] = set()
-    if "no selected trades" in text or "no selected trade" in text or "nearly uninvested" in text or "all-hold" in text:
+    if (
+        "no selected trades" in text
+        or "no selected trade" in text
+        or "nearly uninvested" in text
+        or "all-hold" in text
+        or "under-exposure" in text
+        or "too little exposure" in text
+    ):
         tags.add("undertrading")
-    if "over-constrained" in text or "skeptic-vetoed" in text or "skeptic veto" in text or "too cautious" in text:
+    if (
+        "over-constrained" in text
+        or "skeptic-vetoed" in text
+        or "skeptic veto" in text
+        or "none survived" in text
+        or "hard vetoes" in text
+        or "too cautious" in text
+    ):
         tags.add("llm_overconstrained")
     if "lagged the benchmark" in text or "poorly calibrated" in text or "weak trades" in text:
         tags.add("weak_trade_quality")

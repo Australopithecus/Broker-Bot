@@ -44,8 +44,8 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
             "strategies": [
                 "Stock Selector chooses a concentrated watchlist from ranked candidates.",
                 "Analyst writes stock-specific daily reports with catalysts, current events, contrary evidence, risks, and confidence.",
-                "Trader converts those reports into structured LONG/SHORT/HOLD decisions with conviction and expected upside/downside.",
-                "Skeptic challenges each Trader decision, can reduce conviction, and can veto weakly supported ideas.",
+                "Trader converts those reports into structured LONG/SHORT/HOLD decisions with conviction and expected upside/downside, targeting a small number of actionable paper trades when evidence is usable.",
+                "Skeptic challenges each Trader decision, usually reducing conviction rather than blocking activity, and reserves hard vetoes for invalid, contradictory, or materially negative-edge setups.",
                 "Coach reviews mature outcomes and feeds concrete ticker-specific lessons back into the next Trader prompt.",
             ],
         },
@@ -79,7 +79,7 @@ STRATEGY_BLUEPRINT: dict[str, Any] = {
     "current_safety_posture": [
         "Paper trading only.",
         "LLM outputs are sanitized and bounded before they affect sizing or decisions.",
-        "The LLM Skeptic can block trades before execution when evidence quality or upside/downside is poor.",
+        "The LLM Skeptic can reduce conviction before execution and can block trades only when evidence quality or upside/downside is clearly invalid.",
         "Confidence gates, sector caps, correlation caps, volatility targeting, drawdown controls, and broker-side exit protection reduce runaway behavior.",
         "Champion/challenger threshold promotion stays bounded and requires enough evaluated evidence before future runs use a changed gate.",
         "Supervisor policy changes require repeated Summary Report findings, cooldown periods, and an audit trail in the policy file.",

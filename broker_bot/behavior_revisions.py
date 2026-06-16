@@ -4,10 +4,22 @@ from copy import deepcopy
 from typing import Any
 
 
-CURRENT_BEHAVIOR_REVISION = "3.1.0"
-CURRENT_BEHAVIOR_REVISION_DATE = "2026-05-08"
+CURRENT_BEHAVIOR_REVISION = "3.2.0"
+CURRENT_BEHAVIOR_REVISION_DATE = "2026-06-10"
 
 BEHAVIOR_REVISION_HISTORY: list[dict[str, Any]] = [
+    {
+        "revision": "3.2.0",
+        "date": "2026-06-10",
+        "title": "LLM activity calibration",
+        "models": ["LLM Bot"],
+        "changes": [
+            "Reworked the LLM fallback Trader so fallback mode uses calibrated conviction and risk/reward estimates instead of flat borderline conviction.",
+            "Changed the LLM Trader prompt to target a small number of actionable paper-trade ideas when evidence is usable, rather than defaulting to inactivity.",
+            "Softened the LLM Skeptic role so it primarily reduces conviction and reserves hard vetoes for invalid, contradictory, or materially negative-edge setups.",
+            "Added Summary/Supervisor diagnostics that distinguish poor active trades from under-exposure, all-veto behavior, or unavailable LLM service.",
+        ],
+    },
     {
         "revision": "3.1.0",
         "date": "2026-05-08",

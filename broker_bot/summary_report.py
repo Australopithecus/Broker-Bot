@@ -221,6 +221,7 @@ def _diagnose_bot(
     win_rate = metrics.get("win_rate")
     avg_alpha = metrics.get("avg_trade_alpha")
     gross_exposure_pct = metrics.get("gross_exposure_pct")
+    inactive_book = gross_exposure_pct is not None and gross_exposure_pct < 0.02
 
     if window_return is not None and window_return > 0:
         positives.append(f"{label} produced a positive 7-day account return of {_fmt_pct(window_return)}.")
@@ -236,7 +237,18 @@ def _diagnose_bot(
 
     if window_alpha is not None and window_alpha < -0.01:
         issues.append(f"{label} lagged the benchmark by {_fmt_pct(window_alpha)} over the 7-day window.")
-        recommendations.append(f"Review {label}'s latest selected decisions and consider tightening its active threshold if weak trades drove the lag.")
+        if inactive_book:
+            recommendations.append(
+                f"Treat {label}'s lag as an under-exposure problem first; review its activity budget, gates, and vetoes before tightening thresholds."
+            )
+        elif counts["trades"] >= 5 or metrics.get("evaluated_decision_count", 0) >= 10:
+            recommendations.append(
+                f"Review {label}'s latest selected decisions and consider tightening its active threshold if weak trades drove the lag."
+            )
+        else:
+            recommendations.append(
+                f"Collect more active {label} outcomes before tightening; current benchmark lag may reflect too little exposure rather than poor picks."
+            )
 
     if win_rate is not None and avg_alpha is not None and metrics.get("evaluated_decision_count", 0) >= 10:
         if win_rate < 0.4 and avg_alpha < -0.001:
@@ -255,11 +267,25 @@ def _diagnose_bot(
         recommendations.append(f"Review threshold calibration for {label}; persistent all-HOLD behavior can miss large benchmark moves.")
 
     if bot_name == LLM_BOT_NAME:
+        if context.get("llm_available") is False:
+            issues.append(f"{label} is running in fallback mode because the LLM service is unavailable or disabled.")
+            recommendations.append(
+                "Verify `LLM_ENABLED=1` and a valid model/API key if the intended test is a true LLM decision network."
+            )
+        raw_decisions = int(context.get("raw_trader_decision_count", 0) or 0)
+        post_skeptic = int(context.get("post_skeptic_decision_count", 0) or 0)
         gated = int(context.get("conviction_gated_count", 0) or 0)
         vetoed = 0
         skeptic_summary = context.get("skeptic_action_summary")
         if isinstance(skeptic_summary, dict):
             vetoed = int(skeptic_summary.get("vetoed_count", 0) or 0)
+        if raw_decisions > 0 and post_skeptic == 0:
+            issues.append(
+                f"{label} proposed {raw_decisions} trader idea(s), but none survived conviction/Skeptic review."
+            )
+            recommendations.append(
+                "Relax the LLM activity gate before assuming the ideas were bad; hard vetoes should be reserved for clearly invalid or negative-edge setups."
+            )
         if counts["selected_decisions"] == 0 and (gated or vetoed):
             issues.append(
                 f"{label} appears over-constrained: {gated} conviction-gated and {vetoed} skeptic-vetoed decisions in the latest run."

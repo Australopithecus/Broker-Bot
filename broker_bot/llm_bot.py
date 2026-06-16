@@ -466,19 +466,28 @@ def generate_llm_coach_report(config: Config) -> dict:
     return coach_report
 
 
-def _fallback_trader_decisions(watchlist: list[dict], coach_report: dict) -> tuple[list[dict], str]:
+def _fallback_trader_decisions(config: Config, watchlist: list[dict], coach_report: dict) -> tuple[list[dict], str]:
     ranked = sorted(watchlist, key=lambda row: abs(float(row["final_score"])), reverse=True)
     selected: list[dict] = []
-    for row in ranked[: max(4, min(len(ranked), 6))]:
+    top_score = max((abs(float(row["final_score"])) for row in ranked), default=0.0)
+    target_count = min(len(ranked), max(2, min(5, config.rebalance_top_k)))
+    conviction_floor = min(0.88, max(0.58, float(config.llm_min_conviction) + 0.04))
+    for rank, row in enumerate(ranked[:target_count], start=1):
         if row["side"] not in {"LONG", "SHORT"}:
             continue
+        abs_score = abs(float(row["final_score"]))
+        score_strength = abs_score / top_score if top_score > 0 else 0.0
+        vol = max(float(row.get("vol", 0.02) or 0.02), 0.005)
+        conviction = min(0.95, conviction_floor + 0.08 * score_strength + 0.01 * max(target_count - rank, 0))
+        expected_upside = min(0.12, max(abs_score * 4.0, vol * 0.65, 0.012))
+        expected_downside = min(0.08, max(vol * 0.45, 0.008))
         selected.append(
             {
                 "symbol": row["symbol"],
                 "side": row["side"],
-                "conviction": 0.6,
-                "expected_upside_pct": abs(float(row["final_score"])) * 2.0,
-                "expected_downside_pct": max(float(row.get("vol", 0.02)), 0.01),
+                "conviction": conviction,
+                "expected_upside_pct": expected_upside,
+                "expected_downside_pct": expected_downside,
                 "time_horizon": "short swing",
                 "why_now": row["rationale"] or "Current model score ranks highly among available candidates.",
                 "disconfirming_evidence": "Fallback trader did not receive a full LLM contradiction review.",
@@ -486,7 +495,7 @@ def _fallback_trader_decisions(watchlist: list[dict], coach_report: dict) -> tup
                 "risk_note": "Fallback trader used existing model direction with moderate conviction.",
             }
         )
-    return selected, "Fallback trader used the strongest watchlist directions with moderate conviction."
+    return selected, "Fallback trader used the strongest watchlist directions with calibrated conviction and risk/reward estimates."
 
 
 def _trader_decisions(config: Config, watchlist: list[dict], analyst_reports: list[dict], coach_report: dict) -> tuple[list[dict], str]:
@@ -498,11 +507,19 @@ def _trader_decisions(config: Config, watchlist: list[dict], analyst_reports: li
     payload = {
         "objective": "Turn analyst reports into today's trading decisions.",
         "constraints": {
-            "max_positions": min(len(watchlist), max(4, config.rebalance_top_k)),
+            "max_positions": min(len(watchlist), 5),
+            "target_trade_count": min(len(watchlist), 3),
+            "minimum_trade_conviction": config.llm_min_conviction,
             "allowed_sides": ["LONG", "SHORT", "HOLD"],
             "paper_trading": True,
             "same_execution_framework_as_ml_bot": True,
         },
+        "decision_policy": [
+            "Normally submit 2-4 LONG/SHORT ideas when at least that many reports have a concrete catalyst and acceptable risk/reward.",
+            "Use HOLD for genuinely weak or contradictory setups, not as the default response to uncertainty.",
+            "For any LONG/SHORT idea, set conviction at or above minimum_trade_conviction; otherwise choose HOLD.",
+            "Prefer smaller, explicit-risk paper trades over total inactivity when the market is moving and evidence is usable.",
+        ],
         "coach_guidance": coach_report.get("trader_guidance", ""),
         "watchlist_reports": analyst_reports,
         "output_format": {
@@ -535,7 +552,7 @@ def _trader_decisions(config: Config, watchlist: list[dict], analyst_reports: li
         max_output_tokens=2200,
     )
     if not response:
-        return _fallback_trader_decisions(watchlist, coach_report)
+        return _fallback_trader_decisions(config, watchlist, coach_report)
 
     allowed = {row["symbol"] for row in watchlist}
     decisions: list[dict] = []
@@ -567,7 +584,7 @@ def _trader_decisions(config: Config, watchlist: list[dict], analyst_reports: li
             }
         )
     if not decisions:
-        return _fallback_trader_decisions(watchlist, coach_report)
+        return _fallback_trader_decisions(config, watchlist, coach_report)
     return decisions, str(response.get("summary", "")).strip() or "LLM trader selected today's trades from the analyst reports."
 
 
@@ -602,11 +619,11 @@ def _fallback_skeptic_review(config: Config, decisions: list[dict], analyst_repo
         concerns: list[str] = []
         approval = "approve"
         risk_level = "low"
-        if expected_edge <= 0:
-            concerns.append("Expected upside did not clearly exceed expected downside.")
+        if expected_edge <= -0.005:
+            concerns.append("Expected downside materially exceeded expected upside.")
             approval = "veto"
             risk_level = "high"
-        elif expected_edge < 0.01:
+        elif expected_edge < 0.005:
             concerns.append("Expected edge is positive but thin.")
             approval = "caution"
             risk_level = "medium"
@@ -665,7 +682,8 @@ def _skeptic_review(config: Config, decisions: list[dict], analyst_reports: list
         "instructions": [
             "Try to falsify each trade thesis using only supplied evidence.",
             "Flag unsupported, crowded, asymmetric, or weakly timed trades.",
-            "Approve strong trades, caution weaker trades, and veto trades whose upside/downside or evidence quality is poor.",
+            "Approve strong trades and caution weaker trades by reducing conviction.",
+            "Use veto only for clearly invalid, contradictory, or materially negative-edge trades; do not veto merely because evidence is imperfect.",
         ],
         "vetoes_enabled": config.llm_skeptic_veto_enabled,
         "coach_guidance": coach_report.get("trader_guidance", ""),
@@ -1051,13 +1069,20 @@ def rebalance_llm_bot(config: Config, symbols: list[str]) -> LlmBotRunResult:
         {
             "selector_summary": selector_summary,
             "watchlist_symbols": watchlist_symbols,
+            "watchlist_count": len(watchlist_symbols),
             "analyst_reports": analyst_reports,
             "coach_report": coach_report,
             "trader_summary": trader_summary,
+            "llm_available": llm_is_available(config),
+            "llm_min_conviction": float(config.llm_min_conviction),
+            "llm_skeptic_enabled": bool(config.llm_skeptic_enabled),
+            "llm_skeptic_veto_enabled": bool(config.llm_skeptic_veto_enabled),
             "raw_trader_decision_count": len(raw_decisions),
+            "conviction_gated_count": len(conviction_gated),
             "conviction_gated": conviction_gated,
             "skeptic_review": skeptic_review,
             "skeptic_action_summary": skeptic_action_summary,
+            "post_skeptic_decision_count": len(decisions),
             "bot_name": LLM_BOT_NAME,
         }
     )

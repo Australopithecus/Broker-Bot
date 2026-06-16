@@ -45,8 +45,8 @@ python3 scripts/setup_env.py
 
 - `Stock Selector`: chooses the watchlist
 - `Analyst`: writes daily memos for each watchlist stock, including catalysts, contrary evidence, time horizon, and confidence
-- `Trader`: reads the analyst memos plus coach guidance and makes today’s long/short decisions with structured conviction and expected upside/downside
-- `Skeptic`: challenges the Trader before execution, reducing or vetoing weakly supported ideas
+- `Trader`: reads the analyst memos plus coach guidance and makes today’s long/short decisions with structured conviction and expected upside/downside, targeting a small actionable paper-trade set when evidence is usable
+- `Skeptic`: challenges the Trader before execution, usually reducing conviction and reserving hard vetoes for invalid, contradictory, or materially negative-edge ideas
 - `Coach`: reviews mature outcomes and writes the next feedback report for the trader, avoiding behavior changes based on one-off results
 
 `AI Lab Bot` is the open-ended AI-designed challenger:
@@ -347,7 +347,7 @@ LLM outputs are sanitized and clamped to conservative bounds before applying ove
 - `MIN_PRICE` and `MIN_DOLLAR_VOL` filter illiquid or low-priced symbols.
 - `MIN_SIGNAL_ABS_SCORE` gates weak ML-style signals before sizing; set it to `0` to disable this confidence gate.
 - `LLM_MIN_CONVICTION` removes low-conviction LLM Trader decisions before Skeptic review.
-- `LLM_SKEPTIC_ENABLED=1` enables the LLM Skeptic; `LLM_SKEPTIC_VETO_ENABLED=1` lets it block weak trades before execution.
+- `LLM_SKEPTIC_ENABLED=1` enables the LLM Skeptic; `LLM_SKEPTIC_VETO_ENABLED=1` lets it block only clearly invalid or materially negative-edge trades before execution.
 - `VOL_TARGET` + `VOL_WINDOW` scales leverage down in high-volatility regimes.
 - `MAX_DRAWDOWN`, `MIN_LEVERAGE`, and `DRAWDOWN_WINDOW` apply drawdown guardrails.
 - `MAX_SECTOR_EXPOSURE_PCT` caps total absolute exposure in one mapped sector.
