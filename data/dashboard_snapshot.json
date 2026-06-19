@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-19T15:54:57.921321+00:00",
+  "generated_at": "2026-06-19T17:45:19.797602+00:00",
   "strategy_blueprint": {
     "title": "Strategy Blueprint",
     "revision": "3.2.0",
@@ -247,10 +247,10 @@
     ]
   },
   "health": {
-    "generated_at": "2026-06-19T15:54:57.921321+00:00",
+    "generated_at": "2026-06-19T17:45:19.797602+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.613333333333333e-05,
+      "age_minutes": 3.5266666666666666e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -296,8 +296,8 @@
           "revision_report_ts": null,
           "latest_equity": 100039.26,
           "window_return": 0.0,
-          "spy_window_return": 0.0001875142309908373,
-          "window_alpha": -0.0001875142309908373,
+          "spy_window_return": 0.0008443681981451512,
+          "window_alpha": -0.0008443681981451512,
           "max_drawdown": 0.0,
           "trade_count": 94,
           "position_count": 2,
@@ -313,7 +313,39 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-06-19T15:54:54.099502+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:16.246158+00:00"
+        },
+        {
+          "bot": "ml",
+          "label": "ML Bot R2",
+          "base_label": "ML Bot",
+          "revision_id": "ml-r2-learned-overlays",
+          "revision_label": "R2",
+          "revision_name": "Learned Overlays",
+          "revision_summary": "Out-of-sample model evaluation plus learned component reliability scales.",
+          "revision_status": "active",
+          "behavior_revision": "3.2.0",
+          "revision_report_ts": null,
+          "latest_equity": 102893.91,
+          "window_return": -0.0007958175828781666,
+          "spy_window_return": 0.0008443681981451512,
+          "window_alpha": -0.0016401857810233178,
+          "max_drawdown": 0.0007958175828781337,
+          "trade_count": 352,
+          "position_count": 1,
+          "gross_exposure": 6033.030875,
+          "gross_exposure_pct": 0.058633507804300565,
+          "long_exposure": 6033.030875,
+          "short_exposure": 0,
+          "largest_position": 6033.030875,
+          "largest_position_pct": 0.058633507804300565,
+          "protected_position_count": 1,
+          "unprotected_position_count": 0,
+          "protection_rate": 1.0,
+          "evaluated_decision_count": 137,
+          "win_rate": 0.4744525547445255,
+          "avg_trade_alpha": -0.0022297532764263893,
+          "latest_snapshot_ts": "2026-06-19T17:45:14.334931+00:00"
         },
         {
           "bot": "ai_lab",
@@ -327,9 +359,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": "2026-06-15T23:09:39.586861+00:00",
           "latest_equity": 99906.08,
-          "window_return": -0.0006010033795436076,
-          "spy_window_return": 0.0001875142309908373,
-          "window_alpha": -0.0007885176105344449,
+          "window_return": -0.0018225870104956465,
+          "spy_window_return": 0.0008443681981451512,
+          "window_alpha": -0.0026669552086407977,
           "max_drawdown": 0.0018225870104956938,
           "trade_count": 225,
           "position_count": 5,
@@ -345,39 +377,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-06-19T15:54:56.179353+00:00"
-        },
-        {
-          "bot": "ml",
-          "label": "ML Bot R2",
-          "base_label": "ML Bot",
-          "revision_id": "ml-r2-learned-overlays",
-          "revision_label": "R2",
-          "revision_name": "Learned Overlays",
-          "revision_summary": "Out-of-sample model evaluation plus learned component reliability scales.",
-          "revision_status": "active",
-          "behavior_revision": "3.2.0",
-          "revision_report_ts": null,
-          "latest_equity": 102893.91,
-          "window_return": -0.0018791779382260065,
-          "spy_window_return": 0.0001875142309908373,
-          "window_alpha": -0.002066692169216844,
-          "max_drawdown": 0.0018791779382259651,
-          "trade_count": 352,
-          "position_count": 1,
-          "gross_exposure": 6033.030875,
-          "gross_exposure_pct": 0.058633507804300565,
-          "long_exposure": 6033.030875,
-          "short_exposure": 0,
-          "largest_position": 6033.030875,
-          "largest_position_pct": 0.058633507804300565,
-          "protected_position_count": 1,
-          "unprotected_position_count": 0,
-          "protection_rate": 1.0,
-          "evaluated_decision_count": 137,
-          "win_rate": 0.4744525547445255,
-          "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-06-19T15:54:52.029832+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:18.127991+00:00"
         }
       ],
       "7d": [
@@ -393,9 +393,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": "2026-06-15T23:09:39.586861+00:00",
           "latest_equity": 99906.08,
-          "window_return": 0.0066695101586320416,
-          "spy_window_return": 0.012309027071725875,
-          "window_alpha": -0.005639516913093834,
+          "window_return": 0.00672479451568897,
+          "spy_window_return": 0.010186412705283976,
+          "window_alpha": -0.003461618189595006,
           "max_drawdown": 0.0018225870104956938,
           "trade_count": 225,
           "position_count": 5,
@@ -411,7 +411,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-06-19T15:54:56.179353+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:18.127991+00:00"
         },
         {
           "bot": "ml",
@@ -425,9 +425,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": null,
           "latest_equity": 102893.91,
-          "window_return": 0.0017018256585192848,
-          "spy_window_return": 0.012309027071725875,
-          "window_alpha": -0.01060720141320659,
+          "window_return": 0.0010366060573985258,
+          "spy_window_return": 0.010186412705283976,
+          "window_alpha": -0.00914980664788545,
           "max_drawdown": 0.0024693495657042417,
           "trade_count": 352,
           "position_count": 1,
@@ -443,7 +443,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-06-19T15:54:52.029832+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:14.334931+00:00"
         },
         {
           "bot": "llm",
@@ -458,8 +458,8 @@
           "revision_report_ts": null,
           "latest_equity": 100039.26,
           "window_return": 0.0,
-          "spy_window_return": 0.012309027071725875,
-          "window_alpha": -0.012309027071725875,
+          "spy_window_return": 0.010186412705283976,
+          "window_alpha": -0.010186412705283976,
           "max_drawdown": 0.0,
           "trade_count": 94,
           "position_count": 2,
@@ -475,7 +475,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-06-19T15:54:54.099502+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:16.246158+00:00"
         }
       ],
       "14d": [
@@ -491,9 +491,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": "2026-06-15T23:09:39.586861+00:00",
           "latest_equity": 99906.08,
-          "window_return": 0.003232138910375326,
-          "spy_window_return": 0.0003482966952002009,
-          "window_alpha": 0.0028838422151751253,
+          "window_return": 0.003209170239858894,
+          "spy_window_return": 0.003493919236713161,
+          "window_alpha": -0.00028474899685426713,
           "max_drawdown": 0.004988126401482771,
           "trade_count": 225,
           "position_count": 5,
@@ -509,7 +509,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-06-19T15:54:56.179353+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:18.127991+00:00"
         },
         {
           "bot": "ml",
@@ -523,9 +523,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": null,
           "latest_equity": 102893.91,
-          "window_return": 0.0031743719698245076,
-          "spy_window_return": -0.0003079065035208606,
-          "window_alpha": 0.0034822784733453682,
+          "window_return": 0.002973030905582208,
+          "spy_window_return": 0.003493919236713161,
+          "window_alpha": -0.0005208883311309531,
           "max_drawdown": 0.0027480008912434194,
           "trade_count": 352,
           "position_count": 1,
@@ -541,7 +541,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-06-19T15:54:52.029832+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:14.334931+00:00"
         },
         {
           "bot": "llm",
@@ -556,8 +556,8 @@
           "revision_report_ts": null,
           "latest_equity": 100039.26,
           "window_return": 0.0,
-          "spy_window_return": 0.0003482966952002009,
-          "window_alpha": -0.0003482966952002009,
+          "spy_window_return": 0.003493919236713161,
+          "window_alpha": -0.003493919236713161,
           "max_drawdown": 0.0,
           "trade_count": 94,
           "position_count": 2,
@@ -573,7 +573,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-06-19T15:54:54.099502+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:16.246158+00:00"
         }
       ],
       "28d": [
@@ -590,8 +590,8 @@
           "revision_report_ts": null,
           "latest_equity": 100039.26,
           "window_return": 0.0,
-          "spy_window_return": -0.0011236105351863923,
-          "window_alpha": 0.0011236105351863923,
+          "spy_window_return": -0.002697757655888977,
+          "window_alpha": 0.002697757655888977,
           "max_drawdown": 0.0,
           "trade_count": 94,
           "position_count": 2,
@@ -607,7 +607,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-06-19T15:54:54.099502+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:16.246158+00:00"
         },
         {
           "bot": "ai_lab",
@@ -621,9 +621,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": "2026-06-15T23:09:39.586861+00:00",
           "latest_equity": 99906.08,
-          "window_return": -0.0023074355828416326,
-          "spy_window_return": -0.0011236105351863923,
-          "window_alpha": -0.0011838250476552403,
+          "window_return": -0.001907549295673383,
+          "spy_window_return": -0.002697757655888977,
+          "window_alpha": 0.000790208360215594,
           "max_drawdown": 0.015919913209251485,
           "trade_count": 225,
           "position_count": 5,
@@ -639,7 +639,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-06-19T15:54:56.179353+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:18.127991+00:00"
         },
         {
           "bot": "ml",
@@ -653,9 +653,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": null,
           "latest_equity": 102893.91,
-          "window_return": -0.008344470441470797,
-          "spy_window_return": -0.0011236105351863923,
-          "window_alpha": -0.007220859906284405,
+          "window_return": -0.008245256476305696,
+          "spy_window_return": -0.002697757655888977,
+          "window_alpha": -0.005547498820416719,
           "max_drawdown": 0.014365206966614235,
           "trade_count": 352,
           "position_count": 1,
@@ -671,7 +671,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-06-19T15:54:52.029832+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:14.334931+00:00"
         }
       ],
       "90d": [
@@ -705,7 +705,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-06-19T15:54:52.029832+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:14.334931+00:00"
         },
         {
           "bot": "llm",
@@ -737,7 +737,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-06-19T15:54:54.099502+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:16.246158+00:00"
         },
         {
           "bot": "ai_lab",
@@ -769,7 +769,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-06-19T15:54:56.179353+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:18.127991+00:00"
         }
       ],
       "180d": [
@@ -803,7 +803,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-06-19T15:54:52.029832+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:14.334931+00:00"
         },
         {
           "bot": "llm",
@@ -835,7 +835,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-06-19T15:54:54.099502+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:16.246158+00:00"
         },
         {
           "bot": "ai_lab",
@@ -867,7 +867,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-06-19T15:54:56.179353+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:18.127991+00:00"
         }
       ],
       "360d": [
@@ -901,7 +901,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-06-19T15:54:52.029832+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:14.334931+00:00"
         },
         {
           "bot": "llm",
@@ -933,7 +933,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-06-19T15:54:54.099502+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:16.246158+00:00"
         },
         {
           "bot": "ai_lab",
@@ -965,7 +965,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-06-19T15:54:56.179353+00:00"
+          "latest_snapshot_ts": "2026-06-19T17:45:18.127991+00:00"
         }
       ]
     },
@@ -1933,6 +1933,13 @@
         },
         {
           "ts": "2026-06-19T15:54:56.179353+00:00",
+          "equity": 99906.08,
+          "cash": 83680.32,
+          "portfolio_value": 99906.08,
+          "spy_value": 746.75
+        },
+        {
+          "ts": "2026-06-19T17:45:18.127991+00:00",
           "equity": 99906.08,
           "cash": 83680.32,
           "portfolio_value": 99906.08,
@@ -10626,6 +10633,13 @@
           "cash": 100039.26,
           "portfolio_value": 100039.26,
           "spy_value": 746.75
+        },
+        {
+          "ts": "2026-06-19T17:45:16.246158+00:00",
+          "equity": 100039.26,
+          "cash": 100039.26,
+          "portfolio_value": 100039.26,
+          "spy_value": 746.75
         }
       ],
       "trades": [
@@ -16853,6 +16867,13 @@
         },
         {
           "ts": "2026-06-19T15:54:52.029832+00:00",
+          "equity": 102893.91,
+          "cash": 96860.88,
+          "portfolio_value": 102893.91,
+          "spy_value": 746.75
+        },
+        {
+          "ts": "2026-06-19T17:45:14.334931+00:00",
           "equity": 102893.91,
           "cash": 96860.88,
           "portfolio_value": 102893.91,
