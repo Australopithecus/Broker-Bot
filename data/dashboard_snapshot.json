@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-03T14:59:37.620737+00:00",
+  "generated_at": "2026-07-03T16:22:59.044757+00:00",
   "strategy_blueprint": {
     "title": "Strategy Blueprint",
     "revision": "3.2.0",
@@ -247,10 +247,10 @@
     ]
   },
   "health": {
-    "generated_at": "2026-07-03T14:59:37.620737+00:00",
+    "generated_at": "2026-07-03T16:22:59.044757+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.681666666666667e-05,
+      "age_minutes": 3.658333333333333e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -295,9 +295,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": "2026-06-15T23:09:39.586861+00:00",
           "latest_equity": 100578.05,
-          "window_return": 0.004163495523159089,
-          "spy_window_return": -0.003505110504628872,
-          "window_alpha": 0.007668606027787961,
+          "window_return": 0.00036761089421255555,
+          "spy_window_return": -0.0034517820828428025,
+          "window_alpha": 0.003819392977055358,
           "max_drawdown": 0.00025213571883884756,
           "trade_count": 225,
           "position_count": 4,
@@ -313,7 +313,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-07-03T14:59:34.881681+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:56.345784+00:00"
         },
         {
           "bot": "llm",
@@ -328,8 +328,8 @@
           "revision_report_ts": null,
           "latest_equity": 100039.26,
           "window_return": 0.0,
-          "spy_window_return": -0.003505110504628872,
-          "window_alpha": 0.003505110504628872,
+          "spy_window_return": -0.0034517820828428025,
+          "window_alpha": 0.0034517820828428025,
           "max_drawdown": 0.0,
           "trade_count": 94,
           "position_count": 2,
@@ -345,7 +345,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-07-03T14:59:31.914597+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:53.593695+00:00"
         },
         {
           "bot": "ml",
@@ -359,10 +359,10 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": null,
           "latest_equity": 102850.74,
-          "window_return": -0.0025942061662217464,
-          "spy_window_return": -0.003505110504628872,
-          "window_alpha": 0.0009109043384071258,
-          "max_drawdown": 0.0026810967020871783,
+          "window_return": -0.0011114436938777228,
+          "spy_window_return": -0.0034517820828428025,
+          "window_alpha": 0.0023403383889650797,
+          "max_drawdown": 0.0011984634028707004,
           "trade_count": 355,
           "position_count": 2,
           "gross_exposure": 12050.862063,
@@ -377,7 +377,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-07-03T14:59:28.704677+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:50.845815+00:00"
         }
       ],
       "7d": [
@@ -393,9 +393,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": "2026-06-15T23:09:39.586861+00:00",
           "latest_equity": 100578.05,
-          "window_return": 0.0076230394900114185,
-          "spy_window_return": 0.017193111830335894,
-          "window_alpha": -0.009570072340324476,
+          "window_return": 0.00628545404083769,
+          "spy_window_return": 0.01642274758639517,
+          "window_alpha": -0.01013729354555748,
           "max_drawdown": 0.001692749421659812,
           "trade_count": 225,
           "position_count": 4,
@@ -411,7 +411,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-07-03T14:59:34.881681+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:56.345784+00:00"
         },
         {
           "bot": "llm",
@@ -426,8 +426,8 @@
           "revision_report_ts": null,
           "latest_equity": 100039.26,
           "window_return": 0.0,
-          "spy_window_return": 0.017193111830335894,
-          "window_alpha": -0.017193111830335894,
+          "spy_window_return": 0.01642274758639517,
+          "window_alpha": -0.01642274758639517,
           "max_drawdown": 0.0,
           "trade_count": 94,
           "position_count": 2,
@@ -443,7 +443,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-07-03T14:59:31.914597+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:53.593695+00:00"
         },
         {
           "bot": "ml",
@@ -457,9 +457,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": null,
           "latest_equity": 102850.74,
-          "window_return": -0.0007085833608536651,
-          "spy_window_return": 0.017193111830335894,
-          "window_alpha": -0.01790169519118956,
+          "window_return": -0.0012501519720238274,
+          "spy_window_return": 0.01642274758639517,
+          "window_alpha": -0.017672899558418997,
           "max_drawdown": 0.0028813554063373097,
           "trade_count": 355,
           "position_count": 2,
@@ -475,7 +475,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-07-03T14:59:28.704677+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:50.845815+00:00"
         }
       ],
       "14d": [
@@ -491,9 +491,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": "2026-06-15T23:09:39.586861+00:00",
           "latest_equity": 100578.05,
-          "window_return": 0.00573152087493356,
-          "spy_window_return": -0.0019562654089398945,
-          "window_alpha": 0.0076877862838734545,
+          "window_return": 0.006726017075237012,
+          "spy_window_return": -0.0025309675259457265,
+          "window_alpha": 0.009256984601182738,
           "max_drawdown": 0.004146760837185759,
           "trade_count": 225,
           "position_count": 4,
@@ -509,7 +509,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-07-03T14:59:34.881681+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:56.345784+00:00"
         },
         {
           "bot": "llm",
@@ -524,8 +524,8 @@
           "revision_report_ts": null,
           "latest_equity": 100039.26,
           "window_return": 0.0,
-          "spy_window_return": -0.0019562654089398945,
-          "window_alpha": 0.0019562654089398945,
+          "spy_window_return": -0.0025309675259457265,
+          "window_alpha": 0.0025309675259457265,
           "max_drawdown": 0.0,
           "trade_count": 94,
           "position_count": 2,
@@ -541,7 +541,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-07-03T14:59:31.914597+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:53.593695+00:00"
         },
         {
           "bot": "ml",
@@ -555,9 +555,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": null,
           "latest_equity": 102850.74,
-          "window_return": -0.0009620224540547451,
-          "spy_window_return": -0.0019562654089398945,
-          "window_alpha": 0.0009942429548851495,
+          "window_return": -0.000419558358701666,
+          "spy_window_return": -0.0025309675259457265,
+          "window_alpha": 0.0021114091672440605,
           "max_drawdown": 0.0028813554063373097,
           "trade_count": 355,
           "position_count": 2,
@@ -573,7 +573,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-07-03T14:59:28.704677+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:50.845815+00:00"
         }
       ],
       "28d": [
@@ -589,10 +589,10 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": "2026-06-15T23:09:39.586861+00:00",
           "latest_equity": 100578.05,
-          "window_return": 0.009745467527339624,
-          "spy_window_return": -0.015997991994398775,
-          "window_alpha": 0.0257434595217384,
-          "max_drawdown": 0.005196304328205529,
+          "window_return": 0.009979895407113304,
+          "spy_window_return": -0.002183552358370533,
+          "window_alpha": 0.012163447765483837,
+          "max_drawdown": 0.004988126401482771,
           "trade_count": 225,
           "position_count": 4,
           "gross_exposure": 22165.642853,
@@ -607,7 +607,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-07-03T14:59:34.881681+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:56.345784+00:00"
         },
         {
           "bot": "ml",
@@ -621,9 +621,9 @@
           "behavior_revision": "3.2.0",
           "revision_report_ts": null,
           "latest_equity": 102850.74,
-          "window_return": 0.002235597827040303,
-          "spy_window_return": -0.015997991994398775,
-          "window_alpha": 0.018233589821439078,
+          "window_return": 0.002753481776829325,
+          "spy_window_return": -0.002838094728105145,
+          "window_alpha": 0.00559157650493447,
           "max_drawdown": 0.003066546115692073,
           "trade_count": 355,
           "position_count": 2,
@@ -639,7 +639,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-07-03T14:59:28.704677+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:50.845815+00:00"
         },
         {
           "bot": "llm",
@@ -654,8 +654,8 @@
           "revision_report_ts": null,
           "latest_equity": 100039.26,
           "window_return": 0.0,
-          "spy_window_return": -0.015997991994398775,
-          "window_alpha": 0.015997991994398775,
+          "spy_window_return": -0.002183552358370533,
+          "window_alpha": 0.002183552358370533,
           "max_drawdown": 0.0,
           "trade_count": 94,
           "position_count": 2,
@@ -671,7 +671,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-07-03T14:59:31.914597+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:53.593695+00:00"
         }
       ],
       "90d": [
@@ -705,7 +705,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-07-03T14:59:28.704677+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:50.845815+00:00"
         },
         {
           "bot": "ai_lab",
@@ -737,7 +737,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-07-03T14:59:34.881681+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:56.345784+00:00"
         },
         {
           "bot": "llm",
@@ -769,7 +769,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-07-03T14:59:31.914597+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:53.593695+00:00"
         }
       ],
       "180d": [
@@ -803,7 +803,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-07-03T14:59:28.704677+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:50.845815+00:00"
         },
         {
           "bot": "ai_lab",
@@ -835,7 +835,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-07-03T14:59:34.881681+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:56.345784+00:00"
         },
         {
           "bot": "llm",
@@ -867,7 +867,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-07-03T14:59:31.914597+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:53.593695+00:00"
         }
       ],
       "360d": [
@@ -901,7 +901,7 @@
           "evaluated_decision_count": 137,
           "win_rate": 0.4744525547445255,
           "avg_trade_alpha": -0.0022297532764263893,
-          "latest_snapshot_ts": "2026-07-03T14:59:28.704677+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:50.845815+00:00"
         },
         {
           "bot": "ai_lab",
@@ -933,7 +933,7 @@
           "evaluated_decision_count": 136,
           "win_rate": 0.5147058823529411,
           "avg_trade_alpha": -0.0033339258661593736,
-          "latest_snapshot_ts": "2026-07-03T14:59:34.881681+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:56.345784+00:00"
         },
         {
           "bot": "llm",
@@ -965,7 +965,7 @@
           "evaluated_decision_count": 108,
           "win_rate": 0.4444444444444444,
           "avg_trade_alpha": -0.0001918699879700585,
-          "latest_snapshot_ts": "2026-07-03T14:59:31.914597+00:00"
+          "latest_snapshot_ts": "2026-07-03T16:22:53.593695+00:00"
         }
       ]
     },
@@ -2122,6 +2122,13 @@
         },
         {
           "ts": "2026-07-03T14:59:34.881681+00:00",
+          "equity": 100578.05,
+          "cash": 78412.41,
+          "portfolio_value": 100578.05,
+          "spy_value": 744.86
+        },
+        {
+          "ts": "2026-07-03T16:22:56.345784+00:00",
           "equity": 100578.05,
           "cash": 78412.41,
           "portfolio_value": 100578.05,
@@ -10988,6 +10995,13 @@
           "cash": 100039.26,
           "portfolio_value": 100039.26,
           "spy_value": 744.86
+        },
+        {
+          "ts": "2026-07-03T16:22:53.593695+00:00",
+          "equity": 100039.26,
+          "cash": 100039.26,
+          "portfolio_value": 100039.26,
+          "spy_value": 744.86
         }
       ],
       "trades": [
@@ -17404,6 +17418,13 @@
         },
         {
           "ts": "2026-07-03T14:59:28.704677+00:00",
+          "equity": 102850.74,
+          "cash": 90799.88,
+          "portfolio_value": 102850.74,
+          "spy_value": 744.86
+        },
+        {
+          "ts": "2026-07-03T16:22:50.845815+00:00",
           "equity": 102850.74,
           "cash": 90799.88,
           "portfolio_value": 102850.74,
