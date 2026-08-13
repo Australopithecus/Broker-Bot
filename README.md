@@ -62,6 +62,24 @@ Reporting: markdown reports are written to `data/reports/` and also stored in th
 
 ## Commands
 
+Check local readiness before trusting the bot or dashboard:
+
+```bash
+python3 -m broker_bot.cli foundation-audit
+```
+
+Use JSON output for automation:
+
+```bash
+python3 -m broker_bot.cli foundation-audit --json
+```
+
+Refresh the S&P 500 universe and sector map:
+
+```bash
+python3 scripts/refresh_sp500_universe.py
+```
+
 Train the model on one year of data:
 
 ```bash

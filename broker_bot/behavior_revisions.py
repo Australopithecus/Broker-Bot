@@ -4,153 +4,20 @@ from copy import deepcopy
 from typing import Any
 
 
-CURRENT_BEHAVIOR_REVISION = "3.2.0"
-CURRENT_BEHAVIOR_REVISION_DATE = "2026-06-10"
+CURRENT_BEHAVIOR_REVISION = "4.0.0"
+CURRENT_BEHAVIOR_REVISION_DATE = "2026-08-13"
 
 BEHAVIOR_REVISION_HISTORY: list[dict[str, Any]] = [
     {
-        "revision": "3.2.0",
-        "date": "2026-06-10",
-        "title": "LLM activity calibration",
-        "models": ["LLM Bot"],
+        "revision": "4.0.0",
+        "date": "2026-08-13",
+        "title": "Fresh-start base model",
+        "models": ["Broker Bot"],
         "changes": [
-            "Reworked the LLM fallback Trader so fallback mode uses calibrated conviction and risk/reward estimates instead of flat borderline conviction.",
-            "Changed the LLM Trader prompt to target a small number of actionable paper-trade ideas when evidence is usable, rather than defaulting to inactivity.",
-            "Softened the LLM Skeptic role so it primarily reduces conviction and reserves hard vetoes for invalid, contradictory, or materially negative-edge setups.",
-            "Added Summary/Supervisor diagnostics that distinguish poor active trades from under-exposure, all-veto behavior, or unavailable LLM service.",
-        ],
-    },
-    {
-        "revision": "3.1.0",
-        "date": "2026-05-08",
-        "title": "Three-account active roster",
-        "models": ["ML Bot", "LLM Bot", "AI Lab Bot"],
-        "changes": [
-            "Promoted AI Lab Bot into the third active paper-account slot.",
-            "Moved Stat Arb Bot out of the scheduled/dashboard active roster so the system fits a three-paper-account limit.",
-            "Updated Summary, Supervisor, Champion/Challenger, snapshot, and dashboard discovery to compare only the active ML, LLM, and AI Lab models by default.",
-        ],
-    },
-    {
-        "revision": "3.0.0",
-        "date": "2026-05-08",
-        "title": "AI Lab adaptive model",
-        "models": ["AI Lab Bot"],
-        "changes": [
-            "Added a fourth paper-trading model designed as an adaptive sleeve ensemble rather than a fixed ML model, pure LLM trader, or pair-trading system.",
-            "Blended trend, reversal, breakout, volume-confirmation, low-volatility, and market-regime alignment sleeves into a single composite score.",
-            "Added an AI Lab policy file that can update sleeve weights and entry thresholds from mature decision outcomes while staying bounded and auditable.",
-            "Added a conservative controlled-exploration budget for near-threshold paper trades so the new model can learn from borderline setups.",
-        ],
-    },
-    {
-        "revision": "2.9.0",
-        "date": "2026-05-06",
-        "title": "Supervisor-controlled policy adaptation",
-        "models": ["ML Bot", "LLM Bot", "Stat Arb Bot"],
-        "changes": [
-            "Added a Supervisor layer that consolidates Summary, Coach, attribution, and Champion/Challenger evidence before changing runtime policy.",
-            "Required repeated findings, cooldown periods, and per-run change limits before policy changes can be applied.",
-            "Allowed the Supervisor to make bounded changes to ML confidence, LLM conviction/Skeptic veto authority, and Stat Arb entry z-score through the existing champion/challenger policy file.",
-        ],
-    },
-    {
-        "revision": "2.8.1",
-        "date": "2026-05-05",
-        "title": "Champion/challenger threshold adaptation",
-        "models": ["ML Bot", "LLM Bot", "Stat Arb Bot"],
-        "changes": [
-            "Promoted champion/challenger from report-only shadow analysis into a bounded threshold-adjustment system.",
-            "Added a shared champion/challenger policy file that can tighten or relax ML confidence, LLM conviction, and Stat Arb z-score thresholds when evaluated outcomes support the change.",
-            "Connected the promoted thresholds back into runtime configuration so future runs use the latest champion/challenger-supported gates.",
-        ],
-    },
-    {
-        "revision": "2.8.0",
-        "date": "2026-05-04",
-        "title": "Stat Arb Bot R1 pairs mean reversion",
-        "models": ["Stat Arb Bot"],
-        "changes": [
-            "Added a third strategy family that trades explicit statistical pair dislocations instead of LLM decisions or supervised return predictions.",
-            "Added hedge-ratio spread z-scores, minimum pair correlation gates, liquidity filters, and market-neutral long/short pair construction.",
-            "Added Stat Arb Bot reports, decision logs, model revision metadata, and cloud workflow hooks.",
-        ],
-    },
-    {
-        "revision": "2.7.0",
-        "date": "2026-05-01",
-        "title": "ML Bot R2 learned overlays",
-        "models": ["ML Bot"],
-        "changes": [
-            "Added walk-forward model evaluation for out-of-sample directional accuracy, return, and overlay impact.",
-            "Promoted the ML model behavior to ML Bot R2 with learned component reliability scales for snapshot, technical, and memory signals.",
-            "Added model revision metadata to dashboard comparison payloads, reports, and snapshot generation.",
-        ],
-    },
-    {
-        "revision": "2.6.0",
-        "date": "2026-04-30",
-        "title": "Ticker-specific LLM Coach feedback",
-        "models": ["LLM Bot"],
-        "changes": [
-            "Changed the LLM Coach feedback style from generic advice to ticker-specific wins, mistakes, and next-action guidance.",
-            "Fed more concrete Coach lessons back into the LLM Trader context so future decisions can adapt to prior outcomes.",
-        ],
-    },
-    {
-        "revision": "2.5.0",
-        "date": "2026-04-30",
-        "title": "Skeptic and strategy evaluation layer",
-        "models": ["ML Bot", "LLM Bot"],
-        "changes": [
-            "Added LLM Skeptic review before LLM Trader decisions reach execution.",
-            "Added ML confidence gating and LLM conviction gating.",
-            "Added post-trade attribution reports.",
-            "Added Champion/Challenger shadow evaluation reports.",
-        ],
-    },
-    {
-        "revision": "2.4.0",
-        "date": "2026-04-29",
-        "title": "Market-hours caretaker",
-        "models": ["ML Bot", "LLM Bot"],
-        "changes": [
-            "Added lightweight caretaker commands and workflow.",
-            "Added broker-side trailing-stop protection checks.",
-            "Added optional same-day drawdown kill switch.",
-        ],
-    },
-    {
-        "revision": "2.2.0",
-        "date": "2026-04-24",
-        "title": "Second paper account and LLM bot",
-        "models": ["LLM Bot"],
-        "changes": [
-            "Separated ML and LLM bots into distinct brokerage paper accounts.",
-            "Added LLM Stock Selector, Analyst, Trader, and Coach reports.",
-            "Enabled ML and LLM bots to generate independent decisions and outcomes for direct performance comparison.",
-        ],
-    },
-    {
-        "revision": "2.1.0",
-        "date": "2026-04-23",
-        "title": "Learning and research reports",
-        "models": ["ML Bot"],
-        "changes": [
-            "Added richer strategy, watchlist, and learning reports.",
-            "Added deep research notes for current watchlist names.",
-            "Added decision outcome logging for later learning.",
-        ],
-    },
-    {
-        "revision": "2.0.0",
-        "date": "2026-04-22",
-        "title": "Paper-trading automation baseline",
-        "models": ["ML Bot"],
-        "changes": [
-            "Added model training and rebalance commands for automated paper-trading decisions.",
-            "Added advisor and strategy report automation to explain generated decisions.",
-            "Added snapshot generation so model outcomes could feed later learning and review loops.",
+            "Reset the dashboard and visible model metadata around one fresh-start champion model.",
+            "Expanded the trading universe to the current S&P 500 with sector mapping.",
+            "Quarantined learned overlays after broad-universe out-of-sample validation showed the base model was stronger.",
+            "Kept risk controls, evidence logging, model evaluation, Summary, and Supervisor reports as the operating guardrails.",
         ],
     },
 ]

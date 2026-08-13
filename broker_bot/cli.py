@@ -11,6 +11,7 @@ from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
 
 from .config import configured_bot_names, get_bot_account_config, load_config
+from .foundation_audit import FAIL, format_audit_report, run_foundation_audit
 from .logging_db import (
     init_db,
     log_advisor_report,
@@ -670,12 +671,28 @@ def cmd_model_eval(args: argparse.Namespace) -> None:
     print(f"Saved report to {report.report_path}")
 
 
+def cmd_foundation_audit(args: argparse.Namespace) -> None:
+    audit = run_foundation_audit(os.getcwd())
+    if args.json_output:
+        print(json.dumps(audit.to_dict(), indent=2, sort_keys=True))
+    else:
+        print(format_audit_report(audit))
+    if args.strict and audit.overall_status == FAIL:
+        raise SystemExit(1)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Broker Bot - Paper Trading")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("init-db")
     subparsers.add_parser("doctor")
+    audit_parser = subparsers.add_parser(
+        "foundation-audit",
+        help="Check local readiness: credentials, universe breadth, evidence freshness, reports, and automation.",
+    )
+    audit_parser.add_argument("--strict", action="store_true", help="Exit non-zero when any FAIL check is present.")
+    audit_parser.add_argument("--json", action="store_true", dest="json_output", help="Emit machine-readable JSON.")
     subparsers.add_parser("train")
     subparsers.add_parser("backtest")
     subparsers.add_parser("rebalance")
@@ -720,6 +737,8 @@ def main() -> None:
             cmd_init_db(args)
         elif args.command == "doctor":
             cmd_doctor(args)
+        elif args.command == "foundation-audit":
+            cmd_foundation_audit(args)
         elif args.command == "train":
             cmd_train(args)
         elif args.command == "backtest":

@@ -47,6 +47,10 @@ PARAMETER_SPECS: dict[str, dict[str, float | str]] = {
 }
 
 
+def _display_label(bot_name: str) -> str:
+    return "Broker Bot" if normalize_bot_name(bot_name) == ML_BOT_NAME else bot_label(bot_name)
+
+
 @dataclass
 class SupervisorReport:
     ts: str
@@ -156,13 +160,13 @@ def _recent_policy_update(policy: dict, bot_name: str, field: str, now: datetime
             continue
         parsed = _parse_ts(str(item.get("ts") or ""))
         if parsed and parsed >= cutoff:
-            return f"Supervisor already changed {field} for {bot_label(normalized)} on {parsed.date()}."
+            return f"Supervisor already changed {field} for {_display_label(normalized)} on {parsed.date()}."
 
     bot_policy = policy.get("bots", {}).get(normalized, {})
     if isinstance(bot_policy, dict) and bot_policy.get("updated_at") and bot_policy.get("updated_by") in {"champion_challenger", "supervisor"}:
         parsed = _parse_ts(str(bot_policy.get("updated_at") or ""))
         if parsed and parsed >= cutoff and field in bot_policy:
-            return f"{bot_label(normalized)} policy was already updated by {bot_policy.get('updated_by')} on {parsed.date()}."
+            return f"{_display_label(normalized)} policy was already updated by {bot_policy.get('updated_by')} on {parsed.date()}."
     return None
 
 
@@ -188,7 +192,7 @@ def _summary_reports(config: Config) -> list[dict[str, Any]]:
 
 def _supporting_report_text(config: Config, bot_name: str) -> str:
     parts: list[str] = []
-    for report_type in ["coach", "learning", "attribution", "champion_challenger"]:
+    for report_type in ["learning", "attribution", "model_eval"]:
         rows = read_latest_strategy_reports(config.db_path, limit=1, bot_name=bot_name, report_type=report_type)
         if not rows:
             continue
@@ -443,7 +447,7 @@ def _monitoring_rows(evidence: dict[str, dict[str, Any]]) -> list[dict[str, Any]
             rows.append(
                 {
                     "bot_name": bot_name,
-                    "label": bot_label(bot_name),
+                    "label": _display_label(bot_name),
                     "status": "No repeated Summary Report issue tags yet.",
                     "tag_counts": {},
                     "supporting_report_notes": entry.get("supporting_report_notes", []),
@@ -453,7 +457,7 @@ def _monitoring_rows(evidence: dict[str, dict[str, Any]]) -> list[dict[str, Any]
         rows.append(
             {
                 "bot_name": bot_name,
-                "label": bot_label(bot_name),
+                "label": _display_label(bot_name),
                 "status": "Monitoring until repeated evidence clears the minimum-change threshold.",
                 "tag_counts": tag_counts,
                 "supporting_report_notes": entry.get("supporting_report_notes", []),
@@ -476,22 +480,22 @@ def _build_body(
         "",
         "## Purpose",
         (
-            "The Supervisor consolidates the all-model Summary Report, Coach/Learning/Attribution reports, "
-            "and Champion/Challenger evidence into bounded runtime policy changes. It does not edit source code."
+            "The Supervisor consolidates Broker Bot Summary, learning, attribution, and model-evaluation evidence "
+            "into bounded runtime policy changes. It does not edit source code."
         ),
         "",
         "## Guardrails",
         f"- Requires at least {SUPERVISOR_MIN_REPEAT_COUNT} recent Summary Report confirmations before applying a change.",
         f"- Enforces a {SUPERVISOR_COOLDOWN_DAYS}-day cooldown per model/field.",
         f"- Applies at most {SUPERVISOR_MAX_APPLIED_CHANGES} change(s) per run.",
-        "- Writes only bounded policy values to the existing champion/challenger policy file.",
+        "- Writes only bounded policy values to the supervisor policy file.",
         "",
         "## Changes Applied",
     ]
     if applied:
         for item in applied:
             lines.append(
-                f"- {bot_label(item['bot_name'])}: `{item['field']}` "
+                f"- {_display_label(item['bot_name'])}: `{item['field']}` "
                 f"{float(item['old_value']):.6f} -> {float(item['new_value']):.6f}. {item.get('reason', '')}"
             )
     else:
@@ -501,7 +505,7 @@ def _build_body(
     if skipped:
         for item in skipped:
             lines.append(
-                f"- {bot_label(item['bot_name'])}: `{item['field']}` {item.get('direction', 'hold')} skipped "
+                f"- {_display_label(item['bot_name'])}: `{item['field']}` {item.get('direction', 'hold')} skipped "
                 f"({item.get('status', 'skipped')}). {item.get('skip_reason') or item.get('reason', '')}"
             )
     else:
@@ -526,7 +530,7 @@ def _build_body(
 
 def generate_supervisor_report(config: Config) -> SupervisorReport:
     now = datetime.now(timezone.utc)
-    bot_names = configured_bot_names(config)
+    bot_names = [ML_BOT_NAME]
     summary_reports = _summary_reports(config)
     evidence = _collect_evidence(config, bot_names)
     candidates = _candidate_actions(config, evidence)
@@ -561,7 +565,7 @@ def generate_supervisor_report(config: Config) -> SupervisorReport:
             )
         policy["supervisor_history"] = history[-80:]
         policy["generated_at"] = now.isoformat()
-        policy["summary"] = "Conservative threshold and authority overrides promoted by champion/challenger and Supervisor reports."
+        policy["summary"] = "Conservative threshold and authority overrides promoted by Supervisor reports."
         policy["supervisor"] = {
             "generated_at": now.isoformat(),
             "applied_change_count": len(applied),

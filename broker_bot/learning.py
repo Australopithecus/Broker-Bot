@@ -974,7 +974,7 @@ def _propose_weight_updates(
         if step == 0.0:
             continue
 
-        proposed = round(_clip(updated_weights[weight_name] + step, 0.25, 2.0), 3)
+        proposed = round(_clip(updated_weights[weight_name] + step, 0.0, 2.0), 3)
         if abs(proposed - updated_weights[weight_name]) < 1e-9:
             continue
         updated_weights[weight_name] = proposed

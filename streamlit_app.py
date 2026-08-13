@@ -8,15 +8,18 @@ import requests
 import streamlit as st
 
 from broker_bot.bot_blueprint import get_strategy_blueprint
-from broker_bot.bots import ACTIVE_BOT_LABELS, BOT_LABELS
+from broker_bot.bots import ML_BOT_NAME
 from broker_bot.dashboard_metrics import (
     WINDOW_OPTIONS,
-    agreement_summary,
     bot_performance_metrics,
-    comparison_table,
     extract_key_takeaways,
     filter_frame_to_window,
     freshness_status,
+)
+from broker_bot.fresh_start_reports import (
+    FRESH_START_REPORT_TYPES,
+    REPORT_ARCHIVE_MESSAGE,
+    fresh_start_strategy_reports,
 )
 from broker_bot.model_revisions import apply_model_revision
 
@@ -70,7 +73,7 @@ DEFAULT_WINDOW_KEY = "7d"
 
 st.set_page_config(page_title="Broker Bot Dashboard", layout="wide")
 st.title("Broker Bot Dashboard")
-st.caption("A single trend graph sits at the top, while the sections below keep each bot's trades, reports, and positions separate.")
+st.caption("Fresh-start paper-trading cockpit for the current Broker Bot model.")
 st.markdown(
     """
     <style>
@@ -155,33 +158,30 @@ def _render_sidebar_nav(
     bots_payload: dict[str, dict],
 ) -> None:
     st.sidebar.title("Broker Bot")
-    st.sidebar.caption("Paper-trading research cockpit")
-    st.sidebar.metric("Bot Behavior Revision", str(strategy_blueprint.get("revision") or "unknown"))
+    st.sidebar.caption("Fresh-start paper-trading cockpit")
+    st.sidebar.metric("Model", "Broker Bot")
+    st.sidebar.metric("Revision", str(strategy_blueprint.get("revision") or "unknown"))
     if snapshot_updated:
         st.sidebar.caption(f"Snapshot updated: {snapshot_updated}")
     elif DATA_URL:
         st.sidebar.caption("Snapshot source configured; timestamp pending.")
     else:
         st.sidebar.caption("Using live API data.")
-    st.sidebar.caption(f"Models visible: {len(bots_payload)}")
     st.sidebar.divider()
     st.sidebar.markdown("**Navigation**")
     for label, anchor_id in [
         ("System Health", "system-health"),
-        ("Strategy Blueprint", "strategy-blueprint"),
         ("Summary Report", "summary-report"),
-        ("Supervisor", "supervisor"),
         ("Trend Graph", "trend-graph"),
         ("Current Holdings", "current-holdings"),
         ("Risk Cockpit", "risk-cockpit"),
-        ("Champion Lab", "champion-lab"),
         ("Reports", "reports"),
         ("Decision Explorer", "decision-explorer"),
         ("Detailed Tables", "detailed-tables"),
     ]:
         _sidebar_link(label, anchor_id)
     st.sidebar.divider()
-    st.sidebar.caption("Tip: use the trend graph controls to switch window, graph scale, and which model is visible.")
+    st.sidebar.caption("Use the trend controls to switch time window and graph scale.")
 
 
 @st.cache_data(ttl=60)
@@ -295,21 +295,16 @@ def fetch(path: str):
         if route == "/api/blueprint":
             return get_strategy_blueprint()
         if route == "/api/bots":
-            active_snapshot_bots = [name for name in bots.keys() if name in ACTIVE_BOT_LABELS]
-            bot_names = list(dict.fromkeys([*ACTIVE_BOT_LABELS.keys(), *active_snapshot_bots]))
-            bot_rows = []
-            for name in bot_names:
-                revised = _with_revision(name, bots.get(name, {}))
-                bot_rows.append(
+            revised = _with_revision(ML_BOT_NAME, bots.get(ML_BOT_NAME, {}))
+            return {
+                "data": [
                     {
-                        "name": name,
-                        "label": revised.get("label", BOT_LABELS.get(name, name.upper())),
+                        "name": ML_BOT_NAME,
+                        "label": revised.get("label", "Broker Bot"),
                         "base_label": revised.get("base_label"),
                         "revision": revised.get("revision"),
                     }
-                )
-            return {
-                "data": bot_rows
+                ]
             }
         if route == "/api/summary":
             equity = bot_payload.get("equity", [])
@@ -346,7 +341,7 @@ def fetch(path: str):
         if route == "/api/advisor":
             return {"data": bot_payload.get("advisor_reports", [])}
         if route == "/api/strategy":
-            return {"data": bot_payload.get("strategy_reports", [])}
+            return {"data": fresh_start_strategy_reports(bot_payload.get("strategy_reports", []))}
         if route == "/api/decisions":
             return {"data": bot_payload.get("decisions", [])}
         return {}
@@ -358,7 +353,7 @@ def _load_bot_names() -> list[tuple[str, str]]:
     try:
         response = fetch("/api/bots")
     except Exception:
-        return [("ml", "ML Bot")]
+        return [(ML_BOT_NAME, "Broker Bot")]
     rows = response.get("data", [])
     names = []
     for row in rows:
@@ -366,7 +361,7 @@ def _load_bot_names() -> list[tuple[str, str]]:
         label = str(row.get("label", name.upper())).strip()
         if name:
             names.append((name, label))
-    return names or [("ml", "ML Bot")]
+    return names or [(ML_BOT_NAME, "Broker Bot")]
 
 
 def _equity_df(bot_name: str) -> pd.DataFrame:
@@ -493,6 +488,8 @@ def _bot_payload(bot_name: str, label: str, snapshot_meta: dict) -> dict:
         payload = (snapshot_meta.get("bots") or {}).get(bot_name, {})
         if isinstance(payload, dict):
             if payload:
+                payload = dict(payload)
+                payload["strategy_reports"] = fresh_start_strategy_reports(payload.get("strategy_reports", []))
                 return _with_revision(bot_name, payload)
             return _with_revision(
                 bot_name,
@@ -508,7 +505,7 @@ def _bot_payload(bot_name: str, label: str, snapshot_meta: dict) -> dict:
     equity = fetch(f"/api/equity?bot={bot_name}&limit=1000").get("data", [])
     positions = fetch(f"/api/positions?bot={bot_name}").get("data", [])
     trades = fetch(f"/api/trades?bot={bot_name}").get("data", [])
-    strategy_reports = fetch(f"/api/strategy?bot={bot_name}").get("data", [])
+    strategy_reports = fresh_start_strategy_reports(fetch(f"/api/strategy?bot={bot_name}").get("data", []))
     decisions = fetch(f"/api/decisions?bot={bot_name}&limit=150").get("data", [])
     return _with_revision(bot_name, {
         "label": label,
@@ -598,11 +595,6 @@ def _latest_reports_by_type(reports: list[dict]) -> dict[str, dict]:
     return latest
 
 
-def _sorted_reports_by_type(reports: list[dict], report_type: str) -> list[dict]:
-    filtered = [report for report in reports or [] if report.get("report_type") == report_type]
-    return sorted(filtered, key=lambda report: str(report.get("ts") or ""), reverse=True)
-
-
 def _global_reports_by_type(bots_payload: dict[str, dict], report_type: str) -> list[dict]:
     rows: list[dict] = []
     for bot_name, payload in bots_payload.items():
@@ -613,11 +605,6 @@ def _global_reports_by_type(bots_payload: dict[str, dict], report_type: str) -> 
             copied["model_label"] = payload.get("label", bot_name.upper())
             rows.append(copied)
     return sorted(rows, key=lambda report: str(report.get("ts") or ""), reverse=True)
-
-
-def _report_metric(report: dict, name: str):
-    metrics = report.get("metrics") if isinstance(report.get("metrics"), dict) else {}
-    return metrics.get(name)
 
 
 def _report_ts(report: dict):
@@ -695,11 +682,12 @@ def _render_system_health(snapshot_meta: dict, bots_payload: dict[str, dict]) ->
     generated_at = health.get("generated_at") or snapshot_meta.get("generated_at") if isinstance(snapshot_meta, dict) else None
     fresh = freshness_status(generated_at)
     health_bots = {row.get("bot_name"): row for row in health.get("bots", [])} if isinstance(health.get("bots"), list) else {}
+    model_label = next((payload.get("label") for payload in bots_payload.values() if payload.get("label")), "Broker Bot")
 
     cols = st.columns(5)
     cols[0].metric("Snapshot", fresh.get("status", "unknown").title(), f"{fresh.get('age_minutes', 0) or 0:.0f} min old" if fresh.get("age_minutes") is not None else None)
     cols[1].metric("Data Source", "Snapshot" if DATA_URL else "Live API")
-    cols[2].metric("Models Seen", str(len(bots_payload)))
+    cols[2].metric("Model", model_label)
     total_positions = sum(len(payload.get("positions", []) or []) for payload in bots_payload.values())
     cols[3].metric("Open Positions", str(total_positions))
     total_unprotected = 0
@@ -734,60 +722,14 @@ def _render_system_health(snapshot_meta: dict, bots_payload: dict[str, dict]) ->
     _render_cloud_run_controls()
 
 
-def _render_strategy_blueprint(blueprint: dict) -> None:
-    st.subheader(str(blueprint.get("title") or "Strategy Blueprint"))
-    col1, col2, col3, col4 = st.columns(4)
-    models = blueprint.get("models") if isinstance(blueprint.get("models"), list) else []
-    changelog = blueprint.get("changelog") if isinstance(blueprint.get("changelog"), list) else []
-    col1.metric("Bot Behavior Revision", str(blueprint.get("revision") or "unknown"))
-    col2.metric("Updated", str(blueprint.get("revision_date") or "unknown"))
-    col3.metric("Models", str(len(models)))
-    col4.metric("Behavior Changes", str(len(changelog)))
-    st.write(blueprint.get("summary") or "")
-
-    with st.expander("Show model details, safety posture, and bot behavior revision history", expanded=False):
-        model_tabs = st.tabs([str(model.get("name") or f"Model {idx + 1}") for idx, model in enumerate(models)]) if models else []
-        for tab, model in zip(model_tabs, models):
-            with tab:
-                st.markdown(f"**Role:** {model.get('role', 'Not specified')}")
-                st.write(model.get("description", ""))
-                strategies = model.get("strategies") if isinstance(model.get("strategies"), list) else []
-                for item in strategies:
-                    st.markdown(f"- {item}")
-
-        shared_layers = blueprint.get("shared_layers") if isinstance(blueprint.get("shared_layers"), list) else []
-        safety = blueprint.get("current_safety_posture") if isinstance(blueprint.get("current_safety_posture"), list) else []
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.markdown("**Shared Strategy Layers**")
-            for item in shared_layers:
-                st.markdown(f"- {item}")
-        with col_b:
-            st.markdown("**Current Safety Posture**")
-            for item in safety:
-                st.markdown(f"- {item}")
-
-        st.markdown("**Bot Behavior Revision History**")
-        for entry in changelog:
-            models_changed = entry.get("models") if isinstance(entry.get("models"), list) else []
-            applies_to = f"  \nModels changed: {', '.join(models_changed)}" if models_changed else ""
-            st.markdown(
-                f"**Revision {entry.get('revision', 'unknown')} - {entry.get('title', 'Untitled')}**  \n"
-                f"{entry.get('date', '')}{applies_to}"
-            )
-            changes = entry.get("changes") if isinstance(entry.get("changes"), list) else []
-            for item in changes:
-                st.markdown(f"- {item}")
-
-
 def _render_summary_report(bots_payload: dict[str, dict]) -> None:
     st.subheader("Summary Report")
     reports = _global_reports_by_type(bots_payload, "summary")
     supervisor_reports = _global_reports_by_type(bots_payload, "supervisor")
     if not reports:
         st.caption(
-            "No all-model Summary Report has been generated yet. "
-            "The scheduled cloud run creates one after the daily model runs complete."
+            "No Summary Report has been generated yet. "
+            "The scheduled cloud run creates one after the daily model run completes."
         )
         return
 
@@ -804,12 +746,12 @@ def _render_summary_report(bots_payload: dict[str, dict]) -> None:
     supervisor_report = _matching_supervisor_report(reports, int(selected_idx), supervisor_reports)
 
     cols = st.columns(4)
-    cols[0].metric("Models Reviewed", _fmt_metric_num(metrics.get("model_count")))
+    cols[0].metric("Model", report.get("model_label", "Broker Bot"))
     cols[1].metric("Issues Flagged", _fmt_metric_num(metrics.get("issue_count")))
     cols[2].metric("Market 7D", _fmt_metric_pct(metrics.get("market_7d_return")))
     cols[3].metric("Market 28D", _fmt_metric_pct(metrics.get("market_28d_return")))
 
-    st.markdown(f"**{report.get('headline', 'All-Model Summary Report')}**")
+    st.markdown(f"**{report.get('headline', 'Summary Report')}**")
     st.write(report.get("summary", ""))
 
     if issues or recommendations:
@@ -837,54 +779,6 @@ def _render_summary_report(bots_payload: dict[str, dict]) -> None:
             for item in takeaways:
                 st.markdown(f"- {item}")
         st.markdown(report.get("body", ""))
-
-
-def _render_supervisor_panel(bots_payload: dict[str, dict]) -> None:
-    st.subheader("Supervisor")
-    st.caption(
-        "The Supervisor consolidates Summary, Coach, attribution, and Champion/Challenger evidence into bounded policy changes. "
-        "It changes policy JSON only, not source code."
-    )
-    reports = _global_reports_by_type(bots_payload, "supervisor")
-    if not reports:
-        st.caption("No Supervisor report yet. The next daily cloud run will generate this after the Summary Report.")
-        return
-
-    latest = reports[0]
-    metrics = latest.get("metrics") if isinstance(latest.get("metrics"), dict) else {}
-    changes = latest.get("changes") if isinstance(latest.get("changes"), dict) else {}
-    monitoring = changes.get("monitoring") if isinstance(changes.get("monitoring"), list) else []
-
-    cols = st.columns(4)
-    cols[0].metric("Summary Reports", f"{int(float(metrics.get('summary_report_count') or 0))}")
-    cols[1].metric("Candidates", f"{int(float(metrics.get('candidate_change_count') or 0))}")
-    cols[2].metric("Applied", f"{int(float(metrics.get('applied_change_count') or 0))}")
-    cols[3].metric("Deferred", f"{int(float(metrics.get('skipped_change_count') or 0))}")
-    _render_supervisor_changes(latest, compact=True)
-
-    if monitoring:
-        with st.expander("Monitored evidence by model", expanded=False):
-            rows = []
-            for row in monitoring:
-                tag_counts = row.get("tag_counts") if isinstance(row.get("tag_counts"), dict) else {}
-                rows.append(
-                    {
-                        "Model": row.get("label") or str(row.get("bot_name", "")).upper(),
-                        "Status": row.get("status", ""),
-                        "Tags": ", ".join(f"{key}={value}" for key, value in sorted(tag_counts.items())) or "none",
-                        "Supporting Notes": " ".join(row.get("supporting_report_notes", []) or []),
-                    }
-                )
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-
-    selected_idx = st.selectbox(
-        "Historical Supervisor reports",
-        list(range(len(reports))),
-        format_func=lambda idx: f"{reports[idx].get('ts', 'unknown time')} • {reports[idx].get('summary', '')[:90]}",
-    )
-    selected_report = reports[int(selected_idx)]
-    with st.expander("Read selected Supervisor report", expanded=False):
-        st.markdown(selected_report.get("body", ""))
 
 
 def _render_cloud_run_controls() -> None:
@@ -956,124 +850,6 @@ def _render_cloud_run_controls() -> None:
             )
 
 
-def _render_comparison_summary(bots_payload: dict[str, dict], selected_window_key: str) -> None:
-    st.subheader("Model Comparison")
-    rows = comparison_table(bots_payload, selected_window_key)
-    if rows:
-        table = pd.DataFrame(
-            [
-                {
-                    "Model": row["label"],
-                    "Revision": " / ".join(
-                        str(value)
-                        for value in [row.get("behavior_revision"), row.get("revision_name") or row.get("revision_label")]
-                        if value
-                    )
-                    or "n/a",
-                    "Return": _fmt_metric_pct(row.get("window_return")),
-                    "Vs SPY": _fmt_metric_pct(row.get("window_alpha")),
-                    "Max DD": _fmt_metric_pct(row.get("max_drawdown")),
-                    "Win Rate": _fmt_metric_pct(row.get("win_rate")),
-                    "Avg Trade Alpha": _fmt_metric_pct(row.get("avg_trade_alpha")),
-                    "Gross Exposure": _fmt_metric_pct(row.get("gross_exposure_pct")),
-                    "Protection": _fmt_metric_pct(row.get("protection_rate")),
-                }
-                for row in rows
-            ]
-        )
-        st.dataframe(table, use_container_width=True, hide_index=True)
-    agreement = agreement_summary(bots_payload)
-    if agreement.get("overlap"):
-        st.caption(
-            f"ML/LLM overlap: {agreement['overlap']} names • "
-            f"agreement rate {_fmt_metric_pct(agreement.get('agreement_rate'))}. "
-            f"Agreements: {', '.join(agreement.get('agreements', [])[:6]) or 'none'}; "
-            f"disagreements: {', '.join(agreement.get('disagreements', [])[:6]) or 'none'}."
-        )
-    else:
-        st.caption("Not enough overlapping ML/LLM decisions yet to score agreement quality.")
-
-
-def _render_champion_challenger_info(bots_payload: dict[str, dict]) -> None:
-    st.subheader("Champion / Challenger Lab")
-    st.caption(
-        "Champion is the bot's current live policy. Challenger is a stricter shadow policy tested against historical outcomes before we trust it with more influence."
-    )
-    report_tabs = st.tabs([payload.get("label", name.upper()) for name, payload in bots_payload.items()])
-    for tab, (bot_name, payload) in zip(report_tabs, bots_payload.items()):
-        with tab:
-            reports = _sorted_reports_by_type(payload.get("strategy_reports", []), "champion_challenger")
-            if not reports:
-                st.caption("No Champion/Challenger reports yet. The next cloud report run will populate this panel.")
-                continue
-
-            latest = reports[0]
-            latest_changes = latest.get("changes") if isinstance(latest.get("changes"), dict) else {}
-            latest_metrics = latest.get("metrics") if isinstance(latest.get("metrics"), dict) else {}
-            policy_adjustment = latest_changes.get("policy_adjustment") if isinstance(latest_changes.get("policy_adjustment"), dict) else {}
-
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Champion Avg", _fmt_metric_pct(latest_metrics.get("champion_avg_signed_return")))
-            col2.metric("Challenger Avg", _fmt_metric_pct(latest_metrics.get("challenger_avg_signed_return")))
-            col3.metric("Champion Samples", f"{int(float(latest_metrics.get('champion_samples') or 0))}")
-            col4.metric("Challenger Samples", f"{int(float(latest_metrics.get('challenger_samples') or 0))}")
-
-            if policy_adjustment:
-                st.info(
-                    "Policy adjustment: "
-                    f"{policy_adjustment.get('field', 'threshold')} "
-                    f"{float(policy_adjustment.get('old_value') or 0.0):.4f} -> "
-                    f"{float(policy_adjustment.get('new_value') or 0.0):.4f}. "
-                    f"{policy_adjustment.get('reason', '')}"
-                )
-
-            st.markdown("**Models Being Tested**")
-            st.write(latest_changes.get("champion_description") or "Champion: current selected-decision policy.")
-            st.write(latest_changes.get("challenger_description") or "Challenger: stricter threshold-gated shadow policy.")
-
-            implemented = latest_changes.get("implemented_changes")
-            if isinstance(implemented, list) and implemented:
-                st.markdown("**Changes Implemented**")
-                for item in implemented:
-                    st.markdown(f"- {item}")
-
-            history_rows = []
-            for report in reports:
-                changes = report.get("changes") if isinstance(report.get("changes"), dict) else {}
-                history_rows.append(
-                    {
-                        "Time": report.get("ts"),
-                        "Champion Avg": _report_metric(report, "champion_avg_signed_return"),
-                        "Challenger Avg": _report_metric(report, "challenger_avg_signed_return"),
-                        "Champion Samples": _report_metric(report, "champion_samples"),
-                        "Challenger Samples": _report_metric(report, "challenger_samples"),
-                        "Excluded Avg": _report_metric(report, "excluded_avg_signed_return"),
-                        "Threshold": _report_metric(report, "threshold"),
-                        "Verdict": changes.get("verdict") or report.get("summary", ""),
-                    }
-                )
-            history_df = pd.DataFrame(history_rows)
-            for column in ["Champion Avg", "Challenger Avg", "Excluded Avg", "Threshold", "Champion Samples", "Challenger Samples"]:
-                if column in history_df.columns:
-                    history_df[column] = pd.to_numeric(history_df[column], errors="coerce")
-            st.dataframe(history_df, use_container_width=True, hide_index=True)
-
-            labels = [
-                f"{report.get('ts', 'unknown')} - {str(report.get('summary', ''))[:90]}"
-                for report in reports
-            ]
-            selected_idx = st.selectbox(
-                "Historical report",
-                range(len(reports)),
-                format_func=lambda idx, labels=labels: labels[idx],
-                key=f"champion_challenger_history_{bot_name}",
-            )
-            selected_report = reports[int(selected_idx)]
-            with st.expander("Show selected historical report", expanded=False):
-                st.write(selected_report.get("summary", ""))
-                st.markdown(selected_report.get("body", ""))
-
-
 def _render_risk_panel(bots_payload: dict[str, dict], selected_window_key: str) -> None:
     st.subheader("Risk Cockpit")
     window = WINDOW_OPTIONS[selected_window_key]
@@ -1085,15 +861,6 @@ def _render_risk_panel(bots_payload: dict[str, dict], selected_window_key: str) 
         rows.append(
             {
                 "Model": payload.get("label", bot_name.upper()),
-                "Revision": " / ".join(
-                    str(value)
-                    for value in [
-                        (payload.get("revision") or {}).get("behavior_revision"),
-                        (payload.get("revision") or {}).get("name"),
-                    ]
-                    if value
-                )
-                or "n/a",
                 "Gross Exposure": _fmt_metric_pct(metrics.get("gross_exposure_pct")),
                 "Long $": _fmt_money(metrics.get("long_exposure")),
                 "Short $": _fmt_money(metrics.get("short_exposure")),
@@ -1126,44 +893,27 @@ def _render_risk_panel(bots_payload: dict[str, dict], selected_window_key: str) 
 
 
 def _render_report_cockpit(bots_payload: dict[str, dict]) -> None:
-    st.subheader("Latest Reports")
-    report_tabs = st.tabs([payload.get("label", name.upper()) for name, payload in bots_payload.items()])
-    for tab, (bot_name, payload) in zip(report_tabs, bots_payload.items()):
-        with tab:
-            reports = payload.get("strategy_reports", []) or []
-            if not reports:
-                st.caption("No reports yet.")
-                continue
-            latest_by_type = _latest_reports_by_type(reports)
-            report_types = [
-                "summary",
-                "supervisor",
-                "strategy",
-                "model_eval",
-                "watchlist",
-                "learning",
-                "attribution",
-                "champion_challenger",
-                "ai_lab_daily",
-                "analyst_daily",
-                "trader_daily",
-                "skeptic",
-                "coach",
-                "llm_daily",
-                "options_scaffold",
-            ]
-            for report_type in report_types:
-                report = latest_by_type.get(report_type)
-                if not report:
-                    continue
-                with st.expander(f"{report.get('headline', report_type)} • {report.get('ts', '')}", expanded=report_type in {"strategy", "summary", "supervisor", "analyst_daily", "trader_daily", "coach"}):
-                    st.write(report.get("summary", ""))
-                    takeaways = extract_key_takeaways(report.get("body"), limit=5)
-                    if takeaways:
-                        st.markdown("**Key takeaways**")
-                        for item in takeaways:
-                            st.markdown(f"- {item}")
-                    st.markdown(report.get("body", ""))
+    st.subheader("Reports")
+    st.caption(REPORT_ARCHIVE_MESSAGE)
+    payload = next(iter(bots_payload.values()), {})
+    reports = payload.get("strategy_reports", []) or []
+    if not reports:
+        st.caption("No fresh-start reports yet.")
+        return
+    latest_by_type = _latest_reports_by_type(reports)
+    report_types = ["summary", "supervisor", "model_eval", "learning", "attribution", "strategy"]
+    for report_type in report_types:
+        report = latest_by_type.get(report_type)
+        if not report:
+            continue
+        with st.expander(f"{report.get('headline', report_type)} • {report.get('ts', '')}", expanded=report_type in {"summary", "supervisor"}):
+            st.write(report.get("summary", ""))
+            takeaways = extract_key_takeaways(report.get("body"), limit=5)
+            if takeaways:
+                st.markdown("**Key takeaways**")
+                for item in takeaways:
+                    st.markdown(f"- {item}")
+            st.markdown(report.get("body", ""))
 
 
 def _render_decision_explorer(bots_payload: dict[str, dict]) -> None:
@@ -1197,20 +947,19 @@ def _render_decision_explorer(bots_payload: dict[str, dict]) -> None:
         return
 
     df = pd.DataFrame(rows)
-    col1, col2, col3 = st.columns(3)
-    model_options = sorted(df["Model"].dropna().unique())
-    model_filter = col1.multiselect("Model", model_options, default=model_options)
+    col1, col2 = st.columns(2)
     symbol_options = sorted(df["Symbol"].dropna().unique())
-    symbol_filter = col2.multiselect("Symbol", symbol_options, default=symbol_options[: min(8, len(symbol_options))])
-    outcome_filter = col3.multiselect("Outcome", sorted(df["Outcome"].dropna().unique()), default=sorted(df["Outcome"].dropna().unique()))
-    filtered = df[df["Model"].isin(model_filter) & df["Symbol"].isin(symbol_filter) & df["Outcome"].isin(outcome_filter)].copy()
+    symbol_filter = col1.multiselect("Symbol", symbol_options, default=symbol_options[: min(8, len(symbol_options))])
+    outcome_filter = col2.multiselect("Outcome", sorted(df["Outcome"].dropna().unique()), default=sorted(df["Outcome"].dropna().unique()))
+    filtered = df[df["Symbol"].isin(symbol_filter) & df["Outcome"].isin(outcome_filter)].copy()
+    filtered = filtered.drop(columns=["Model"], errors="ignore")
     for column in ["Base", "Final", "Signed Return", "Beat SPY"]:
         filtered[column] = pd.to_numeric(filtered[column], errors="coerce")
     st.dataframe(filtered, use_container_width=True, hide_index=True)
 
 
 bot_names = _load_bot_names()
-comparison_frames: dict[str, pd.DataFrame] = {name: _equity_df(name) for name, _ in bot_names}
+equity_frames_by_bot: dict[str, pd.DataFrame] = {name: _equity_df(name) for name, _ in bot_names}
 snapshot_meta = _load_snapshot() if DATA_URL else {}
 snapshot_updated = _format_snapshot_timestamp(snapshot_meta.get("generated_at") if isinstance(snapshot_meta, dict) else None)
 bots_payload = {name: _bot_payload(name, label, snapshot_meta) for name, label in bot_names}
@@ -1219,16 +968,12 @@ strategy_blueprint = _strategy_blueprint(snapshot_meta)
 _render_sidebar_nav(strategy_blueprint, snapshot_updated, bots_payload)
 _anchor("system-health")
 _render_system_health(snapshot_meta, bots_payload)
-_anchor("strategy-blueprint")
-_render_strategy_blueprint(strategy_blueprint)
 _anchor("summary-report")
 _render_summary_report(bots_payload)
-_anchor("supervisor")
-_render_supervisor_panel(bots_payload)
 
 _anchor("trend-graph")
 st.subheader("Trend Graph")
-control_col1, control_col2, control_col3 = st.columns([1, 1.4, 1.6])
+control_col1, control_col2 = st.columns([1, 1.4])
 with control_col1:
     window_keys = list(WINDOW_OPTIONS.keys())
     selected_window_key = st.selectbox(
@@ -1243,9 +988,6 @@ with control_col2:
         horizontal=True,
     )
 display_labels = [label for _, label in bot_names]
-display_options = ["All models"] + display_labels
-with control_col3:
-    selected_display = st.radio("Show", display_options, horizontal=True)
 selected_window = WINDOW_OPTIONS[selected_window_key]
 if snapshot_updated:
     st.caption(f"Snapshot updated: {snapshot_updated}")
@@ -1253,14 +995,13 @@ elif DATA_URL:
     st.caption("Snapshot source is configured, but no snapshot timestamp was found.")
 else:
     st.caption("Using live API data.")
-_render_comparison_summary(bots_payload, selected_window_key)
 trend_series: list[pd.Series] = []
 spy_series: list[pd.Series] = []
-trend_frames = {name: _trend_source_df(name, df) for name, df in comparison_frames.items()}
+trend_frames = {name: _trend_source_df(name, df) for name, df in equity_frames_by_bot.items()}
 global_latest = max((df.index.max() for df in trend_frames.values() if not df.empty), default=None)
 excluded_labels: list[str] = []
-selected_labels = set(display_labels if selected_display == "All models" else [selected_display])
-selected_bots = [(name, label) for name, label in bot_names if label in selected_labels]
+selected_labels = set(display_labels)
+selected_bots = bot_names
 for name, label in bot_names:
     df = trend_frames.get(name, pd.DataFrame())
     if df.empty:
@@ -1404,15 +1145,13 @@ if excluded_labels:
 
 _anchor("risk-cockpit")
 _render_risk_panel(bots_payload, selected_window_key)
-_anchor("champion-lab")
-_render_champion_challenger_info(bots_payload)
 _anchor("reports")
 _render_report_cockpit(bots_payload)
 _anchor("decision-explorer")
 _render_decision_explorer(bots_payload)
 
 _anchor("detailed-tables")
-with st.expander("Detailed bot tables", expanded=False):
+with st.expander("Detailed tables", expanded=False):
     tabs = st.tabs([label for _, label in bot_names])
 
     for tab, (bot_name, bot_label_text) in zip(tabs, bot_names):
@@ -1428,7 +1167,7 @@ with st.expander("Detailed bot tables", expanded=False):
             col3.metric("Portfolio", _fmt_money(summary.get("portfolio")))
             col4.metric("SPY", _fmt_money(summary.get("spy")) if summary.get("spy") is not None else "--")
 
-            df = comparison_frames.get(bot_name, pd.DataFrame())
+            df = equity_frames_by_bot.get(bot_name, pd.DataFrame())
             alpha, tracking_error = _alpha_tracking(df)
             col5.metric("Alpha 20D", _fmt_pct(alpha))
             col6.metric("Tracking Error", _fmt_pct(tracking_error))
@@ -1436,7 +1175,11 @@ with st.expander("Detailed bot tables", expanded=False):
             positions = fetch(f"/api/positions?bot={bot_name}").get("data", [])
             trades = fetch(f"/api/trades?bot={bot_name}").get("data", [])
             advisor = fetch(f"/api/advisor?bot={bot_name}").get("data", [])
-            strategy_reports = fetch(f"/api/strategy?bot={bot_name}").get("data", [])
+            strategy_reports = [
+                report
+                for report in fetch(f"/api/strategy?bot={bot_name}").get("data", [])
+                if report.get("report_type") in FRESH_START_REPORT_TYPES
+            ]
             decisions = fetch(f"/api/decisions?bot={bot_name}&limit=50").get("data", [])
 
             st.subheader("Positions")

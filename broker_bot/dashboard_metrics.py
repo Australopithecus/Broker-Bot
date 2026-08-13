@@ -86,7 +86,12 @@ def filter_frame_to_window(df: pd.DataFrame, window: pd.Timedelta, anchor_ts: pd
     before_cutoff = df[df.index < cutoff].tail(1)
     in_window = df[df.index >= cutoff]
     if in_window.empty:
-        return df.tail(2).sort_index()
+        return in_window
+    if not before_cutoff.empty:
+        baseline_ts = before_cutoff.index.max()
+        max_baseline_gap = max(pd.Timedelta(days=1), window * 0.25)
+        if cutoff - baseline_ts > max_baseline_gap:
+            before_cutoff = before_cutoff.iloc[0:0]
     filtered = pd.concat([before_cutoff, in_window])
     filtered = filtered[~filtered.index.duplicated(keep="last")]
     return filtered.sort_index()

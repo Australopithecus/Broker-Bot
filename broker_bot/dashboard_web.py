@@ -9,11 +9,11 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from .bot_blueprint import get_strategy_blueprint
-from .bots import ACTIVE_BOT_LABELS, ML_BOT_NAME, bot_label, normalize_bot_name
-from .config import Config, configured_bot_names
-from .dashboard_metrics import WINDOW_OPTIONS, agreement_summary, comparison_table, freshness_status
+from .bots import ML_BOT_NAME, bot_label, normalize_bot_name
+from .config import Config
+from .dashboard_metrics import freshness_status
+from .fresh_start_reports import fresh_start_strategy_reports
 from .logging_db import (
-    read_available_bot_names,
     read_latest_advisor_reports,
     read_latest_equity,
     read_latest_positions,
@@ -21,7 +21,7 @@ from .logging_db import (
     read_latest_trades,
     read_recent_selected_decisions,
 )
-from .model_revisions import apply_model_revision, model_revision
+from .model_revisions import model_revision
 from .trader import snapshot_positions_with_protection
 
 
@@ -43,7 +43,7 @@ def _strategy_report_dicts(rows: list[tuple]) -> list[dict[str, Any]]:
 def create_app(db_path: str, config: Config | None = None) -> FastAPI:
     app = FastAPI(title="Broker Bot Dashboard")
     api_token = os.getenv("API_TOKEN", "").strip()
-    known_bots = configured_bot_names(config) if config is not None else [ML_BOT_NAME]
+    known_bots = [ML_BOT_NAME]
 
     def _check_token(request: Request) -> None:
         if not api_token:
@@ -60,15 +60,12 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
     @app.get("/api/bots")
     def bots(request: Request) -> JSONResponse:
         _check_token(request)
-        discovered = set(ACTIVE_BOT_LABELS) | {name for name in known_bots if name in ACTIVE_BOT_LABELS}
-        try:
-            discovered.update(name for name in read_available_bot_names(db_path) if name in ACTIVE_BOT_LABELS)
-        except Exception:
-            pass
         data = []
-        for bot_name in sorted(discovered):
+        for bot_name in known_bots:
             try:
-                reports = _strategy_report_dicts(read_latest_strategy_reports(db_path, limit=20, bot_name=bot_name))
+                reports = fresh_start_strategy_reports(
+                    _strategy_report_dicts(read_latest_strategy_reports(db_path, limit=20, bot_name=bot_name))
+                )
             except Exception:
                 reports = []
             revision = model_revision(bot_name, reports)
@@ -213,7 +210,7 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
         _check_token(request)
         bot_name = _bot_name(request)
         rows = read_latest_strategy_reports(db_path, limit=80, bot_name=bot_name)
-        data = _strategy_report_dicts(rows)
+        data = fresh_start_strategy_reports(_strategy_report_dicts(rows))
         return JSONResponse({"data": data})
 
     @app.get("/api/decisions")
@@ -250,56 +247,9 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
     @app.get("/api/health")
     def health(request: Request) -> JSONResponse:
         _check_token(request)
-        discovered = set(known_bots)
-        try:
-            discovered.update(read_available_bot_names(db_path))
-        except Exception:
-            pass
-        bots_payload = {}
         latest_ts = None
-        for bot_name in sorted(discovered):
+        for bot_name in known_bots:
             equity_rows = list(reversed(read_latest_equity(db_path, limit=365, bot_name=bot_name)))
-            trades_rows = read_latest_trades(db_path, limit=1000, bot_name=bot_name)
-            decision_rows = read_recent_selected_decisions(db_path, limit=150, bot_name=bot_name)
-            positions_rows = read_latest_positions(db_path, limit=500, bot_name=bot_name)
-            strategy_reports = _strategy_report_dicts(read_latest_strategy_reports(db_path, limit=30, bot_name=bot_name))
-            payload = {
-                "label": bot_label(bot_name),
-                "base_label": bot_label(bot_name),
-                "equity": [
-                    {"ts": row[0], "equity": row[1], "cash": row[2], "portfolio_value": row[3], "spy_value": row[4]}
-                    for row in equity_rows
-                ],
-                "trades": [
-                    {"ts": row[0], "symbol": row[1], "side": row[2], "qty": row[3], "price": row[4], "status": row[5]}
-                    for row in trades_rows
-                ],
-                "positions": [
-                    {"symbol": row[0], "qty": row[1], "avg_entry": row[2], "market_value": row[3], "unreal_pl": row[4]}
-                    for row in positions_rows
-                ],
-                "strategy_reports": strategy_reports,
-                "decisions": [
-                    {
-                        "ts": row[0],
-                        "symbol": row[1],
-                        "side": row[2],
-                        "base_score": row[3],
-                        "final_score": row[4],
-                        "components": json.loads(row[5]) if row[5] else {},
-                        "rationale": row[6],
-                        "evaluated_ts": row[7],
-                        "horizon_days": row[8],
-                        "realized_return": row[9],
-                        "signed_return": row[10],
-                        "beat_spy": row[11],
-                        "outcome_label": row[12],
-                    }
-                    for row in decision_rows
-                ],
-            }
-            payload = apply_model_revision(bot_name, payload)
-            bots_payload[bot_name] = payload
             if equity_rows:
                 ts = equity_rows[-1][0]
                 latest_ts = ts if latest_ts is None or ts > latest_ts else latest_ts
@@ -308,11 +258,7 @@ def create_app(db_path: str, config: Config | None = None) -> FastAPI:
             {
                 "generated_at": generated_at,
                 "freshness": freshness_status(latest_ts),
-                "comparison": {
-                    key: comparison_table(bots_payload, window_key=key)
-                    for key in WINDOW_OPTIONS
-                },
-                "agreement": agreement_summary(bots_payload),
+                "models": [{"name": bot_name, "label": "Broker Bot"} for bot_name in known_bots],
             }
         )
 
@@ -586,25 +532,18 @@ def _dashboard_html() -> str:
   <div class="app-shell">
     <aside class="sidebar" aria-label="Dashboard navigation">
       <div>
-        <div class="eyebrow">Paper Trading Lab</div>
+        <div class="eyebrow">Fresh Start</div>
         <h1>Broker Bot</h1>
-        <p>Two competing paper-trading systems, one cleaner cockpit.</p>
-      </div>
-      <div class="sidebar-block">
-        <label class="muted" for="botSelector">Active bot</label>
-        <select id="botSelector" class="control"></select>
+        <p>One current paper-trading model with a cleaner operating cockpit.</p>
       </div>
       <div class="sidebar-status">
-        <div><span>Bot Behavior Revision</span><strong id="sidebarRevision">--</strong></div>
+        <div><span>Model</span><strong id="sidebarModel">Broker Bot</strong></div>
         <div><span>Data</span><strong id="sidebarFreshness">--</strong></div>
       </div>
       <nav class="sidebar-nav">
         <a href="#overview">Overview</a>
-        <a href="#blueprint">Blueprint</a>
         <a href="#performance">Performance</a>
         <a href="#holdings">Holdings</a>
-        <a href="#comparison">Comparison</a>
-        <a href="#champion">Champion Lab</a>
         <a href="#risk">Risk</a>
         <a href="#positions">Positions</a>
         <a href="#trades">Trades</a>
@@ -615,21 +554,16 @@ def _dashboard_html() -> str:
 
     <main class="container">
     <header id="overview">
-      <div class="eyebrow">Dashboard Cockpit</div>
+      <div class="eyebrow">Dashboard</div>
       <h1>Broker Bot Dashboard</h1>
-      <p>Local paper-trading cockpit • Auto-refreshes every 10s • The chart compares bot performance while the panels explain health, risk, decisions, and reports.</p>
+      <p>Fresh-start paper-trading cockpit • Auto-refreshes every 10s • Focused on the current base model, risk posture, positions, decisions, and reports.</p>
     </header>
 
     <section class="summary" aria-label="System overview">
       <div class="card"><h3>Data Freshness</h3><div class="value" id="freshness">--</div></div>
       <div class="card"><h3>Source</h3><div class="value">Local API</div></div>
-      <div class="card"><h3>Models Seen</h3><div class="value" id="botsSeen">--</div></div>
-      <div class="card"><h3>Agreement</h3><div class="value" id="agreementRate">--</div></div>
-    </section>
-
-    <section class="panel" id="blueprint">
-      <h2>Strategy Blueprint</h2>
-      <div id="strategyBlueprintBox" class="muted">Loading strategy revision...</div>
+      <div class="card"><h3>Model</h3><div class="value" id="modelName">Broker Bot</div></div>
+      <div class="card"><h3>Revision</h3><div class="value" id="modelRevision">4.0.0</div></div>
     </section>
 
     <section class="summary" id="account">
@@ -648,9 +582,8 @@ def _dashboard_html() -> str:
     <section class="grid" aria-label="Performance and holdings">
       <div class="panel" id="performance">
         <div class="panel-header">
-          <h2>Model Performance Comparison</h2>
+          <h2>Performance</h2>
           <div class="inline-controls">
-            <div class="choice-row" id="displaySelector"></div>
             <label class="muted" for="graphModeSelector">Scale
               <select id="graphModeSelector" class="control" style="margin-left: 8px; width: auto;">
                 <option value="indexed" selected>Indexed performance</option>
@@ -678,32 +611,6 @@ def _dashboard_html() -> str:
         <canvas id="holdingsChart" width="360" height="240"></canvas>
         <div class="muted" id="holdingsHint"></div>
       </div>
-    </section>
-
-    <section class="panel" id="comparison">
-      <h2>Model Comparison</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Model</th>
-            <th>Revision</th>
-            <th>Return</th>
-            <th>Vs SPY</th>
-            <th>Max DD</th>
-            <th>Win Rate</th>
-            <th>Gross Exp</th>
-            <th>Protected</th>
-          </tr>
-        </thead>
-        <tbody id="comparisonBody"></tbody>
-      </table>
-      <div class="muted" id="comparisonHint"></div>
-    </section>
-
-    <section class="panel" id="champion">
-      <h2>Champion / Challenger Lab</h2>
-      <p class="muted">Champion is the current live policy. Challenger is a stricter shadow policy tested against historical outcomes before we trust it with more influence.</p>
-      <div id="championChallengerBox" class="muted">No Champion/Challenger reports yet.</div>
     </section>
 
     <section class="panel" id="risk">
@@ -760,6 +667,7 @@ def _dashboard_html() -> str:
 
     <section class="panel">
       <h2>Strategy Reports</h2>
+      <p class="muted">Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from this dashboard.</p>
       <div id="strategyReports" class="muted">No reports yet.</div>
     </section>
 
@@ -915,64 +823,37 @@ function setMetric(id, value) {
   if (el) el.textContent = value;
 }
 
-const renderDisplaySelector = () => {
-  const container = document.getElementById('displaySelector');
-  if (!container) return;
-  const options = [{ value: 'both', label: 'All models' }, ...availableBots.map(bot => ({ value: bot.name, label: bot.label }))];
-  if (currentDisplay !== 'both' && !availableBots.some(bot => bot.name === currentDisplay)) {
-    currentDisplay = 'both';
-  }
-  container.innerHTML = '';
-  options.forEach(option => {
-    const label = document.createElement('label');
-    const input = document.createElement('input');
-    input.type = 'radio';
-    input.name = 'displayMode';
-    input.value = option.value;
-    input.checked = currentDisplay === option.value;
-    input.addEventListener('change', async (event) => {
-      currentDisplay = event.target.value || 'both';
-      await loadEquity();
-    });
-    label.appendChild(input);
-    label.append(` ${option.label}`);
-    container.appendChild(label);
-  });
-};
+function currentBotLabel() {
+  const bot = availableBots.find(item => item.name === currentBot);
+  return bot?.label || 'Broker Bot';
+}
 
 async function loadBots() {
   const res = await fetch('/api/bots', { headers: apiHeaders });
   const data = await res.json();
-  const selector = document.getElementById('botSelector');
-  availableBots = data.data || [];
-  selector.innerHTML = '';
-  availableBots.forEach(item => {
-    const option = document.createElement('option');
-    option.value = item.name;
-    option.textContent = item.label;
-    selector.appendChild(option);
-  });
-  if (!availableBots.some(item => item.name === currentBot) && availableBots.length) {
-    currentBot = availableBots[0].name;
-  }
-  selector.value = currentBot;
-  selector.addEventListener('change', async (event) => {
-    currentBot = event.target.value || 'ml';
-    await refreshAll();
-  });
-  renderDisplaySelector();
+  availableBots = data.data?.length ? data.data : [{ name: 'ml', label: 'Broker Bot', revision: { behavior_revision: '4.0.0' } }];
+  currentBot = availableBots[0]?.name || 'ml';
+  currentDisplay = currentBot;
+  const revision = availableBots[0]?.revision || {};
+  setMetric('modelName', currentBotLabel());
+  setMetric('sidebarModel', currentBotLabel());
+  setMetric('modelRevision', revision.behavior_revision || revision.label || '4.0.0');
   const rangeSelector = document.getElementById('rangeSelector');
-  rangeSelector.value = currentRange;
-  rangeSelector.addEventListener('change', async (event) => {
-    currentRange = event.target.value || '7d';
-    await Promise.all([loadEquity(), loadHealth()]);
-  });
+  if (rangeSelector) {
+    rangeSelector.value = currentRange;
+    rangeSelector.addEventListener('change', async (event) => {
+      currentRange = event.target.value || '7d';
+      await Promise.all([loadEquity(), loadHealth()]);
+    });
+  }
   const graphModeSelector = document.getElementById('graphModeSelector');
-  graphModeSelector.value = currentGraphMode;
-  graphModeSelector.addEventListener('change', async (event) => {
-    currentGraphMode = event.target.value || 'indexed';
-    await loadEquity();
-  });
+  if (graphModeSelector) {
+    graphModeSelector.value = currentGraphMode;
+    graphModeSelector.addEventListener('change', async (event) => {
+      currentGraphMode = event.target.value || 'indexed';
+      await loadEquity();
+    });
+  }
   document.getElementById('decisionSymbol')?.addEventListener('input', loadDecisions);
   document.getElementById('decisionOutcome')?.addEventListener('change', loadDecisions);
 }
@@ -1000,34 +881,9 @@ async function loadHealth() {
     const fresh = data.freshness || {};
     setMetric('freshness', fresh.status ? `${fresh.status}` : '--');
     setMetric('sidebarFreshness', fresh.status ? `${fresh.status}` : '--');
-    setMetric('botsSeen', String(availableBots.length || 0));
-    const agreement = data.agreement || {};
-    setMetric('agreementRate', agreement.agreement_rate === null || agreement.agreement_rate === undefined ? '--' : pct(agreement.agreement_rate));
-
-    const rows = ((data.comparison || {})[currentRange] || []);
-    const body = document.getElementById('comparisonBody');
-    body.innerHTML = '';
-    rows.forEach(row => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${row.label || row.bot}</td>
-        <td>${[row.behavior_revision, row.revision_name || row.revision_label].filter(Boolean).join(' / ') || '--'}</td>
-        <td>${pct(row.window_return)}</td>
-        <td>${pct(row.window_alpha)}</td>
-        <td>${pct(row.max_drawdown)}</td>
-        <td>${pct(row.win_rate)}</td>
-        <td>${pct(row.gross_exposure_pct)}</td>
-        <td>${pct(row.protection_rate)}</td>
-      `;
-      body.appendChild(tr);
-    });
-    const agreements = (agreement.agreements || []).slice(0, 6).join(', ') || 'none';
-    const disagreements = (agreement.disagreements || []).slice(0, 6).join(', ') || 'none';
-    document.getElementById('comparisonHint').textContent = `Overlap: ${agreement.overlap || 0} • Agreements: ${agreements} • Disagreements: ${disagreements}`;
   } catch (_) {
     setMetric('freshness', '--');
     setMetric('sidebarFreshness', '--');
-    setMetric('botsSeen', String(availableBots.length || 0));
   }
 }
 
@@ -1341,7 +1197,7 @@ function drawHoldingsChart(rows) {
   ctx.fillStyle = '#e5e7eb';
   ctx.textAlign = 'center';
   ctx.font = 'bold 16px Helvetica';
-  ctx.fillText(currentBot.toUpperCase(), cx, cy - 8);
+  ctx.fillText(currentBotLabel(), cx, cy - 8);
   ctx.font = '12px Helvetica';
   ctx.fillStyle = '#9ca3af';
   ctx.fillText(fmt(total), cx, cy + 14);
@@ -1447,134 +1303,23 @@ function renderTakeaways(body) {
   return items ? `<ul class="muted">${items}</ul>` : '';
 }
 
-async function loadStrategyBlueprint() {
-  const res = await fetch('/api/blueprint', { headers: apiHeaders });
-  const blueprint = await res.json();
-  const container = document.getElementById('strategyBlueprintBox');
-  const models = Array.isArray(blueprint.models) ? blueprint.models : [];
-  const shared = Array.isArray(blueprint.shared_layers) ? blueprint.shared_layers : [];
-  const safety = Array.isArray(blueprint.current_safety_posture) ? blueprint.current_safety_posture : [];
-  const changelog = Array.isArray(blueprint.changelog) ? blueprint.changelog : [];
-  setMetric('sidebarRevision', blueprint.revision || '--');
-  const modelCards = models.map(model => `
-    <details style="margin-top: 8px;">
-      <summary>${esc(model.name)} - ${esc(model.role)}</summary>
-      <p style="margin-top: 6px;">${esc(model.description)}</p>
-      <ul>${(model.strategies || []).map(item => `<li>${esc(item)}</li>`).join('')}</ul>
-    </details>
-  `).join('');
-  const changes = changelog.map((entry, index) => `
-    <details ${index === 0 ? 'open' : ''} style="margin-top: 10px;">
-      <summary><strong>Revision ${esc(entry.revision)}</strong> (${esc(entry.date)}) - ${esc(entry.title)}</summary>
-      ${Array.isArray(entry.models) && entry.models.length ? `<p class="muted">Models changed: ${entry.models.map(esc).join(', ')}</p>` : ''}
-      <ul>${(entry.changes || []).map(item => `<li>${esc(item)}</li>`).join('')}</ul>
-    </details>
-  `).join('');
-  container.innerHTML = `
-    <div class="grid cards">
-      <div class="card"><h3>Bot Behavior Revision</h3><div class="value">${esc(blueprint.revision || '--')}</div></div>
-      <div class="card"><h3>Updated</h3><div class="value">${esc(blueprint.revision_date || '--')}</div></div>
-      <div class="card"><h3>Models</h3><div class="value">${models.length}</div></div>
-      <div class="card"><h3>Behavior Changes</h3><div class="value">${changelog.length}</div></div>
-    </div>
-    <p>${esc(blueprint.summary || '')}</p>
-    <details>
-      <summary>Models and strategies</summary>
-      ${modelCards || '<p class="muted">No model description available.</p>'}
-    </details>
-    <details>
-      <summary>Shared strategy layers</summary>
-      <ul>${shared.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
-    </details>
-    <details>
-      <summary>Current safety posture</summary>
-      <ul>${safety.map(item => `<li>${esc(item)}</li>`).join('')}</ul>
-    </details>
-    <details>
-      <summary>Bot behavior revision history</summary>
-      ${changes || '<p class="muted">No changelog entries available.</p>'}
-    </details>
-  `;
-}
-
-function compactPct(num) {
-  if (num === null || num === undefined || Number.isNaN(Number(num))) return '--';
-  return `${(Number(num) * 100).toFixed(2)}%`;
-}
-
-async function loadChampionChallenger() {
-  const res = await fetch(apiPath('/api/strategy'), { headers: apiHeaders });
-  const data = await res.json();
-  const reports = (data.data || []).filter(report => report.report_type === 'champion_challenger');
-  const container = document.getElementById('championChallengerBox');
-  if (!reports.length) {
-    container.textContent = 'No Champion/Challenger reports yet. The next cloud report run will populate this panel.';
-    return;
-  }
-  const latest = reports[0];
-  const metrics = latest.metrics || {};
-  const changes = latest.changes || {};
-  const implemented = Array.isArray(changes.implemented_changes) ? changes.implemented_changes : [];
-  const rows = reports.slice(0, 10).map(report => {
-    const m = report.metrics || {};
-    const c = report.changes || {};
-    return `
-      <tr>
-        <td>${report.ts || ''}</td>
-        <td>${compactPct(m.champion_avg_signed_return)}</td>
-        <td>${compactPct(m.challenger_avg_signed_return)}</td>
-        <td>${Number(m.champion_samples || 0).toFixed(0)} / ${Number(m.challenger_samples || 0).toFixed(0)}</td>
-        <td>${compactPct(m.excluded_avg_signed_return)}</td>
-        <td>${c.verdict || report.summary || ''}</td>
-      </tr>
-    `;
-  }).join('');
-  const historicalDetails = reports.slice(0, 6).map((report, index) => `
-    <details ${index === 0 ? 'open' : ''} style="margin-top: 10px;">
-      <summary><strong>${report.ts || 'Report'}</strong> - ${report.summary || ''}</summary>
-      <div class="muted" style="white-space: pre-wrap; margin-top: 8px;">${(report.body || '').slice(0, 2600)}</div>
-    </details>
-  `).join('');
-  container.innerHTML = `
-    <div class="grid cards">
-      <div class="card"><h3>Champion Avg</h3><div class="value">${compactPct(metrics.champion_avg_signed_return)}</div></div>
-      <div class="card"><h3>Challenger Avg</h3><div class="value">${compactPct(metrics.challenger_avg_signed_return)}</div></div>
-      <div class="card"><h3>Champion Samples</h3><div class="value">${Number(metrics.champion_samples || 0).toFixed(0)}</div></div>
-      <div class="card"><h3>Challenger Samples</h3><div class="value">${Number(metrics.challenger_samples || 0).toFixed(0)}</div></div>
-    </div>
-    <p><strong>Models being tested</strong></p>
-    <p>${changes.champion_description || 'Champion: current selected-decision policy.'}</p>
-    <p>${changes.challenger_description || 'Challenger: stricter confidence-gated shadow policy.'}</p>
-    ${implemented.length ? `<p><strong>Changes implemented</strong></p><ul>${implemented.map(item => `<li>${item}</li>`).join('')}</ul>` : ''}
-    <table style="margin-top: 10px;">
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>Champion Avg</th>
-          <th>Challenger Avg</th>
-          <th>Samples</th>
-          <th>Excluded Avg</th>
-          <th>Verdict</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-    ${historicalDetails}
-  `;
-}
-
 async function loadStrategy() {
   const res = await fetch(apiPath('/api/strategy'), { headers: apiHeaders });
   const data = await res.json();
   const reports = data.data || [];
   const container = document.getElementById('strategyReports');
   if (!reports.length) {
-    container.textContent = 'No strategy reports yet.';
+    container.textContent = 'No fresh-start strategy reports yet.';
     return;
   }
   container.innerHTML = '';
-  const featuredTypes = new Set(['summary', 'supervisor', 'model_eval', 'watchlist', 'skeptic', 'attribution', 'champion_challenger', 'ai_lab_daily', 'options_scaffold']);
-  reports.filter(report => featuredTypes.has(report.report_type)).slice(0, 3).forEach(report => {
+  const featuredTypes = new Set(['summary', 'supervisor', 'model_eval', 'learning', 'attribution', 'strategy']);
+  const visibleReports = reports.filter(report => featuredTypes.has(report.report_type)).slice(0, 5);
+  if (!visibleReports.length) {
+    container.textContent = 'No fresh-start reports yet. Older reports remain archived in storage.';
+    return;
+  }
+  visibleReports.forEach(report => {
     const div = document.createElement('div');
     div.className = 'card';
     div.style.marginBottom = '10px';
@@ -1584,19 +1329,6 @@ async function loadStrategy() {
       <span class="muted">Type: ${report.report_type}</span><br />
       ${renderTakeaways(report.body)}
       <div class="muted" style="white-space: pre-wrap; margin-top: 8px;">${(report.body || '').slice(0, 1600)}</div>
-    `;
-    container.appendChild(div);
-  });
-  reports.filter(report => !featuredTypes.has(report.report_type)).slice(0, 4).forEach(report => {
-    const div = document.createElement('div');
-    div.className = 'card';
-    div.style.marginBottom = '10px';
-    const changes = report.changes ? Object.keys(report.changes) : [];
-    div.innerHTML = `
-      <strong>${report.headline}</strong> <span class="muted">(${report.ts})</span><br />
-      ${report.summary}<br />
-      ${renderTakeaways(report.body)}
-      <span class="muted">Type: ${report.report_type}${changes.length ? ` • Changes: ${changes.join(', ')}` : ''}</span>
     `;
     container.appendChild(div);
   });
@@ -1633,7 +1365,7 @@ async function loadDecisions() {
 }
 
 async function refreshAll() {
-  await Promise.all([loadSummary(), loadHealth(), loadStrategyBlueprint(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadChampionChallenger(), loadStrategy(), loadDecisions()]);
+  await Promise.all([loadSummary(), loadHealth(), loadEquity(), loadPositions(), loadTrades(), loadAdvisor(), loadStrategy(), loadDecisions()]);
 }
 
 loadBots().then(refreshAll);

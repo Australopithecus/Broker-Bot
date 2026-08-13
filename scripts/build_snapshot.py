@@ -16,9 +16,10 @@ from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
 
 from broker_bot.bot_blueprint import get_strategy_blueprint
-from broker_bot.config import configured_bot_names, get_bot_account_config, load_config
-from broker_bot.bots import ACTIVE_BOT_LABELS, bot_label
-from broker_bot.dashboard_metrics import agreement_summary, comparison_table, freshness_status
+from broker_bot.config import get_bot_account_config, load_config
+from broker_bot.bots import ML_BOT_NAME, bot_label
+from broker_bot.dashboard_metrics import freshness_status
+from broker_bot.fresh_start_reports import fresh_start_report_archive_note, fresh_start_strategy_reports
 from broker_bot.model_revisions import apply_model_revision
 from broker_bot.logging_db import (
     init_db,
@@ -28,7 +29,6 @@ from broker_bot.logging_db import (
     read_latest_trades,
     read_latest_advisor_reports,
     read_latest_strategy_reports,
-    read_available_bot_names,
 )
 from broker_bot.trader import snapshot_positions_with_protection
 
@@ -65,7 +65,7 @@ def _check_bot_auth(config, bot_name: str) -> dict:
 
     return {
         "bot_name": bot_name,
-        "label": bot_label(bot_name),
+        "label": "Broker Bot" if bot_name == ML_BOT_NAME else bot_label(bot_name),
         "trading_auth": trading_status,
         "trading_message": trading_message,
         "market_data_auth": data_status,
@@ -76,10 +76,7 @@ def _check_bot_auth(config, bot_name: str) -> dict:
 def main() -> None:
     config = load_config()
     init_db(config.db_path)
-    bot_names = sorted(
-        {name for name in read_available_bot_names(config.db_path) if name in ACTIVE_BOT_LABELS}
-        | {name for name in configured_bot_names(config) if name in ACTIVE_BOT_LABELS}
-    )
+    bot_names = [ML_BOT_NAME]
 
     bots_payload: dict[str, dict] = {}
     for bot_name in bot_names:
@@ -94,9 +91,24 @@ def main() -> None:
         strategy_rows = read_latest_strategy_reports(config.db_path, limit=80, bot_name=bot_name)
         decision_rows = read_recent_selected_decisions(config.db_path, limit=150, bot_name=bot_name)
 
+        strategy_reports = fresh_start_strategy_reports(
+            [
+                {
+                    "ts": row[0],
+                    "report_type": row[1],
+                    "headline": row[2],
+                    "summary": row[3],
+                    "body": row[4],
+                    "metrics": json.loads(row[5]) if row[5] else {},
+                    "changes": json.loads(row[6]) if row[6] else {},
+                }
+                for row in strategy_rows
+            ]
+        )
+
         payload = {
             "label": bot_label(bot_name),
-            "base_label": bot_label(bot_name),
+            "base_label": "Broker Bot" if bot_name == ML_BOT_NAME else bot_label(bot_name),
             "equity": [
                 {
                     "ts": row[0],
@@ -147,18 +159,7 @@ def main() -> None:
                 }
                 for row in advisor_rows
             ],
-            "strategy_reports": [
-                {
-                    "ts": row[0],
-                    "report_type": row[1],
-                    "headline": row[2],
-                    "summary": row[3],
-                    "body": row[4],
-                    "metrics": json.loads(row[5]) if row[5] else {},
-                    "changes": json.loads(row[6]) if row[6] else {},
-                }
-                for row in strategy_rows
-            ],
+            "strategy_reports": strategy_reports,
             "decisions": [
                 {
                     "ts": row[0],
@@ -184,17 +185,11 @@ def main() -> None:
     data = {
         "generated_at": generated_at,
         "strategy_blueprint": get_strategy_blueprint(),
+        "report_archive": fresh_start_report_archive_note(),
         "health": {
             "generated_at": generated_at,
             "freshness": freshness_status(generated_at),
             "bots": [_check_bot_auth(config, bot_name) for bot_name in bot_names],
-        },
-        "comparison": {
-            "windows": {
-                window_key: comparison_table(bots_payload, window_key=window_key)
-                for window_key in ["24h", "7d", "14d", "28d", "90d", "180d", "360d"]
-            },
-            "agreement": agreement_summary(bots_payload),
         },
         "bots": bots_payload,
     }

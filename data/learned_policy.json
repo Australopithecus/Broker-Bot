@@ -41,14 +41,14 @@
     "snapshot_adjustment": 1.0,
     "technical_adjustment": 1.021
   },
-  "generated_at": "2026-06-15T23:09:23.148777+00:00",
-  "summary": "Evaluated 0 mature decisions this run; recent hit rate 47.6%, average signed return -0.07%.",
+  "generated_at": "2026-08-13T21:18:51.919078+00:00",
+  "summary": "Overlay quarantine applied after broad-universe OOS evaluation: base model returned +26.63% vs learned overlays +5.35%, so runtime overlay weights are set to zero until fresh evidence supports reintroduction.",
   "weights": {
-    "llm_weight": 0.8,
-    "memory_weight": 0.25,
-    "news_weight": 0.9,
-    "screener_weight": 2.0,
-    "snapshot_weight": 2.0,
-    "technical_weight": 2.0
+    "llm_weight": 0.0,
+    "memory_weight": 0.0,
+    "news_weight": 0.0,
+    "screener_weight": 0.0,
+    "snapshot_weight": 0.0,
+    "technical_weight": 0.0
   }
 }

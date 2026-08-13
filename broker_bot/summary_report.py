@@ -253,7 +253,7 @@ def _diagnose_bot(
     if win_rate is not None and avg_alpha is not None and metrics.get("evaluated_decision_count", 0) >= 10:
         if win_rate < 0.4 and avg_alpha < -0.001:
             issues.append(f"{label} looks poorly calibrated: win rate {_fmt_pct(win_rate)} with average trade alpha {_fmt_pct(avg_alpha)}.")
-            recommendations.append(f"Let champion/challenger tighten {label}'s threshold unless excluded trades are outperforming.")
+            recommendations.append(f"Let the Supervisor tighten {label}'s threshold only if repeated evaluated outcomes support it.")
 
     if gross_exposure_pct is not None and gross_exposure_pct < 0.02 and market_7d is not None and abs(market_7d) > 0.015:
         market_direction = "rising" if market_7d > 0 else "falling"
@@ -348,7 +348,7 @@ def _build_body(
 
     market_returns = market.get("returns") or {}
     lines = [
-        "# All-Model Summary Report",
+        "# Broker Bot Summary Report",
         "",
         f"Generated at {generated_at}",
         "",
@@ -396,12 +396,7 @@ def _build_body(
 
 
 def generate_summary_report(config: Config) -> SummaryReport:
-    discovered = set(ACTIVE_BOT_LABELS) | {name for name in configured_bot_names(config) if name in ACTIVE_BOT_LABELS}
-    try:
-        discovered.update(name for name in read_available_bot_names(config.db_path) if name in ACTIVE_BOT_LABELS)
-    except Exception:
-        pass
-    bot_names = sorted(discovered)
+    bot_names = [ML_BOT_NAME]
     bots_payload = {bot_name: _bot_payload(config, bot_name) for bot_name in bot_names}
     market = _market_summary(bots_payload)
 
@@ -456,7 +451,7 @@ def generate_summary_report(config: Config) -> SummaryReport:
     llm_narrative = call_json_llm(
         config,
         system_prompt=(
-            "You are writing a concise all-model paper-trading summary report. "
+            "You are writing a concise Broker Bot paper-trading summary report. "
             "Use only the supplied metrics. Diagnose abnormal model behavior concretely and avoid generic trading advice. "
             "Return JSON with executive_summary and additional_notes."
         ),
@@ -466,10 +461,8 @@ def generate_summary_report(config: Config) -> SummaryReport:
 
     ts = datetime.now(timezone.utc).isoformat()
     body = _build_body(ts, market, rows, positives[:12], issues[:12], recommendations[:12], llm_narrative)
-    scored_rows = [row for row in rows if row.get("window_return") is not None]
-    best = scored_rows[0]["label"] if scored_rows else "n/a"
     issue_count = len(issues)
-    summary = f"Reviewed {len(rows)} model(s). Best 7-day model: {best}. Flagged {issue_count} issue(s)."
+    summary = f"Reviewed Broker Bot. Flagged {issue_count} issue(s)."
     reports_dir = Path(config.reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
     report_path = reports_dir / f"summary_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.md"
@@ -490,11 +483,11 @@ def generate_summary_report(config: Config) -> SummaryReport:
         config.db_path,
         ts,
         SUMMARY_REPORT_TYPE,
-        "All-Model Summary Report",
+        "Broker Bot Summary Report",
         summary,
         body,
         json.dumps(metrics, sort_keys=True),
         json.dumps(changes, sort_keys=True),
         bot_name=ML_BOT_NAME,
     )
-    return SummaryReport(ts=ts, headline="All-Model Summary Report", summary=summary, report_path=str(report_path))
+    return SummaryReport(ts=ts, headline="Broker Bot Summary Report", summary=summary, report_path=str(report_path))
