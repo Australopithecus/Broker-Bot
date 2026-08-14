@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T23:50:26.693272+00:00",
+  "generated_at": "2026-08-14T14:04:57.277243+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-13T23:50:26.693272+00:00",
+    "generated_at": "2026-08-14T14:04:57.277243+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.378333333333334e-05,
+      "age_minutes": 3.25e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -97,6 +97,13 @@
           "cash": 95175.92,
           "portfolio_value": 101612.7,
           "spy_value": 777.84
+        },
+        {
+          "ts": "2026-08-14T14:04:49.816927+00:00",
+          "equity": 101602.1,
+          "cash": 89379.89,
+          "portfolio_value": 101602.1,
+          "spy_value": 778.35
         }
       ],
       "trades": [
@@ -111,52 +118,36 @@
       ],
       "positions": [
         {
+          "symbol": "MSFT",
+          "qty": 12.271976409,
+          "avg_entry": 494.927351,
+          "avg_entry_price": 494.927351,
+          "market_value": 6111.321532,
+          "unreal_pl": 37.584756,
+          "unrealized_pl": 37.584756,
+          "side": "Long",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
+        },
+        {
           "symbol": "NVDA",
-          "qty": 27.274541965,
+          "qty": 27.053783281,
           "avg_entry": 224.88,
           "avg_entry_price": 224.88,
-          "market_value": 6150.136468,
-          "unreal_pl": 16.637471,
-          "unrealized_pl": 16.637471,
+          "market_value": 6109.420609,
+          "unreal_pl": 25.565825,
+          "unrealized_pl": 25.565825,
           "side": "Long",
-          "protection_mode": "Open exit order",
-          "protection_summary": "Open exit order without parsed thresholds.",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "JPM",
-          "qty": 16.736022781,
-          "avg_entry": 363.0,
-          "avg_entry_price": 363.0,
-          "market_value": 6077.351952,
-          "unreal_pl": 2.175682,
-          "unrealized_pl": 2.175682,
-          "side": "Long",
-          "protection_mode": "Open exit order",
-          "protection_summary": "Open exit order without parsed thresholds.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "AAPL",
-          "qty": -19.0,
-          "avg_entry": 314.87,
-          "avg_entry_price": 314.87,
-          "market_value": -5791.58,
-          "unreal_pl": 190.95,
-          "unrealized_pl": 190.95,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
+          "open_exit_order_count": 0
         }
       ],
       "advisor_reports": [
