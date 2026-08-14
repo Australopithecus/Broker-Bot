@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-14T15:11:45.637676+00:00",
+  "generated_at": "2026-08-14T16:10:37.101211+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-14T15:11:45.637676+00:00",
+    "generated_at": "2026-08-14T16:10:37.101211+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.475e-05,
+      "age_minutes": 3.291666666666667e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -111,6 +111,13 @@
           "cash": 89379.89,
           "portfolio_value": 101604.9,
           "spy_value": 776.66
+        },
+        {
+          "ts": "2026-08-14T16:10:30.094939+00:00",
+          "equity": 101586.81,
+          "cash": 89379.89,
+          "portfolio_value": 101586.81,
+          "spy_value": 776.22
         }
       ],
       "trades": [
@@ -129,9 +136,9 @@
           "qty": 12.271976409,
           "avg_entry": 494.927351,
           "avg_entry_price": 494.927351,
-          "market_value": 6115.862163,
-          "unreal_pl": 42.125387,
-          "unrealized_pl": 42.125387,
+          "market_value": 6112.794169,
+          "unreal_pl": 39.057393,
+          "unrealized_pl": 39.057393,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -145,9 +152,9 @@
           "qty": 27.053783281,
           "avg_entry": 224.88,
           "avg_entry_price": 224.88,
-          "market_value": 6109.826416,
-          "unreal_pl": 25.971632,
-          "unrealized_pl": 25.971632,
+          "market_value": 6095.758449,
+          "unreal_pl": 11.903665,
+          "unrealized_pl": 11.903665,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
