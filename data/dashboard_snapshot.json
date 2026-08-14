@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-14T14:04:57.277243+00:00",
+  "generated_at": "2026-08-14T15:11:45.637676+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-14T14:04:57.277243+00:00",
+    "generated_at": "2026-08-14T15:11:45.637676+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.25e-05,
+      "age_minutes": 3.475e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -104,6 +104,13 @@
           "cash": 89379.89,
           "portfolio_value": 101602.1,
           "spy_value": 778.35
+        },
+        {
+          "ts": "2026-08-14T15:11:39.504144+00:00",
+          "equity": 101604.9,
+          "cash": 89379.89,
+          "portfolio_value": 101604.9,
+          "spy_value": 776.66
         }
       ],
       "trades": [
@@ -122,9 +129,9 @@
           "qty": 12.271976409,
           "avg_entry": 494.927351,
           "avg_entry_price": 494.927351,
-          "market_value": 6111.321532,
-          "unreal_pl": 37.584756,
-          "unrealized_pl": 37.584756,
+          "market_value": 6115.862163,
+          "unreal_pl": 42.125387,
+          "unrealized_pl": 42.125387,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -138,9 +145,9 @@
           "qty": 27.053783281,
           "avg_entry": 224.88,
           "avg_entry_price": 224.88,
-          "market_value": 6109.420609,
-          "unreal_pl": 25.565825,
-          "unrealized_pl": 25.565825,
+          "market_value": 6109.826416,
+          "unreal_pl": 25.971632,
+          "unrealized_pl": 25.971632,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
