@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-14T16:10:37.101211+00:00",
+  "generated_at": "2026-08-14T17:20:40.019415+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-14T16:10:37.101211+00:00",
+    "generated_at": "2026-08-14T17:20:40.019415+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.291666666666667e-05,
+      "age_minutes": 3.703333333333334e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -118,6 +118,13 @@
           "cash": 89379.89,
           "portfolio_value": 101586.81,
           "spy_value": 776.22
+        },
+        {
+          "ts": "2026-08-14T17:20:30.774658+00:00",
+          "equity": 101560.61,
+          "cash": 89379.89,
+          "portfolio_value": 101560.61,
+          "spy_value": 775.97
         }
       ],
       "trades": [
@@ -132,13 +139,13 @@
       ],
       "positions": [
         {
-          "symbol": "MSFT",
-          "qty": 12.271976409,
-          "avg_entry": 494.927351,
-          "avg_entry_price": 494.927351,
-          "market_value": 6112.794169,
-          "unreal_pl": 39.057393,
-          "unrealized_pl": 39.057393,
+          "symbol": "NVDA",
+          "qty": 27.053783281,
+          "avg_entry": 224.88,
+          "avg_entry_price": 224.88,
+          "market_value": 6094.676298,
+          "unreal_pl": 10.821514,
+          "unrealized_pl": 10.821514,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -148,13 +155,13 @@
           "open_exit_order_count": 0
         },
         {
-          "symbol": "NVDA",
-          "qty": 27.053783281,
-          "avg_entry": 224.88,
-          "avg_entry_price": 224.88,
-          "market_value": 6095.758449,
-          "unreal_pl": 11.903665,
-          "unrealized_pl": 11.903665,
+          "symbol": "MSFT",
+          "qty": 12.271976409,
+          "avg_entry": 494.927351,
+          "avg_entry_price": 494.927351,
+          "market_value": 6085.979901,
+          "unreal_pl": 12.243125,
+          "unrealized_pl": 12.243125,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
