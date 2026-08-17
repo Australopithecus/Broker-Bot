@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-17T15:45:50.969400+00:00",
+  "generated_at": "2026-08-17T16:11:06.750500+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-17T15:45:50.969400+00:00",
+    "generated_at": "2026-08-17T16:11:06.750500+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.2649999999999994e-05,
+      "age_minutes": 2.7966666666666668e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -167,6 +167,13 @@
           "cash": 89724.77,
           "portfolio_value": 101488.22,
           "spy_value": 775.095
+        },
+        {
+          "ts": "2026-08-17T16:11:00.579032+00:00",
+          "equity": 101415.22,
+          "cash": 89724.77,
+          "portfolio_value": 101415.22,
+          "spy_value": 775.12
         }
       ],
       "trades": [
@@ -185,9 +192,9 @@
           "qty": 152.892511919,
           "avg_entry": 38.43546,
           "avg_entry_price": 38.43546,
-          "market_value": 5905.473273,
-          "unreal_pl": 28.979247,
-          "unrealized_pl": 28.979247,
+          "market_value": 5852.526596,
+          "unreal_pl": -23.96743,
+          "unrealized_pl": -23.96743,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -201,9 +208,9 @@
           "qty": 30.672405356,
           "avg_entry": 193.761984,
           "avg_entry_price": 193.761984,
-          "market_value": 5860.423129,
-          "unreal_pl": -82.722987,
-          "unrealized_pl": -82.722987,
+          "market_value": 5836.958739,
+          "unreal_pl": -106.187377,
+          "unrealized_pl": -106.187377,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
