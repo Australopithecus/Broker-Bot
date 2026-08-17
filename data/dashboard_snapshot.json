@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-17T15:12:41.773165+00:00",
+  "generated_at": "2026-08-17T15:45:50.969400+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-17T15:12:41.773165+00:00",
+    "generated_at": "2026-08-17T15:45:50.969400+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.263333333333334e-05,
+      "age_minutes": 3.2649999999999994e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -160,6 +160,13 @@
           "cash": 89724.77,
           "portfolio_value": 101503.32,
           "spy_value": 775.515
+        },
+        {
+          "ts": "2026-08-17T15:45:43.777812+00:00",
+          "equity": 101488.22,
+          "cash": 89724.77,
+          "portfolio_value": 101488.22,
+          "spy_value": 775.095
         }
       ],
       "trades": [
@@ -178,9 +185,9 @@
           "qty": 152.892511919,
           "avg_entry": 38.43546,
           "avg_entry_price": 38.43546,
-          "market_value": 5909.295586,
-          "unreal_pl": 32.80156,
-          "unrealized_pl": 32.80156,
+          "market_value": 5905.473273,
+          "unreal_pl": 28.979247,
+          "unrealized_pl": 28.979247,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -194,9 +201,9 @@
           "qty": 30.672405356,
           "avg_entry": 193.761984,
           "avg_entry_price": 193.761984,
-          "market_value": 5869.22611,
-          "unreal_pl": -73.920006,
-          "unrealized_pl": -73.920006,
+          "market_value": 5860.423129,
+          "unreal_pl": -82.722987,
+          "unrealized_pl": -82.722987,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
