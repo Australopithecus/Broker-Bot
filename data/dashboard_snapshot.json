@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-14T19:24:31.521584+00:00",
+  "generated_at": "2026-08-17T14:01:00.676394+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-14T19:24:31.521584+00:00",
+    "generated_at": "2026-08-17T14:01:00.676394+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.318333333333334e-05,
+      "age_minutes": 3.2449999999999996e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "8 SPY bars via iex"
+        "market_data_message": "6 SPY bars via iex"
       }
     ]
   },
@@ -139,6 +139,13 @@
           "cash": 89379.89,
           "portfolio_value": 101548.78,
           "spy_value": 776.035
+        },
+        {
+          "ts": "2026-08-17T14:00:53.378580+00:00",
+          "equity": 101562.25,
+          "cash": 89724.77,
+          "portfolio_value": 101562.25,
+          "spy_value": 775.19
         }
       ],
       "trades": [
@@ -153,13 +160,13 @@
       ],
       "positions": [
         {
-          "symbol": "NVDA",
-          "qty": 27.053783281,
-          "avg_entry": 224.88,
-          "avg_entry_price": 224.88,
-          "market_value": 6089.536079,
-          "unreal_pl": 5.681295,
-          "unrealized_pl": 5.681295,
+          "symbol": "SMCI",
+          "qty": 152.892511919,
+          "avg_entry": 38.43546,
+          "avg_entry_price": 38.43546,
+          "market_value": 5920.426161,
+          "unreal_pl": 43.932135,
+          "unrealized_pl": 43.932135,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -169,13 +176,13 @@
           "open_exit_order_count": 0
         },
         {
-          "symbol": "MSFT",
-          "qty": 12.271976409,
-          "avg_entry": 494.927351,
-          "avg_entry_price": 494.927351,
-          "market_value": 6079.06096,
-          "unreal_pl": 5.324184,
-          "unrealized_pl": 5.324184,
+          "symbol": "WDAY",
+          "qty": 30.672405356,
+          "avg_entry": 193.761984,
+          "avg_entry_price": 193.761984,
+          "market_value": 5919.160786,
+          "unreal_pl": -23.98533,
+          "unrealized_pl": -23.98533,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
