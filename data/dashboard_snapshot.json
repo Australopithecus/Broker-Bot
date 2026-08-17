@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-17T19:04:46.589185+00:00",
+  "generated_at": "2026-08-17T19:47:30.334865+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-17T19:04:46.589185+00:00",
+    "generated_at": "2026-08-17T19:47:30.334865+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.566666666666667e-05,
+      "age_minutes": 3.405e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -209,6 +209,13 @@
           "cash": 89724.77,
           "portfolio_value": 101473.04,
           "spy_value": 773.33
+        },
+        {
+          "ts": "2026-08-17T19:47:24.730184+00:00",
+          "equity": 101524.84,
+          "cash": 89724.77,
+          "portfolio_value": 101524.84,
+          "spy_value": 773.18
         }
       ],
       "trades": [
@@ -223,13 +230,13 @@
       ],
       "positions": [
         {
-          "symbol": "WDAY",
-          "qty": 30.672405356,
-          "avg_entry": 193.761984,
-          "avg_entry_price": 193.761984,
-          "market_value": 5894.622861,
-          "unreal_pl": -48.523255,
-          "unrealized_pl": -48.523255,
+          "symbol": "SMCI",
+          "qty": 152.892511919,
+          "avg_entry": 38.43546,
+          "avg_entry_price": 38.43546,
+          "market_value": 5913.117898,
+          "unreal_pl": 36.623872,
+          "unrealized_pl": 36.623872,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -239,13 +246,13 @@
           "open_exit_order_count": 0
         },
         {
-          "symbol": "SMCI",
-          "qty": 152.892511919,
-          "avg_entry": 38.43546,
-          "avg_entry_price": 38.43546,
-          "market_value": 5845.845193,
-          "unreal_pl": -30.648833,
-          "unrealized_pl": -30.648833,
+          "symbol": "WDAY",
+          "qty": 30.672405356,
+          "avg_entry": 193.761984,
+          "avg_entry_price": 193.761984,
+          "market_value": 5886.95476,
+          "unreal_pl": -56.191356,
+          "unrealized_pl": -56.191356,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
