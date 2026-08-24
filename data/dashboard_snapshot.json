@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-24T13:39:59.012045+00:00",
+  "generated_at": "2026-08-24T14:29:00.669971+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-24T13:39:59.012045+00:00",
+    "generated_at": "2026-08-24T14:29:00.669971+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.453333333333334e-05,
+      "age_minutes": 3.363333333333333e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -559,6 +559,13 @@
           "cash": 111379.95,
           "portfolio_value": 98877.16,
           "spy_value": 763.25
+        },
+        {
+          "ts": "2026-08-24T14:28:54.626358+00:00",
+          "equity": 98871.52,
+          "cash": 106025.78,
+          "portfolio_value": 98871.52,
+          "spy_value": 762.775
         }
       ],
       "trades": [
@@ -909,29 +916,13 @@
       ],
       "positions": [
         {
-          "symbol": "MRNA",
-          "qty": -40.0,
-          "avg_entry": 140.4,
-          "avg_entry_price": 140.4,
-          "market_value": -5350.2,
-          "unreal_pl": 265.8,
-          "unrealized_pl": 265.8,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
           "symbol": "BRK.B",
           "qty": -7.0,
           "avg_entry": 501.5,
           "avg_entry_price": 501.5,
-          "market_value": -3502.0293,
-          "unreal_pl": 8.4707,
-          "unrealized_pl": 8.4707,
+          "market_value": -3517.7261,
+          "unreal_pl": -7.2261,
+          "unrealized_pl": -7.2261,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -945,9 +936,9 @@
           "qty": -8.0,
           "avg_entry": 228.56,
           "avg_entry_price": 228.56,
-          "market_value": -1720.4,
-          "unreal_pl": 108.08,
-          "unrealized_pl": 108.08,
+          "market_value": -1713.52,
+          "unreal_pl": 114.96,
+          "unrealized_pl": 114.96,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -961,9 +952,9 @@
           "qty": -6.0,
           "avg_entry": 177.926667,
           "avg_entry_price": 177.926667,
-          "market_value": -1052.34,
-          "unreal_pl": 15.220002,
-          "unrealized_pl": 15.220002,
+          "market_value": -1044.3,
+          "unreal_pl": 23.260002,
+          "unrealized_pl": 23.260002,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -977,9 +968,9 @@
           "qty": -3.0,
           "avg_entry": 318.23,
           "avg_entry_price": 318.23,
-          "market_value": -886.2798,
-          "unreal_pl": 68.4102,
-          "unrealized_pl": 68.4102,
+          "market_value": -880.245,
+          "unreal_pl": 74.445,
+          "unrealized_pl": 74.445,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
