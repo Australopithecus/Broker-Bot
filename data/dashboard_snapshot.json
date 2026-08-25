@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-25T17:01:37.452463+00:00",
+  "generated_at": "2026-08-25T17:51:06.653787+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-25T17:01:37.452463+00:00",
+    "generated_at": "2026-08-25T17:51:06.653787+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.353333333333333e-05,
+      "age_minutes": 3.548333333333333e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -650,6 +650,13 @@
           "cash": 104756.13,
           "portfolio_value": 98627.9,
           "spy_value": 765.62
+        },
+        {
+          "ts": "2026-08-25T17:51:00.897681+00:00",
+          "equity": 98634.37,
+          "cash": 104756.13,
+          "portfolio_value": 98634.37,
+          "spy_value": 764.88
         }
       ],
       "trades": [
@@ -1012,9 +1019,9 @@
           "qty": -7.0,
           "avg_entry": 501.5,
           "avg_entry_price": 501.5,
-          "market_value": -3530.905,
-          "unreal_pl": -20.405,
-          "unrealized_pl": -20.405,
+          "market_value": -3529.792,
+          "unreal_pl": -19.292,
+          "unrealized_pl": -19.292,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1028,9 +1035,9 @@
           "qty": -8.0,
           "avg_entry": 228.56,
           "avg_entry_price": 228.56,
-          "market_value": -1726.28,
-          "unreal_pl": 102.2,
-          "unrealized_pl": 102.2,
+          "market_value": -1720.8,
+          "unreal_pl": 107.68,
+          "unrealized_pl": 107.68,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1044,9 +1051,9 @@
           "qty": -3.0,
           "avg_entry": 318.23,
           "avg_entry_price": 318.23,
-          "market_value": -871.05,
-          "unreal_pl": 83.64,
-          "unrealized_pl": 83.64,
+          "market_value": -871.164,
+          "unreal_pl": 83.526,
+          "unrealized_pl": 83.526,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
