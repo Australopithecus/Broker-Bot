@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-24T19:49:51.181851+00:00",
+  "generated_at": "2026-08-25T13:38:20.508940+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-24T19:49:51.181851+00:00",
+    "generated_at": "2026-08-25T13:38:20.508940+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.3833333333333334e-05,
+      "age_minutes": 3.408333333333333e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "6 SPY bars via iex"
+        "market_data_message": "7 SPY bars via iex"
       }
     ]
   },
@@ -615,6 +615,13 @@
           "cash": 104974.04,
           "portfolio_value": 98843.27,
           "spy_value": 763.68
+        },
+        {
+          "ts": "2026-08-25T13:38:14.260776+00:00",
+          "equity": 98728.14,
+          "cash": 111046.05,
+          "portfolio_value": 98728.14,
+          "spy_value": 766.55
         }
       ],
       "trades": [
@@ -961,17 +968,41 @@
           "qty": 40.0,
           "price": 133.76,
           "status": "OrderStatus.NEW (caretaker_trailing_stop)"
+        },
+        {
+          "ts": "2026-08-25T13:38:13.735874+00:00",
+          "symbol": "MRNA",
+          "side": "buy",
+          "qty": 42.0,
+          "price": 147.5,
+          "status": "OrderStatus.NEW (caretaker_trailing_stop)"
         }
       ],
       "positions": [
+        {
+          "symbol": "MRNA",
+          "qty": -42.0,
+          "avg_entry": 144.614286,
+          "avg_entry_price": 144.614286,
+          "market_value": -6164.34,
+          "unreal_pl": -90.539988,
+          "unrealized_pl": -90.539988,
+          "side": "Short",
+          "protection_mode": "Trailing stop",
+          "protection_summary": "2.00% trail",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": "2.00% trail",
+          "open_exit_order_count": 1
+        },
         {
           "symbol": "BRK.B",
           "qty": -7.0,
           "avg_entry": 501.5,
           "avg_entry_price": 501.5,
-          "market_value": -3524.57,
-          "unreal_pl": -14.07,
-          "unrealized_pl": -14.07,
+          "market_value": -3518.69,
+          "unreal_pl": -8.19,
+          "unrealized_pl": -8.19,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -985,9 +1016,9 @@
           "qty": -8.0,
           "avg_entry": 228.56,
           "avg_entry_price": 228.56,
-          "market_value": -1723.52,
-          "unreal_pl": 104.96,
-          "unrealized_pl": 104.96,
+          "market_value": -1722.62,
+          "unreal_pl": 105.86,
+          "unrealized_pl": 105.86,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1001,9 +1032,9 @@
           "qty": -3.0,
           "avg_entry": 318.23,
           "avg_entry_price": 318.23,
-          "market_value": -884.04,
-          "unreal_pl": 70.65,
-          "unrealized_pl": 70.65,
+          "market_value": -880.305,
+          "unreal_pl": 74.385,
+          "unrealized_pl": 74.385,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
