@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-26T13:42:51.052633+00:00",
+  "generated_at": "2026-08-26T14:31:38.562372+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-26T13:42:51.052633+00:00",
+    "generated_at": "2026-08-26T14:31:38.562372+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.766666666666666e-05,
+      "age_minutes": 3.7449999999999995e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -685,6 +685,13 @@
           "cash": 104242.93,
           "portfolio_value": 98703.29,
           "spy_value": 765.65
+        },
+        {
+          "ts": "2026-08-26T14:31:32.494627+00:00",
+          "equity": 98630.3,
+          "cash": 98630.3,
+          "portfolio_value": 98630.3,
+          "spy_value": 765.14
         }
       ],
       "trades": [
@@ -1058,13 +1065,12 @@
           "market_value": -5536.31,
           "unreal_pl": 106.19,
           "unrealized_pl": 106.19,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
+          "protection_mode": "Unknown",
+          "protection_summary": "Snapshot built from DB only; no live brokerage-service protection check.",
           "take_profit_price": null,
           "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
+          "trailing_stop": null,
+          "open_exit_order_count": 0
         }
       ],
       "advisor_reports": [
