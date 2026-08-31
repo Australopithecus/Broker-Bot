@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-26T18:08:22.304580+00:00",
+  "generated_at": "2026-08-31T19:16:10.493013+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-08-26T18:08:22.304580+00:00",
+    "generated_at": "2026-08-31T19:16:10.493013+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.785e-05,
+      "age_minutes": 3.741666666666667e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "8 SPY bars via iex"
+        "market_data_message": "6 SPY bars via iex"
       }
     ]
   },
@@ -706,6 +706,13 @@
           "cash": 98630.3,
           "portfolio_value": 98630.3,
           "spy_value": 765.7
+        },
+        {
+          "ts": "2026-08-31T19:16:04.301797+00:00",
+          "equity": 97449.71,
+          "cash": 97449.71,
+          "portfolio_value": 97449.71,
+          "spy_value": 766.07
         }
       ],
       "trades": [
