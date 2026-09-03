@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-03T16:43:15.156107+00:00",
+  "generated_at": "2026-09-03T19:29:16.411533+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-03T16:43:15.156107+00:00",
+    "generated_at": "2026-09-03T19:29:16.411533+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 4.0499999999999995e-05,
+      "age_minutes": 4.041666666666667e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -748,6 +748,13 @@
           "cash": 98408.69,
           "portfolio_value": 98408.69,
           "spy_value": 773.09
+        },
+        {
+          "ts": "2026-09-03T19:29:08.481882+00:00",
+          "equity": 98408.69,
+          "cash": 98408.69,
+          "portfolio_value": 98408.69,
+          "spy_value": 773.38
         }
       ],
       "trades": [
