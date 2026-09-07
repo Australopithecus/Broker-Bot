@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-04T19:11:17.098065+00:00",
+  "generated_at": "2026-09-07T17:58:00.369014+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-04T19:11:17.098065+00:00",
+    "generated_at": "2026-09-07T17:58:00.369014+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.673333333333333e-05,
+      "age_minutes": 3.621666666666667e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "8 SPY bars via iex"
+        "market_data_message": "5 SPY bars via iex"
       }
     ]
   },
@@ -769,6 +769,13 @@
           "cash": 57409.29,
           "portfolio_value": 98003.14,
           "spy_value": 769.74
+        },
+        {
+          "ts": "2026-09-07T17:57:52.759756+00:00",
+          "equity": 98223.92,
+          "cash": 57409.28,
+          "portfolio_value": 98223.92,
+          "spy_value": 770.18
         }
       ],
       "trades": [
@@ -1135,116 +1142,116 @@
       ],
       "positions": [
         {
-          "symbol": "DELL",
-          "qty": 11.445199895,
-          "avg_entry": 517.259831,
-          "avg_entry_price": 517.259831,
-          "market_value": 5947.555351,
-          "unreal_pl": 27.413188,
-          "unrealized_pl": 27.413188,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
-        },
-        {
           "symbol": "PCG",
           "qty": 423.111529917,
           "avg_entry": 13.868511,
           "avg_entry_price": 13.868511,
-          "market_value": 5934.139207,
-          "unreal_pl": 66.2123,
-          "unrealized_pl": 66.2123,
+          "market_value": 6050.494878,
+          "unreal_pl": 182.567971,
+          "unrealized_pl": 182.567971,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
+        },
+        {
+          "symbol": "DELL",
+          "qty": 11.445199895,
+          "avg_entry": 517.259831,
+          "avg_entry_price": 517.259831,
+          "market_value": 5998.887073,
+          "unreal_pl": 78.74491,
+          "unrealized_pl": 78.74491,
+          "side": "Long",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 1
         },
         {
           "symbol": "EIX",
           "qty": 104.903995735,
-          "avg_entry": 56.214601,
-          "avg_entry_price": 56.214601,
-          "market_value": 5916.585359,
-          "unreal_pl": 19.449095,
-          "unrealized_pl": 19.449095,
+          "avg_entry": 56.214602,
+          "avg_entry_price": 56.214602,
+          "market_value": 5955.399838,
+          "unreal_pl": 58.26347,
+          "unrealized_pl": 58.26347,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
         },
         {
           "symbol": "CRWD",
           "qty": 27.464806381,
           "avg_entry": 215.237077,
           "avg_entry_price": 215.237077,
-          "market_value": 5844.785446,
-          "unreal_pl": -66.6592,
-          "unrealized_pl": -66.6592,
+          "market_value": 5852.75024,
+          "unreal_pl": -58.694406,
+          "unrealized_pl": -58.694406,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
         },
         {
           "symbol": "AXON",
           "qty": 10.976783104,
           "avg_entry": 534.8,
           "avg_entry_price": 534.8,
-          "market_value": 5674.448026,
-          "unreal_pl": -195.935578,
-          "unrealized_pl": -195.935578,
+          "market_value": 5660.397743,
+          "unreal_pl": -209.985861,
+          "unrealized_pl": -209.985861,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
         },
         {
           "symbol": "COIN",
           "qty": 30.631466071,
           "avg_entry": 188.092165,
           "avg_entry_price": 188.092165,
-          "market_value": 5659.775986,
-          "unreal_pl": -101.762784,
-          "unrealized_pl": -101.762784,
+          "market_value": 5655.793895,
+          "unreal_pl": -105.744875,
+          "unrealized_pl": -105.744875,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
         },
         {
           "symbol": "HPE",
           "qty": 108.47917325,
-          "avg_entry": 53.181687,
-          "avg_entry_price": 53.181687,
-          "market_value": 5610.000445,
-          "unreal_pl": -159.104993,
-          "unrealized_pl": -159.104993,
+          "avg_entry": 53.181686,
+          "avg_entry_price": 53.181686,
+          "market_value": 5640.917009,
+          "unreal_pl": -128.18832,
+          "unrealized_pl": -128.18832,
           "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Open exit order",
+          "protection_summary": "Open exit order without parsed thresholds.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
-          "open_exit_order_count": 0
+          "open_exit_order_count": 1
         }
       ],
       "advisor_reports": [
