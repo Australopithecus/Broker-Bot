@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-09T16:55:14.690318+00:00",
+  "generated_at": "2026-09-09T19:32:06.567059+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-09T16:55:14.690318+00:00",
+    "generated_at": "2026-09-09T19:32:06.567059+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.371666666666667e-05,
+      "age_minutes": 2.983333333333333e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -797,6 +797,13 @@
           "cash": 77064.06,
           "portfolio_value": 97863.08,
           "spy_value": 762.685
+        },
+        {
+          "ts": "2026-09-09T19:32:00.108926+00:00",
+          "equity": 97560.43,
+          "cash": 77064.06,
+          "portfolio_value": 97560.43,
+          "spy_value": 763.095
         }
       ],
       "trades": [
@@ -1167,9 +1174,9 @@
           "qty": 104.627100802,
           "avg_entry": 57.321148,
           "avg_entry_price": 57.321148,
-          "market_value": 6098.713706,
-          "unreal_pl": 101.368176,
-          "unrealized_pl": 101.368176,
+          "market_value": 6032.275497,
+          "unreal_pl": 34.929967,
+          "unrealized_pl": 34.929967,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -1183,9 +1190,9 @@
           "qty": 3.374834692,
           "avg_entry": 1751.018375,
           "avg_entry_price": 1751.018375,
-          "market_value": 6005.889566,
-          "unreal_pl": 96.492008,
-          "unrealized_pl": 96.492008,
+          "market_value": 5924.927282,
+          "unreal_pl": 15.529724,
+          "unrealized_pl": 15.529724,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -1199,9 +1206,9 @@
           "qty": 10.99242535,
           "avg_entry": 543.354783,
           "avg_entry_price": 543.354783,
-          "market_value": 5996.368028,
-          "unreal_pl": 23.581137,
-          "unrealized_pl": 23.581137,
+          "market_value": 5857.698583,
+          "unreal_pl": -115.088308,
+          "unrealized_pl": -115.088308,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -1215,9 +1222,9 @@
           "qty": 19.646577368,
           "avg_entry": 143.53,
           "avg_entry_price": 143.53,
-          "market_value": 2699.636196,
-          "unreal_pl": -120.237054,
-          "unrealized_pl": -120.237054,
+          "market_value": 2676.846166,
+          "unreal_pl": -143.027084,
+          "unrealized_pl": -143.027084,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
