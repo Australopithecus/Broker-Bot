@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-10T16:43:03.163409+00:00",
+  "generated_at": "2026-09-10T19:19:22.780534+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-10T16:43:03.163409+00:00",
+    "generated_at": "2026-09-10T19:19:22.780534+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.73e-05,
+      "age_minutes": 3.093333333333333e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -811,6 +811,13 @@
           "cash": 85781.95,
           "portfolio_value": 97159.54,
           "spy_value": 758.51
+        },
+        {
+          "ts": "2026-09-10T19:19:17.508492+00:00",
+          "equity": 97139.53,
+          "cash": 85781.95,
+          "portfolio_value": 97139.53,
+          "spy_value": 757.505
         }
       ],
       "trades": [
@@ -1181,9 +1188,9 @@
           "qty": 43.227179997,
           "avg_entry": 137.209936,
           "avg_entry_price": 137.209936,
-          "market_value": 5831.346582,
-          "unreal_pl": -99.852019,
-          "unrealized_pl": -99.852019,
+          "market_value": 5834.58862,
+          "unreal_pl": -96.609981,
+          "unrealized_pl": -96.609981,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -1197,9 +1204,9 @@
           "qty": 99.515361237,
           "avg_entry": 57.321148,
           "avg_entry_price": 57.321148,
-          "market_value": 5544.000775,
-          "unreal_pl": -160.333975,
-          "unrealized_pl": -160.333975,
+          "market_value": 5521.112241,
+          "unreal_pl": -183.222509,
+          "unrealized_pl": -183.222509,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
