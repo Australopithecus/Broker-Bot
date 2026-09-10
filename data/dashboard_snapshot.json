@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-09T19:32:06.567059+00:00",
+  "generated_at": "2026-09-10T16:43:03.163409+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-09T19:32:06.567059+00:00",
+    "generated_at": "2026-09-10T16:43:03.163409+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 2.983333333333333e-05,
+      "age_minutes": 3.73e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -804,6 +804,13 @@
           "cash": 77064.06,
           "portfolio_value": 97560.43,
           "spy_value": 763.095
+        },
+        {
+          "ts": "2026-09-10T16:42:57.555197+00:00",
+          "equity": 97159.54,
+          "cash": 85781.95,
+          "portfolio_value": 97159.54,
+          "spy_value": 758.51
         }
       ],
       "trades": [
@@ -1170,61 +1177,29 @@
       ],
       "positions": [
         {
+          "symbol": "MRNA",
+          "qty": 43.227179997,
+          "avg_entry": 137.209936,
+          "avg_entry_price": 137.209936,
+          "market_value": 5831.346582,
+          "unreal_pl": -99.852019,
+          "unrealized_pl": -99.852019,
+          "side": "Long",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
+        },
+        {
           "symbol": "HPE",
-          "qty": 104.627100802,
+          "qty": 99.515361237,
           "avg_entry": 57.321148,
           "avg_entry_price": 57.321148,
-          "market_value": 6032.275497,
-          "unreal_pl": 34.929967,
-          "unrealized_pl": 34.929967,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
-        },
-        {
-          "symbol": "SNDK",
-          "qty": 3.374834692,
-          "avg_entry": 1751.018375,
-          "avg_entry_price": 1751.018375,
-          "market_value": 5924.927282,
-          "unreal_pl": 15.529724,
-          "unrealized_pl": 15.529724,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
-        },
-        {
-          "symbol": "DELL",
-          "qty": 10.99242535,
-          "avg_entry": 543.354783,
-          "avg_entry_price": 543.354783,
-          "market_value": 5857.698583,
-          "unreal_pl": -115.088308,
-          "unrealized_pl": -115.088308,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
-        },
-        {
-          "symbol": "MRNA",
-          "qty": 19.646577368,
-          "avg_entry": 143.53,
-          "avg_entry_price": 143.53,
-          "market_value": 2676.846166,
-          "unreal_pl": -143.027084,
-          "unrealized_pl": -143.027084,
+          "market_value": 5544.000775,
+          "unreal_pl": -160.333975,
+          "unrealized_pl": -160.333975,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
