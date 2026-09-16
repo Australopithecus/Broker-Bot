@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-15T17:20:09.022472+00:00",
+  "generated_at": "2026-09-16T17:19:19.576319+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-15T17:20:09.022472+00:00",
+    "generated_at": "2026-09-16T17:19:19.576319+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.568333333333334e-05,
+      "age_minutes": 2.78e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "6 SPY bars via iex"
+        "market_data_message": "7 SPY bars via iex"
       }
     ]
   },
@@ -839,6 +839,13 @@
           "cash": 85102.26,
           "portfolio_value": 97339.86,
           "spy_value": 757.005
+        },
+        {
+          "ts": "2026-09-16T17:19:13.557213+00:00",
+          "equity": 97246.01,
+          "cash": 97246.01,
+          "portfolio_value": 97246.01,
+          "spy_value": 759.78
         }
       ],
       "trades": [
@@ -1212,9 +1219,8 @@
           "market_value": 6532.944286,
           "unreal_pl": 680.940474,
           "unrealized_pl": 680.940474,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Unknown",
+          "protection_summary": "Snapshot built from DB only; no live brokerage-service protection check.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
@@ -1228,9 +1234,8 @@
           "market_value": 5712.350314,
           "unreal_pl": -85.873226,
           "unrealized_pl": -85.873226,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "protection_mode": "Unknown",
+          "protection_summary": "Snapshot built from DB only; no live brokerage-service protection check.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
