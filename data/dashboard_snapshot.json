@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-18T16:45:52.634979+00:00",
+  "generated_at": "2026-09-18T19:15:26.101737+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-18T16:45:52.634979+00:00",
+    "generated_at": "2026-09-18T19:15:26.101737+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.428333333333333e-05,
+      "age_minutes": 2.5300000000000002e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -860,6 +860,13 @@
           "cash": 113995.47,
           "portfolio_value": 97113.99,
           "spy_value": 759.09
+        },
+        {
+          "ts": "2026-09-18T19:15:21.121849+00:00",
+          "equity": 97065.81,
+          "cash": 102630.72,
+          "portfolio_value": 97065.81,
+          "spy_value": 761.185
         }
       ],
       "trades": [
@@ -1258,45 +1265,13 @@
       ],
       "positions": [
         {
-          "symbol": "CRWD",
-          "qty": -24.0,
-          "avg_entry": 236.16,
-          "avg_entry_price": 236.16,
-          "market_value": -5706.24,
-          "unreal_pl": -38.4,
-          "unrealized_pl": -38.4,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
           "symbol": "RVTY",
           "qty": -39.0,
           "avg_entry": 147.317949,
           "avg_entry_price": 147.317949,
-          "market_value": -5616.0,
-          "unreal_pl": 129.400011,
-          "unrealized_pl": 129.400011,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "IT",
-          "qty": -30.0,
-          "avg_entry": 190.5,
-          "avg_entry_price": 190.5,
-          "market_value": -5560.2,
-          "unreal_pl": 154.8,
-          "unrealized_pl": 154.8,
+          "market_value": -5564.91,
+          "unreal_pl": 180.490011,
+          "unrealized_pl": 180.490011,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
