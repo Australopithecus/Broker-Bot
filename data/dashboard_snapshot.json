@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T17:18:35.108195+00:00",
+  "generated_at": "2026-09-18T16:45:52.634979+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-17T17:18:35.108195+00:00",
+    "generated_at": "2026-09-18T16:45:52.634979+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 2.3616666666666667e-05,
+      "age_minutes": 3.428333333333333e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -853,6 +853,13 @@
           "cash": 120215.43,
           "portfolio_value": 96678.75,
           "spy_value": 762.21
+        },
+        {
+          "ts": "2026-09-18T16:45:45.540809+00:00",
+          "equity": 97113.99,
+          "cash": 113995.47,
+          "portfolio_value": 97113.99,
+          "spy_value": 759.09
         }
       ],
       "trades": [
@@ -1251,29 +1258,13 @@
       ],
       "positions": [
         {
-          "symbol": "SWKS",
-          "qty": -68.0,
-          "avg_entry": 85.899706,
-          "avg_entry_price": 85.899706,
-          "market_value": -6162.84,
-          "unreal_pl": -321.659992,
-          "unrealized_pl": -321.659992,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
           "symbol": "CRWD",
           "qty": -24.0,
           "avg_entry": 236.16,
           "avg_entry_price": 236.16,
-          "market_value": -5928.36,
-          "unreal_pl": -260.52,
-          "unrealized_pl": -260.52,
+          "market_value": -5706.24,
+          "unreal_pl": -38.4,
+          "unrealized_pl": -38.4,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1285,11 +1276,11 @@
         {
           "symbol": "RVTY",
           "qty": -39.0,
-          "avg_entry": 147.317948,
-          "avg_entry_price": 147.317948,
-          "market_value": -5798.52,
-          "unreal_pl": -53.120028,
-          "unrealized_pl": -53.120028,
+          "avg_entry": 147.317949,
+          "avg_entry_price": 147.317949,
+          "market_value": -5616.0,
+          "unreal_pl": 129.400011,
+          "unrealized_pl": 129.400011,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1303,9 +1294,9 @@
           "qty": -30.0,
           "avg_entry": 190.5,
           "avg_entry_price": 190.5,
-          "market_value": -5649.0,
-          "unreal_pl": 66.0,
-          "unrealized_pl": 66.0,
+          "market_value": -5560.2,
+          "unreal_pl": 154.8,
+          "unrealized_pl": 154.8,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
