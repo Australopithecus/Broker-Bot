@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T18:20:57.140334+00:00",
+  "generated_at": "2026-09-22T17:22:39.478740+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-21T18:20:57.140334+00:00",
+    "generated_at": "2026-09-22T17:22:39.478740+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.4733333333333335e-05,
+      "age_minutes": 3.7449999999999995e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "6 SPY bars via iex"
+        "market_data_message": "7 SPY bars via iex"
       }
     ]
   },
@@ -874,6 +874,13 @@
           "cash": 141080.71,
           "portfolio_value": 96314.24,
           "spy_value": 773.32
+        },
+        {
+          "ts": "2026-09-22T17:22:32.532696+00:00",
+          "equity": 96385.16,
+          "cash": 117413.47,
+          "portfolio_value": 96385.16,
+          "spy_value": 773.14
         }
       ],
       "trades": [
@@ -1336,29 +1343,13 @@
       ],
       "positions": [
         {
-          "symbol": "QCOM",
-          "qty": -32.0,
-          "avg_entry": 179.33125,
-          "avg_entry_price": 179.33125,
-          "market_value": -6167.36,
-          "unreal_pl": -428.76,
-          "unrealized_pl": -428.76,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "ACN",
-          "qty": -32.0,
-          "avg_entry": 189.55,
-          "avg_entry_price": 189.55,
-          "market_value": -5948.8,
-          "unreal_pl": 116.8,
-          "unrealized_pl": 116.8,
+          "symbol": "GM",
+          "qty": -70.0,
+          "avg_entry": 82.667714,
+          "avg_entry_price": 82.667714,
+          "market_value": -5855.15,
+          "unreal_pl": -68.41002,
+          "unrealized_pl": -68.41002,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1372,41 +1363,9 @@
           "qty": -81.0,
           "avg_entry": 72.007407,
           "avg_entry_price": 72.007407,
-          "market_value": -5931.63,
-          "unreal_pl": -99.030033,
-          "unrealized_pl": -99.030033,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "GM",
-          "qty": -70.0,
-          "avg_entry": 82.667714,
-          "avg_entry_price": 82.667714,
-          "market_value": -5910.1,
-          "unreal_pl": -123.36002,
-          "unrealized_pl": -123.36002,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "ARE",
-          "qty": -109.0,
-          "avg_entry": 53.39,
-          "avg_entry_price": 53.39,
-          "market_value": -5869.65,
-          "unreal_pl": -50.14,
-          "unrealized_pl": -50.14,
+          "market_value": -5822.685,
+          "unreal_pl": 9.914967,
+          "unrealized_pl": 9.914967,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1420,25 +1379,9 @@
           "qty": -23.0,
           "avg_entry": 247.17,
           "avg_entry_price": 247.17,
-          "market_value": -5617.29,
-          "unreal_pl": 67.62,
-          "unrealized_pl": 67.62,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "CF",
-          "qty": -45.0,
-          "avg_entry": 126.117778,
-          "avg_entry_price": 126.117778,
-          "market_value": -5602.05,
-          "unreal_pl": 73.25001,
-          "unrealized_pl": 73.25001,
+          "market_value": -5616.6,
+          "unreal_pl": 68.31,
+          "unrealized_pl": 68.31,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1452,9 +1395,9 @@
           "qty": -15.0,
           "avg_entry": 234.488667,
           "avg_entry_price": 234.488667,
-          "market_value": -3729.15,
-          "unreal_pl": -211.819995,
-          "unrealized_pl": -211.819995,
+          "market_value": -3733.8,
+          "unreal_pl": -216.469995,
+          "unrealized_pl": -216.469995,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
