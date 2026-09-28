@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-25T17:35:39.737740+00:00",
+  "generated_at": "2026-09-28T19:52:12.935102+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-25T17:35:39.737740+00:00",
+    "generated_at": "2026-09-28T19:52:12.935102+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 2.51e-05,
+      "age_minutes": 3.651666666666666e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "8 SPY bars via iex"
+        "market_data_message": "6 SPY bars via iex"
       }
     ]
   },
@@ -902,6 +902,13 @@
           "cash": 100482.17,
           "portfolio_value": 94658.29,
           "spy_value": 770.75
+        },
+        {
+          "ts": "2026-09-28T19:52:07.184911+00:00",
+          "equity": 94735.91,
+          "cash": 100335.03,
+          "portfolio_value": 94735.91,
+          "spy_value": 765.425
         }
       ],
       "trades": [
@@ -1376,9 +1383,9 @@
           "qty": -81.0,
           "avg_entry": 72.007407,
           "avg_entry_price": 72.007407,
-          "market_value": -5763.393,
-          "unreal_pl": 69.206967,
-          "unrealized_pl": 69.206967,
+          "market_value": -5598.72,
+          "unreal_pl": 233.879967,
+          "unrealized_pl": 233.879967,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1386,38 +1393,6 @@
           "stop_price": null,
           "trailing_stop": "2.00% trail",
           "open_exit_order_count": 1
-        },
-        {
-          "symbol": "MRNA",
-          "qty": -29.0,
-          "avg_entry": 195.346896,
-          "avg_entry_price": 195.346896,
-          "market_value": -5756.5,
-          "unreal_pl": -91.440016,
-          "unrealized_pl": -91.440016,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "PSKY",
-          "qty": 560.706836935,
-          "avg_entry": 10.194438,
-          "avg_entry_price": 10.194438,
-          "market_value": 5693.977929,
-          "unreal_pl": -22.113156,
-          "unrealized_pl": -22.113156,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
         }
       ],
       "advisor_reports": [
