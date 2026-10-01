@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-30T18:09:53.430610+00:00",
+  "generated_at": "2026-10-01T18:35:58.700064+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-09-30T18:09:53.430610+00:00",
+    "generated_at": "2026-10-01T18:35:58.700064+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 2.3566666666666666e-05,
+      "age_minutes": 2.71e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -923,6 +923,13 @@
           "cash": 83140.81,
           "portfolio_value": 94859.2,
           "spy_value": 767.1
+        },
+        {
+          "ts": "2026-10-01T18:35:53.800716+00:00",
+          "equity": 94669.36,
+          "cash": 94579.82,
+          "portfolio_value": 94669.36,
+          "spy_value": 765.05
         }
       ],
       "trades": [
@@ -1389,17 +1396,25 @@
           "qty": 29.0,
           "price": 198.4241,
           "status": "OrderStatus.NEW (caretaker_trailing_stop)"
+        },
+        {
+          "ts": "2026-10-01T18:35:53.466174+00:00",
+          "symbol": "RCL",
+          "side": "buy",
+          "qty": 21.0,
+          "price": 268.795,
+          "status": "OrderStatus.NEW (caretaker_trailing_stop)"
         }
       ],
       "positions": [
         {
           "symbol": "GEN",
-          "qty": 272.496149604,
+          "qty": 258.066569742,
           "avg_entry": 21.134286,
           "avg_entry_price": 21.134286,
-          "market_value": 6069.851732,
-          "unreal_pl": 310.840172,
-          "unrealized_pl": 310.840172,
+          "market_value": 5735.529513,
+          "unreal_pl": 281.476821,
+          "unrealized_pl": 281.476821,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -1409,20 +1424,20 @@
           "open_exit_order_count": 0
         },
         {
-          "symbol": "AKAM",
-          "qty": 52.391511016,
-          "avg_entry": 110.04917,
-          "avg_entry_price": 110.04917,
-          "market_value": 5649.900548,
-          "unreal_pl": -115.741754,
-          "unrealized_pl": -115.741754,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "symbol": "RCL",
+          "qty": -21.0,
+          "avg_entry": 263.16,
+          "avg_entry_price": 263.16,
+          "market_value": -5644.695,
+          "unreal_pl": -118.335,
+          "unrealized_pl": -118.335,
+          "side": "Short",
+          "protection_mode": "Trailing stop",
+          "protection_summary": "2.00% trail",
           "take_profit_price": null,
           "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
+          "trailing_stop": "2.00% trail",
+          "open_exit_order_count": 1
         }
       ],
       "advisor_reports": [
