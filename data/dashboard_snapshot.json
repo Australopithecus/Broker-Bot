@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-02T18:05:12.239071+00:00",
+  "generated_at": "2026-10-06T18:40:01.561812+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-10-02T18:05:12.239071+00:00",
+    "generated_at": "2026-10-06T18:40:01.561812+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.56e-05,
+      "age_minutes": 3.493333333333334e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "8 SPY bars via iex"
+        "market_data_message": "7 SPY bars via iex"
       }
     ]
   },
@@ -937,6 +937,13 @@
           "cash": 94574.4,
           "portfolio_value": 94574.4,
           "spy_value": 769.2
+        },
+        {
+          "ts": "2026-10-06T18:39:54.341570+00:00",
+          "equity": 95150.93,
+          "cash": 88704.12,
+          "portfolio_value": 95150.93,
+          "spy_value": 779.86
         }
       ],
       "trades": [
@@ -1411,38 +1418,64 @@
           "qty": 21.0,
           "price": 268.795,
           "status": "OrderStatus.NEW (caretaker_trailing_stop)"
+        },
+        {
+          "ts": "2026-10-06T18:39:53.695401+00:00",
+          "symbol": "PTC",
+          "side": "buy",
+          "qty": 29.0,
+          "price": 193.09,
+          "status": "OrderStatus.NEW (caretaker_trailing_stop)"
         }
       ],
       "positions": [
         {
-          "symbol": "GEN",
-          "qty": 258.066569742,
-          "avg_entry": 21.134286,
-          "avg_entry_price": 21.134286,
-          "market_value": 5735.529513,
-          "unreal_pl": 281.476821,
-          "unrealized_pl": 281.476821,
-          "protection_mode": "Unknown",
-          "protection_summary": "Snapshot built from DB only; no live brokerage-service protection check.",
+          "symbol": "CTVA",
+          "qty": 458.812935483,
+          "avg_entry": 13.145566,
+          "avg_entry_price": 13.145566,
+          "market_value": 6400.44045,
+          "unreal_pl": 369.084725,
+          "unrealized_pl": 369.084725,
+          "side": "Long",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
           "open_exit_order_count": 0
         },
         {
-          "symbol": "RCL",
-          "qty": -21.0,
-          "avg_entry": 263.16,
-          "avg_entry_price": 263.16,
-          "market_value": -5644.695,
-          "unreal_pl": -118.335,
-          "unrealized_pl": -118.335,
-          "protection_mode": "Unknown",
-          "protection_summary": "Snapshot built from DB only; no live brokerage-service protection check.",
+          "symbol": "FICO",
+          "qty": 8.247784342,
+          "avg_entry": 660.500903,
+          "avg_entry_price": 660.500903,
+          "market_value": 5646.350683,
+          "unreal_pl": 198.681677,
+          "unrealized_pl": 198.681677,
+          "side": "Long",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
           "take_profit_price": null,
           "stop_price": null,
           "trailing_stop": null,
           "open_exit_order_count": 0
+        },
+        {
+          "symbol": "PTC",
+          "qty": -29.0,
+          "avg_entry": 193.05,
+          "avg_entry_price": 193.05,
+          "market_value": -5599.32,
+          "unreal_pl": -0.87,
+          "unrealized_pl": -0.87,
+          "side": "Short",
+          "protection_mode": "Trailing stop",
+          "protection_summary": "2.00% trail",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": "2.00% trail",
+          "open_exit_order_count": 1
         }
       ],
       "advisor_reports": [
