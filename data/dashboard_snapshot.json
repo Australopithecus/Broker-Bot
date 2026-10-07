@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-06T18:40:01.561812+00:00",
+  "generated_at": "2026-10-07T19:06:20.397949+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-10-06T18:40:01.561812+00:00",
+    "generated_at": "2026-10-07T19:06:20.397949+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.493333333333334e-05,
+      "age_minutes": 3.536666666666667e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "7 SPY bars via iex"
+        "market_data_message": "8 SPY bars via iex"
       }
     ]
   },
@@ -944,6 +944,13 @@
           "cash": 88704.12,
           "portfolio_value": 95150.93,
           "spy_value": 779.86
+        },
+        {
+          "ts": "2026-10-07T19:06:12.980509+00:00",
+          "equity": 95385.83,
+          "cash": 95103.47,
+          "portfolio_value": 95385.83,
+          "spy_value": 777.37
         }
       ],
       "trades": [
@@ -1431,28 +1438,12 @@
       "positions": [
         {
           "symbol": "CTVA",
-          "qty": 458.812935483,
+          "qty": 410.799784251,
           "avg_entry": 13.145566,
           "avg_entry_price": 13.145566,
-          "market_value": 6400.44045,
-          "unreal_pl": 369.084725,
-          "unrealized_pl": 369.084725,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
-        },
-        {
-          "symbol": "FICO",
-          "qty": 8.247784342,
-          "avg_entry": 660.500903,
-          "avg_entry_price": 660.500903,
-          "market_value": 5646.350683,
-          "unreal_pl": 198.681677,
-          "unrealized_pl": 198.681677,
+          "market_value": 5903.1929,
+          "unreal_pl": 502.997223,
+          "unrealized_pl": 502.997223,
           "side": "Long",
           "protection_mode": "None",
           "protection_summary": "No broker-side exits found.",
@@ -1466,9 +1457,9 @@
           "qty": -29.0,
           "avg_entry": 193.05,
           "avg_entry_price": 193.05,
-          "market_value": -5599.32,
-          "unreal_pl": -0.87,
-          "unrealized_pl": -0.87,
+          "market_value": -5616.14,
+          "unreal_pl": -17.69,
+          "unrealized_pl": -17.69,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
