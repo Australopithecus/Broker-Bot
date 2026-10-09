@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-08T19:02:36.043118+00:00",
+  "generated_at": "2026-10-09T18:33:17.054434+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-10-08T19:02:36.043118+00:00",
+    "generated_at": "2026-10-09T18:33:17.054434+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.39e-05,
+      "age_minutes": 2.7583333333333334e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -958,6 +958,13 @@
           "cash": 95309.79,
           "portfolio_value": 95212.99,
           "spy_value": 772.935
+        },
+        {
+          "ts": "2026-10-09T18:33:10.319313+00:00",
+          "equity": 95069.32,
+          "cash": 100708.22,
+          "portfolio_value": 95069.32,
+          "spy_value": 778.615
         }
       ],
       "trades": [
@@ -1448,9 +1455,9 @@
           "qty": -29.0,
           "avg_entry": 193.05,
           "avg_entry_price": 193.05,
-          "market_value": -5615.85,
-          "unreal_pl": -17.4,
-          "unrealized_pl": -17.4,
+          "market_value": -5639.05,
+          "unreal_pl": -40.6,
+          "unrealized_pl": -40.6,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1458,22 +1465,6 @@
           "stop_price": null,
           "trailing_stop": "2.00% trail",
           "open_exit_order_count": 1
-        },
-        {
-          "symbol": "CTVA",
-          "qty": 396.361660326,
-          "avg_entry": 13.162579,
-          "avg_entry_price": 13.162579,
-          "market_value": 5519.33612,
-          "unreal_pl": 302.194453,
-          "unrealized_pl": 302.194453,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
         }
       ],
       "advisor_reports": [
