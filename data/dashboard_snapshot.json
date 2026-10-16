@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-16T17:01:17.729144+00:00",
+  "generated_at": "2026-10-16T19:59:55.758633+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-10-16T17:01:17.729144+00:00",
+    "generated_at": "2026-10-16T19:59:55.758633+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.613333333333333e-05,
+      "age_minutes": 3.3283333333333334e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -993,6 +993,13 @@
           "cash": 102531.7,
           "portfolio_value": 91994.02,
           "spy_value": 765.87
+        },
+        {
+          "ts": "2026-10-16T19:59:50.341579+00:00",
+          "equity": 92006.96,
+          "cash": 97602.8,
+          "portfolio_value": 92006.96,
+          "spy_value": 763.54
         }
       ],
       "trades": [
@@ -1491,25 +1498,9 @@
           "qty": -29.0,
           "avg_entry": 193.05,
           "avg_entry_price": 193.05,
-          "market_value": -5598.45,
-          "unreal_pl": 0.0,
-          "unrealized_pl": 0.0,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "MRNA",
-          "qty": -23.0,
-          "avg_entry": 233.97913,
-          "avg_entry_price": 233.97913,
-          "market_value": -4939.71,
-          "unreal_pl": 441.80999,
-          "unrealized_pl": 441.80999,
+          "market_value": -5595.695,
+          "unreal_pl": 2.755,
+          "unrealized_pl": 2.755,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
