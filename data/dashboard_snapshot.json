@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-20T17:35:34.362185+00:00",
+  "generated_at": "2026-10-21T17:42:30.799353+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-10-20T17:35:34.362185+00:00",
+    "generated_at": "2026-10-21T17:42:30.799353+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.123333333333333e-05,
+      "age_minutes": 2.8066666666666667e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -68,7 +68,7 @@
         "trading_auth": "ok",
         "trading_message": "AccountStatus.ACTIVE",
         "market_data_auth": "ok",
-        "market_data_message": "7 SPY bars via iex"
+        "market_data_message": "8 SPY bars via iex"
       }
     ]
   },
@@ -1014,6 +1014,13 @@
           "cash": 79629.85,
           "portfolio_value": 90484.17,
           "spy_value": 769.49
+        },
+        {
+          "ts": "2026-10-21T17:42:24.515667+00:00",
+          "equity": 91699.65,
+          "cash": 102783.55,
+          "portfolio_value": 91699.65,
+          "spy_value": 773.88
         }
       ],
       "trades": [
@@ -1504,6 +1511,14 @@
           "qty": 23.0,
           "price": 214.7,
           "status": "OrderStatus.NEW (caretaker_trailing_stop)"
+        },
+        {
+          "ts": "2026-10-21T17:42:23.879104+00:00",
+          "symbol": "MRNA",
+          "side": "buy",
+          "qty": 22.0,
+          "price": 248.6399,
+          "status": "OrderStatus.NEW (caretaker_trailing_stop)"
         }
       ],
       "positions": [
@@ -1512,9 +1527,9 @@
           "qty": -29.0,
           "avg_entry": 193.05,
           "avg_entry_price": 193.05,
-          "market_value": -5603.67,
-          "unreal_pl": -5.22,
-          "unrealized_pl": -5.22,
+          "market_value": -5614.835,
+          "unreal_pl": -16.385,
+          "unrealized_pl": -16.385,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1524,52 +1539,20 @@
           "open_exit_order_count": 1
         },
         {
-          "symbol": "DELL",
-          "qty": 11.966290446,
-          "avg_entry": 450.731496,
-          "avg_entry_price": 450.731496,
-          "market_value": 5554.991351,
-          "unreal_pl": 161.407357,
-          "unrealized_pl": 161.407357,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
+          "symbol": "MRNA",
+          "qty": -22.0,
+          "avg_entry": 244.702273,
+          "avg_entry_price": 244.702273,
+          "market_value": -5467.88,
+          "unreal_pl": -84.429994,
+          "unrealized_pl": -84.429994,
+          "side": "Short",
+          "protection_mode": "Trailing stop",
+          "protection_summary": "2.00% trail",
           "take_profit_price": null,
           "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
-        },
-        {
-          "symbol": "FLEX",
-          "qty": 62.192195456,
-          "avg_entry": 87.681757,
-          "avg_entry_price": 87.681757,
-          "market_value": 5456.432268,
-          "unreal_pl": 3.311299,
-          "unrealized_pl": 3.311299,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
-        },
-        {
-          "symbol": "SMCI",
-          "qty": 169.807182044,
-          "avg_entry": 31.469028,
-          "avg_entry_price": 31.469028,
-          "market_value": 5445.716328,
-          "unreal_pl": 102.049362,
-          "unrealized_pl": 102.049362,
-          "side": "Long",
-          "protection_mode": "None",
-          "protection_summary": "No broker-side exits found.",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": null,
-          "open_exit_order_count": 0
+          "trailing_stop": "2.00% trail",
+          "open_exit_order_count": 1
         }
       ],
       "advisor_reports": [
