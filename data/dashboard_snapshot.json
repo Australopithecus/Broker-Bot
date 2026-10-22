@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-21T17:42:30.799353+00:00",
+  "generated_at": "2026-10-22T17:40:59.343771+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-10-21T17:42:30.799353+00:00",
+    "generated_at": "2026-10-22T17:40:59.343771+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 2.8066666666666667e-05,
+      "age_minutes": 3.845e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -1021,6 +1021,13 @@
           "cash": 102783.55,
           "portfolio_value": 91699.65,
           "spy_value": 773.88
+        },
+        {
+          "ts": "2026-10-22T17:40:53.580742+00:00",
+          "equity": 91590.0,
+          "cash": 97225.86,
+          "portfolio_value": 91590.0,
+          "spy_value": 763.4
         }
       ],
       "trades": [
@@ -1527,25 +1534,9 @@
           "qty": -29.0,
           "avg_entry": 193.05,
           "avg_entry_price": 193.05,
-          "market_value": -5614.835,
-          "unreal_pl": -16.385,
-          "unrealized_pl": -16.385,
-          "side": "Short",
-          "protection_mode": "Trailing stop",
-          "protection_summary": "2.00% trail",
-          "take_profit_price": null,
-          "stop_price": null,
-          "trailing_stop": "2.00% trail",
-          "open_exit_order_count": 1
-        },
-        {
-          "symbol": "MRNA",
-          "qty": -22.0,
-          "avg_entry": 244.702273,
-          "avg_entry_price": 244.702273,
-          "market_value": -5467.88,
-          "unreal_pl": -84.429994,
-          "unrealized_pl": -84.429994,
+          "market_value": -5635.86,
+          "unreal_pl": -37.41,
+          "unrealized_pl": -37.41,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
