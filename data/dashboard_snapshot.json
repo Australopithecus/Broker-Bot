@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-29T18:41:07.996432+00:00",
+  "generated_at": "2026-10-30T18:16:46.273437+00:00",
   "strategy_blueprint": {
     "title": "Fresh-Start Strategy",
     "revision": "4.0.0",
@@ -55,10 +55,10 @@
     "message": "Pre-fresh-start model evaluations and strategy reports remain archived in storage, but are hidden from dashboard and snapshot outputs."
   },
   "health": {
-    "generated_at": "2026-10-29T18:41:07.996432+00:00",
+    "generated_at": "2026-10-30T18:16:46.273437+00:00",
     "freshness": {
       "status": "fresh",
-      "age_minutes": 3.67e-05,
+      "age_minutes": 2.4e-05,
       "message": "Snapshot is 0 minutes old."
     },
     "bots": [
@@ -1063,6 +1063,13 @@
           "cash": 107984.79,
           "portfolio_value": 91388.31,
           "spy_value": 766.97
+        },
+        {
+          "ts": "2026-10-30T18:16:40.175925+00:00",
+          "equity": 91364.67,
+          "cash": 102521.95,
+          "portfolio_value": 91364.67,
+          "spy_value": 752.805
         }
       ],
       "trades": [
@@ -1833,17 +1840,57 @@
           "qty": 88.0,
           "price": 64.565,
           "status": "OrderStatus.NEW (caretaker_trailing_stop)"
+        },
+        {
+          "ts": "2026-10-30T18:16:39.118592+00:00",
+          "symbol": "BLDR",
+          "side": "buy",
+          "qty": 86.0,
+          "price": 63.675,
+          "status": "OrderStatus.NEW (caretaker_trailing_stop)"
         }
       ],
       "positions": [
+        {
+          "symbol": "CSGP",
+          "qty": 194.65693892,
+          "avg_entry": 28.895429,
+          "avg_entry_price": 28.895429,
+          "market_value": 5799.803495,
+          "unreal_pl": 175.107737,
+          "unrealized_pl": 175.107737,
+          "side": "Long",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
+        },
         {
           "symbol": "PTC",
           "qty": -29.0,
           "avg_entry": 193.05,
           "avg_entry_price": 193.05,
-          "market_value": -5631.075,
-          "unreal_pl": -32.625,
-          "unrealized_pl": -32.625,
+          "market_value": -5651.085,
+          "unreal_pl": -52.635,
+          "unrealized_pl": -52.635,
+          "side": "Short",
+          "protection_mode": "Trailing stop",
+          "protection_summary": "2.00% trail",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": "2.00% trail",
+          "open_exit_order_count": 1
+        },
+        {
+          "symbol": "BLDR",
+          "qty": -86.0,
+          "avg_entry": 63.776279,
+          "avg_entry_price": 63.776279,
+          "market_value": -5476.05,
+          "unreal_pl": 8.709994,
+          "unrealized_pl": 8.709994,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1857,9 +1904,9 @@
           "qty": -367.0,
           "avg_entry": 14.98,
           "avg_entry_price": 14.98,
-          "market_value": -5514.175,
-          "unreal_pl": -16.515,
-          "unrealized_pl": -16.515,
+          "market_value": -5453.62,
+          "unreal_pl": 44.04,
+          "unrealized_pl": 44.04,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1873,9 +1920,9 @@
           "qty": -75.0,
           "avg_entry": 72.59,
           "avg_entry_price": 72.59,
-          "market_value": -5451.375,
-          "unreal_pl": -7.125,
-          "unrealized_pl": -7.125,
+          "market_value": -5452.5,
+          "unreal_pl": -8.25,
+          "unrealized_pl": -8.25,
           "side": "Short",
           "protection_mode": "Trailing stop",
           "protection_summary": "2.00% trail",
@@ -1883,6 +1930,22 @@
           "stop_price": null,
           "trailing_stop": "2.00% trail",
           "open_exit_order_count": 1
+        },
+        {
+          "symbol": "FFIV",
+          "qty": 15.103572038,
+          "avg_entry": 352.443992,
+          "avg_entry_price": 352.443992,
+          "market_value": 5066.795312,
+          "unreal_pl": -256.367911,
+          "unrealized_pl": -256.367911,
+          "side": "Long",
+          "protection_mode": "None",
+          "protection_summary": "No broker-side exits found.",
+          "take_profit_price": null,
+          "stop_price": null,
+          "trailing_stop": null,
+          "open_exit_order_count": 0
         }
       ],
       "advisor_reports": [
